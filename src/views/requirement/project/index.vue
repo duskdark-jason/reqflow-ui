@@ -76,6 +76,19 @@
       <el-table-column label="项目名称" align="center" prop="projectName" min-width="180" :show-overflow-tooltip="true" />
       <el-table-column label="项目编码" align="center" prop="projectCode" min-width="140" :show-overflow-tooltip="true" />
       <el-table-column label="负责人ID" align="center" prop="ownerUserId" width="110" />
+      <el-table-column label="初始化状态" align="center" min-width="190">
+        <template slot-scope="scope">
+          <div class="init-status-cell">
+            <el-tag :type="initStatus(scope.row).type" size="mini">{{ initStatus(scope.row).label }}</el-tag>
+            <el-progress
+              :percentage="initStatus(scope.row).percentage"
+              :stroke-width="6"
+              :show-text="false"
+              class="init-progress"
+            />
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="100">
         <template slot-scope="scope">
           <el-tag :type="statusTagType(scope.row.status)" size="mini">{{ statusLabel(scope.row.status) }}</el-tag>
@@ -101,7 +114,7 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['req:project:edit']"
-          >修改</el-button>
+          >初始化</el-button>
           <el-button
             size="mini"
             type="text"
@@ -121,40 +134,23 @@
       @pagination="getList"
     />
 
-    <el-dialog :title="title" :visible.sync="open" width="560px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="90px">
-        <el-form-item label="项目名称" prop="projectName">
-          <el-input v-model="form.projectName" placeholder="请输入项目名称" />
-        </el-form-item>
-        <el-form-item label="项目编码" prop="projectCode">
-          <el-input v-model="form.projectCode" placeholder="请输入项目编码" />
-        </el-form-item>
-        <el-form-item label="负责人ID" prop="ownerUserId">
-          <el-input v-model="form.ownerUserId" placeholder="请输入负责人用户ID" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="form.status">
-            <el-radio
-              v-for="item in statusOptions"
-              :key="item.value"
-              :label="item.value"
-            >{{ item.label }}</el-radio>
-          </el-radio-group>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
-      </div>
-    </el-dialog>
+    <project-init-wizard
+      :visible.sync="initOpen"
+      :project-id="initProjectId"
+      @success="handleInitSuccess"
+      @intake="handleIntakeById"
+    />
   </div>
 </template>
 
 <script>
-import { listProject, getProject, delProject, addProject, updateProject } from "@/api/requirement/project"
+import { listProject, delProject } from "@/api/requirement/project"
+import { getProjectInit } from "@/api/requirement/projectInit"
+import ProjectInitWizard from "./components/ProjectInitWizard"
 
 export default {
   name: "RequirementProject",
+  components: { ProjectInitWizard },
   data() {
     return {
       loading: true,
@@ -164,8 +160,9 @@ export default {
       showSearch: true,
       total: 0,
       projectList: [],
-      title: "",
-      open: false,
+      initOpen: false,
+      initProjectId: undefined,
+      initStatusMap: {},
       statusOptions: [
         { value: "0", label: "正常", type: "success" },
         { value: "1", label: "停用", type: "info" }
@@ -177,18 +174,7 @@ export default {
         projectCode: undefined,
         status: undefined
       },
-      form: {},
-      rules: {
-        projectName: [
-          { required: true, message: "项目名称不能为空", trigger: "blur" }
-        ],
-        projectCode: [
-          { required: true, message: "项目编码不能为空", trigger: "blur" }
-        ],
-        status: [
-          { required: true, message: "项目状态不能为空", trigger: "change" }
-        ]
-      }
+      form: {}
     }
   },
   created() {
@@ -201,23 +187,10 @@ export default {
         this.projectList = response.rows || response.data || []
         this.total = response.total || 0
         this.loading = false
+        this.loadInitStatuses()
       }).catch(() => {
         this.loading = false
       })
-    },
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-    reset() {
-      this.form = {
-        projectId: undefined,
-        projectName: undefined,
-        projectCode: undefined,
-        ownerUserId: undefined,
-        status: "0"
-      }
-      this.resetForm("form")
     },
     handleQuery() {
       this.queryParams.pageNum = 1
@@ -233,41 +206,24 @@ export default {
       this.multiple = !selection.length
     },
     handleAdd() {
-      this.reset()
-      this.open = true
-      this.title = "添加项目"
+      this.initProjectId = undefined
+      this.initOpen = true
     },
     handleUpdate(row) {
-      this.reset()
       const projectId = row.projectId || row.id || this.ids
-      getProject(projectId).then(response => {
-        this.form = response.data
-        this.open = true
-        this.title = "修改项目"
-      })
+      this.initProjectId = Array.isArray(projectId) ? projectId[0] : projectId
+      this.initOpen = true
     },
     handleIntake(row) {
       const projectId = row.projectId || row.id
+      this.handleIntakeById(projectId)
+    },
+    handleIntakeById(projectId) {
+      if (!projectId) return
       this.$router.push({ path: "/requirement/project/detail", query: { projectId: projectId } })
     },
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (this.form.projectId != undefined || this.form.id != undefined) {
-            updateProject(this.form).then(() => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            })
-          } else {
-            addProject(this.form).then(() => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            })
-          }
-        }
-      })
+    handleInitSuccess() {
+      this.getList()
     },
     handleDelete(row) {
       const projectIds = row.projectId || row.id || this.ids
@@ -285,7 +241,49 @@ export default {
     statusTagType(value) {
       const option = this.statusOptions.find(item => item.value === String(value))
       return option ? option.type : ""
+    },
+    loadInitStatuses() {
+      this.initStatusMap = {}
+      this.projectList.forEach(project => {
+        const projectId = project.projectId || project.id
+        if (!projectId) return
+        getProjectInit(projectId).then(response => {
+          this.$set(this.initStatusMap, projectId, response.data || {})
+        }).catch(() => {
+          this.$set(this.initStatusMap, projectId, { initChecklist: {} })
+        })
+      })
+    },
+    initStatus(row) {
+      const projectId = row.projectId || row.id
+      const context = this.initStatusMap[projectId]
+      if (!context) {
+        return { label: "状态读取中", type: "info", percentage: 0 }
+      }
+      const checklist = context.initChecklist || {}
+      const keys = ["projectReady", "repositoryReady", "variantReady", "moduleReady", "indexReady"]
+      const readyCount = keys.filter(key => checklist[key]).length
+      const percentage = readyCount * 20
+      if (!checklist.projectReady) return { label: "项目信息未完成", type: "warning", percentage: percentage }
+      if (!checklist.repositoryReady) return { label: "缺前后端仓库", type: "warning", percentage: percentage }
+      if (!checklist.variantReady) return { label: "缺客户基线", type: "warning", percentage: percentage }
+      if (!checklist.moduleReady) return { label: "缺模块知识", type: "info", percentage: percentage }
+      if (!checklist.indexReady) return { label: "待仓库索引", type: "info", percentage: percentage }
+      return { label: "基础初始化完成", type: "success", percentage: 100 }
     }
   }
 }
 </script>
+
+<style scoped>
+.init-status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.init-progress {
+  width: 120px;
+}
+</style>
