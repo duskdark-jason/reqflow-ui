@@ -24,7 +24,7 @@
 | L1 | AC-UI-001, AC-UI-002, AC-UI-003, AC-UI-004, AC-UI-005 | `npm run build:prod` | 通过；仍有既有 asset size 和 entrypoint size warning |
 | L3 | AC-UI-001, AC-UI-003 | `npm run dev -- --host 127.0.0.1 --port 8093`；`playwright-cli open http://127.0.0.1:8093/`；`playwright-cli snapshot`；`playwright-cli console`；`playwright-cli requests` | dev server 启动成功；浏览器进入登录页；静态资源正常；`/dev-api/captchaImage` 因 8080 未监听返回 500，未进入登录态项目页 |
 | L0 | AC-UI-006 | `sh scripts/check-docs.sh` | 通过 |
-| L0 | AC-UI-006 | `sh scripts/check-harness.sh review --spec docs/specs/active/2026-06-09-REQ-003-项目管理初始化向导` | 通过 |
+| L0 | AC-UI-006 | `sh scripts/check-harness.sh review --spec docs/specs/done/2026-06-09-REQ-003-项目管理初始化向导` | 通过 |
 | L4 | AC-UI-002, AC-UI-004, AC-UI-005 | 登录态新增项目、编辑回显、分支保存、列表状态刷新和进入接入中心 | 未执行；当前执行 agent 未持有可使用的登录态账号或 token |
 
 ## 运行态证据
