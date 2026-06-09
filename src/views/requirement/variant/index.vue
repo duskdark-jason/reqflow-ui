@@ -11,10 +11,10 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="客户线" prop="variantName">
+      <el-form-item label="项目分支" prop="variantName">
         <el-input
           v-model="queryParams.variantName"
-          placeholder="请输入客户线名称"
+          placeholder="请输入项目分支名称"
           clearable
           style="width: 220px"
           @keyup.enter.native="handleQuery"
@@ -86,8 +86,8 @@
       <el-table-column label="所属项目" align="center" min-width="150" :show-overflow-tooltip="true">
         <template slot-scope="scope">{{ projectLabel(scope.row.projectId) }}</template>
       </el-table-column>
-      <el-table-column label="客户线名称" align="center" prop="variantName" min-width="160" :show-overflow-tooltip="true" />
-      <el-table-column label="客户线编码" align="center" prop="variantCode" min-width="140" :show-overflow-tooltip="true" />
+      <el-table-column label="项目分支名称" align="center" prop="variantName" min-width="160" :show-overflow-tooltip="true" />
+      <el-table-column label="项目分支编码" align="center" prop="variantCode" min-width="140" :show-overflow-tooltip="true" />
       <el-table-column label="客户名称" align="center" prop="customerName" min-width="150" :show-overflow-tooltip="true" />
       <el-table-column label="范围类型" align="center" prop="scopeType" width="120">
         <template slot-scope="scope">{{ optionLabel(scopeTypeOptions, scope.row.scopeType) }}</template>
@@ -145,13 +145,13 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="客户线名称" prop="variantName">
-              <el-input v-model="form.variantName" placeholder="请输入客户线名称" />
+            <el-form-item label="分支名称" prop="variantName">
+              <el-input v-model="form.variantName" placeholder="请输入项目分支名称" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="客户线编码" prop="variantCode">
-              <el-input v-model="form.variantCode" placeholder="请输入客户线编码" />
+            <el-form-item label="分支编码" prop="variantCode">
+              <el-input v-model="form.variantCode" placeholder="请输入项目分支编码" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -260,10 +260,10 @@ export default {
           { required: true, message: "所属项目不能为空", trigger: "change" }
         ],
         variantName: [
-          { required: true, message: "客户线名称不能为空", trigger: "blur" }
+          { required: true, message: "项目分支名称不能为空", trigger: "blur" }
         ],
         variantCode: [
-          { required: true, message: "客户线编码不能为空", trigger: "blur" }
+          { required: true, message: "项目分支编码不能为空", trigger: "blur" }
         ],
         scopeType: [
           { required: true, message: "范围类型不能为空", trigger: "change" }
@@ -326,7 +326,7 @@ export default {
     handleAdd() {
       this.reset()
       this.open = true
-      this.title = "添加客户线"
+      this.title = "添加项目分支"
     },
     handleUpdate(row) {
       this.reset()
@@ -334,7 +334,7 @@ export default {
       getVariant(variantId).then(response => {
         this.form = response.data
         this.open = true
-        this.title = "修改客户线"
+        this.title = "修改项目分支"
       })
     },
     submitForm() {
@@ -358,7 +358,7 @@ export default {
     },
     handleDelete(row) {
       const variantIds = row.variantId || row.id || this.ids
-      this.$modal.confirm('是否确认删除客户线编号为"' + variantIds + '"的数据项？').then(function() {
+      this.$modal.confirm('是否确认删除项目分支编号为"' + variantIds + '"的数据项？').then(function() {
         return delVariant(variantIds)
       }).then(() => {
         this.getList()

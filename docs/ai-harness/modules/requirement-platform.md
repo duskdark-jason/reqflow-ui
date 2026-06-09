@@ -11,9 +11,6 @@
 | 项目管理 | `src/views/requirement/project/index.vue` |
 | 项目维护弹窗 | `src/views/requirement/project/components/ProjectInitWizard.vue` |
 | 项目接入中心 | `src/views/requirement/project/detail.vue` |
-| 仓库管理 | `src/views/requirement/repository/index.vue` |
-| 客户定制线 | `src/views/requirement/variant/index.vue` |
-| 模块功能点 | `src/views/requirement/module/index.vue` |
 | 需求列表与提交 | `src/views/requirement/demand/index.vue`、`src/views/requirement/demand/detail.vue` |
 | Agent 交接资料 | `src/views/requirement/package/index.vue` |
 | 使用统计 | `src/views/requirement/statistics/index.vue` |
@@ -27,7 +24,9 @@
 - 表单弹窗使用 Element UI `el-dialog` 和 `el-form`，提交成功后刷新列表。
 - 项目管理新增和修改入口必须打开项目维护弹窗；弹窗单页展示项目信息、代码仓库、分支配置和模块初始化状态，不再使用分步向导。
 - 项目列表的初始化状态必须来自后端 `initChecklist`，不得只按前端本地行状态臆测。
-- 项目接入中心展示并维护仓库公共身份、分支配置、索引批次和模块知识库；仓库维护只保存团队共享 Git 远端、仓库类型和默认分支，分支配置维护中文标签和真实分支名，不保存个人本机绝对路径。
+- 仓库、项目分支和模块知识不再作为独立左侧菜单入口；项目维护弹窗是仓库和项目分支的主维护入口，项目接入中心只读展示仓库、分支、索引批次和模块知识库。
+- 仓库维护只保存团队共享 Git 远端、仓库类型和默认分支，允许纯后端服务只登记一条后端仓库，不保存个人本机绝对路径。
+- 项目分支维护中文标签、真实分支名和后端生成的 `mcpKey`；MCP 索引用 `mcpKey + remoteUrl` 识别项目、分支和代码仓库。
 - 需求表单的影响面推荐只追加候选内容，不强制覆盖人工输入。
 - Agent 交接资料内容使用 textarea，不引入 Markdown 编辑器依赖。
 
@@ -36,7 +35,7 @@
 - 后端接口未运行时，页面只能通过构建验证，不能宣称完成联调。
 - 项目列表会对当前页项目逐个读取初始化上下文；后续如项目数明显增加，可考虑后端增加批量初始化状态接口。
 - Agent 交接资料存在多个 artifact type，前端 tab 的 key 必须使用后端支持的类型值。
-- 索引推荐依赖后端 `/requirement/index/**` 接口，且必须让后端按 `variantId` 解析客户基线分支并限定最新索引批次；接口缺失时需求表单只能保留人工填写影响范围。
+- 索引推荐依赖后端 `/requirement/index/**` 接口，且必须让后端按项目分支 `variantId` 解析真实分支并限定最新索引批次；接口缺失时需求表单只能保留人工填写影响范围。
 - 统计表格返回字段是聚合字段，不能按基础实体字段假设。
 
 ## 验证建议

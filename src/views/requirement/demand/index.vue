@@ -94,7 +94,7 @@
       <el-table-column label="所属项目" align="center" min-width="150" :show-overflow-tooltip="true">
         <template slot-scope="scope">{{ projectLabel(scope.row.projectId) }}</template>
       </el-table-column>
-      <el-table-column label="客户线" align="center" min-width="130" :show-overflow-tooltip="true">
+      <el-table-column label="项目分支" align="center" min-width="130" :show-overflow-tooltip="true">
         <template slot-scope="scope">{{ variantLabel(scope.row.variantId) }}</template>
       </el-table-column>
       <el-table-column label="模块" align="center" min-width="130" :show-overflow-tooltip="true">
@@ -202,8 +202,8 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="客户线" prop="variantId">
-              <el-select v-model="form.variantId" placeholder="请选择客户线" filterable style="width: 100%" @change="handleVariantChange">
+            <el-form-item label="项目分支" prop="variantId">
+              <el-select v-model="form.variantId" placeholder="请选择项目分支" filterable style="width: 100%" @change="handleVariantChange">
                 <el-option
                   v-for="variant in filteredVariantOptions"
                   :key="variant.variantId || variant.id"
@@ -394,7 +394,7 @@ export default {
           { required: true, message: "所属项目不能为空", trigger: "change" }
         ],
         variantId: [
-          { required: true, message: "客户线不能为空", trigger: "change" }
+          { required: true, message: "项目分支不能为空", trigger: "change" }
         ],
         businessBackground: [
           { required: true, message: "业务背景不能为空", trigger: "blur" }

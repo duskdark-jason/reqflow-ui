@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// 查询客户线列表
+// 查询项目分支列表
 export function listVariant(query) {
   return request({
     url: '/requirement/variant/list',
@@ -9,7 +9,7 @@ export function listVariant(query) {
   })
 }
 
-// 查询客户线详细
+// 查询项目分支详细
 export function getVariant(variantId) {
   return request({
     url: '/requirement/variant/' + variantId,
@@ -17,7 +17,7 @@ export function getVariant(variantId) {
   })
 }
 
-// 新增客户线
+// 新增项目分支
 export function addVariant(data) {
   return request({
     url: '/requirement/variant',
@@ -26,7 +26,7 @@ export function addVariant(data) {
   })
 }
 
-// 修改客户线
+// 修改项目分支
 export function updateVariant(data) {
   return request({
     url: '/requirement/variant',
@@ -35,7 +35,7 @@ export function updateVariant(data) {
   })
 }
 
-// 删除客户线
+// 删除项目分支
 export function delVariant(variantIds) {
   return request({
     url: '/requirement/variant/' + variantIds,

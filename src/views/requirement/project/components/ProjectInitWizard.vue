@@ -9,7 +9,7 @@
   >
     <div v-loading="loading" class="project-init-body">
       <el-alert
-        title="平台只保存团队共享 Git 信息、真实分支名和模块索引结果，不保存个人本机仓库目录。"
+        title="平台只保存团队共享 Git 信息、项目分支和模块索引结果；保存后会生成 MCP key，用于识别项目和分支，不保存个人本机仓库目录。"
         type="info"
         show-icon
         :closable="false"
@@ -74,7 +74,12 @@
           </el-table-column>
           <el-table-column label="Git 地址" min-width="260">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.repoUrl" size="small" placeholder="团队共享 Git 远端地址" />
+              <el-input
+                v-model="scope.row.repoUrl"
+                size="small"
+                placeholder="团队共享 Git 远端地址"
+                @blur="handleRepositoryUrlChange(scope.row)"
+              />
             </template>
           </el-table-column>
           <el-table-column label="默认分支" width="140">
@@ -112,6 +117,11 @@
           <el-table-column label="真实分支名" min-width="190">
             <template slot-scope="scope">
               <el-input v-model="scope.row.baselineBranch" size="small" placeholder="main" />
+            </template>
+          </el-table-column>
+          <el-table-column label="MCP Key" min-width="180">
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.mcpKey" size="small" readonly placeholder="保存后生成" />
             </template>
           </el-table-column>
           <el-table-column label="状态" width="100">
@@ -208,7 +218,7 @@ export default {
       repoTypeOptions: [
         { value: "FRONTEND", label: "前端" },
         { value: "BACKEND", label: "后端" },
-        { value: "MONOREPO", label: "多端仓库" },
+        { value: "MONOREPO", label: "前后端同仓" },
         { value: "DOC", label: "文档仓库" },
         { value: "OTHER", label: "其他" }
       ],
@@ -231,8 +241,8 @@ export default {
     },
     checklistText() {
       const pending = []
-      if (!this.initChecklist.repositoryReady) pending.push("补齐前后端仓库")
-      if (!this.initChecklist.variantReady) pending.push("补齐分支")
+      if (!this.initChecklist.repositoryReady) pending.push("补齐代码仓库")
+      if (!this.initChecklist.variantReady) pending.push("补齐项目分支")
       if (!this.initChecklist.moduleReady) pending.push("沉淀模块知识")
       if (!this.initChecklist.indexReady) pending.push("完成仓库索引")
       return pending.length ? pending.join("、") : "基础初始化已完成"
@@ -300,8 +310,7 @@ export default {
     },
     defaultRepositories() {
       return [
-        this.newRepository("前端仓库", "FRONTEND"),
-        this.newRepository("后端仓库", "BACKEND")
+        this.newRepository("", "BACKEND")
       ]
     },
     defaultVariants() {
@@ -327,6 +336,7 @@ export default {
         branchLabel: label || "",
         variantName: label || "",
         variantCode: undefined,
+        mcpKey: undefined,
         customerName: label || "",
         scopeType: "BRANCH",
         baselineBranch: branchName || "main",
@@ -365,6 +375,29 @@ export default {
     removeVariant(index) {
       this.form.variants.splice(index, 1)
     },
+    handleRepositoryUrlChange(row) {
+      const repoName = this.inferRepoName(row.repoUrl)
+      if (!repoName) return
+      if (!row.repoName) {
+        this.$set(row, "repoName", repoName)
+      }
+      if (!this.form.project.projectName) {
+        this.$set(this.form.project, "projectName", repoName)
+      }
+      if (!this.form.project.projectCode) {
+        this.$set(this.form.project, "projectCode", this.inferProjectCode(repoName))
+      }
+    },
+    inferRepoName(repoUrl) {
+      if (!repoUrl) return ""
+      const value = String(repoUrl).trim()
+      const lastSegment = value.split(/[/:]/).filter(Boolean).pop() || ""
+      return lastSegment.replace(/\.git$/i, "")
+    },
+    inferProjectCode(repoName) {
+      const code = String(repoName || "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").toUpperCase()
+      return code || undefined
+    },
     validateAll() {
       return new Promise(resolve => {
         this.$refs.projectForm.validate(valid => {
@@ -374,12 +407,7 @@ export default {
     },
     validateRepositories() {
       if (!this.form.repositories.length) {
-        this.$modal.msgWarning("请至少维护前端仓库和后端仓库")
-        return false
-      }
-      const types = this.form.repositories.map(item => item.repoType)
-      if (types.indexOf("FRONTEND") === -1 || types.indexOf("BACKEND") === -1) {
-        this.$modal.msgWarning("项目初始化至少需要一条前端仓库和一条后端仓库")
+        this.$modal.msgWarning("请至少维护一条代码仓库")
         return false
       }
       const invalid = this.form.repositories.some(item => !item.repoName || !item.repoType || !item.repoUrl || !item.defaultBranch || this.hasLocalPath(item.repoUrl) || this.hasLocalPath(item.defaultBranch))
@@ -391,12 +419,12 @@ export default {
     },
     validateVariants() {
       if (!this.form.variants.length) {
-        this.$modal.msgWarning("请至少维护一条分支配置")
+        this.$modal.msgWarning("请至少维护一条项目分支")
         return false
       }
       const invalid = this.form.variants.some(item => !item.branchLabel || !item.baselineBranch || this.hasLocalPath(item.baselineBranch))
       if (invalid) {
-        this.$modal.msgWarning("请补齐分支中文标签和真实分支名，且不要填写本机绝对路径")
+        this.$modal.msgWarning("请补齐项目分支中文标签和真实分支名，且不要填写本机绝对路径")
         return false
       }
       return true

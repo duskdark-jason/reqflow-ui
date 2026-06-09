@@ -14,7 +14,7 @@
       <el-descriptions :column="3" border size="medium">
         <el-descriptions-item label="需求类型">{{ optionLabel(demandTypeOptions, form.demandType) }}</el-descriptions-item>
         <el-descriptions-item label="所属项目">{{ projectLabel(form.projectId) }}</el-descriptions-item>
-        <el-descriptions-item label="客户线">{{ variantLabel(form.variantId) }}</el-descriptions-item>
+        <el-descriptions-item label="项目分支">{{ variantLabel(form.variantId) }}</el-descriptions-item>
         <el-descriptions-item label="模块">{{ moduleLabel(form.moduleId) }}</el-descriptions-item>
         <el-descriptions-item label="创建人ID">{{ form.creatorId || "-" }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ parseTime(form.createTime) || "-" }}</el-descriptions-item>

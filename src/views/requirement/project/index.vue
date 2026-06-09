@@ -265,8 +265,8 @@ export default {
       const readyCount = keys.filter(key => checklist[key]).length
       const percentage = readyCount * 20
       if (!checklist.projectReady) return { label: "项目信息未完成", type: "warning", percentage: percentage }
-      if (!checklist.repositoryReady) return { label: "缺前后端仓库", type: "warning", percentage: percentage }
-      if (!checklist.variantReady) return { label: "缺分支配置", type: "warning", percentage: percentage }
+      if (!checklist.repositoryReady) return { label: "缺代码仓库", type: "warning", percentage: percentage }
+      if (!checklist.variantReady) return { label: "缺项目分支", type: "warning", percentage: percentage }
       if (!checklist.moduleReady) return { label: "缺模块知识", type: "info", percentage: percentage }
       if (!checklist.indexReady) return { label: "待仓库索引", type: "info", percentage: percentage }
       return { label: "基础初始化完成", type: "success", percentage: 100 }

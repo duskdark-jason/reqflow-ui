@@ -23,16 +23,6 @@
         </el-tab-pane>
 
         <el-tab-pane label="仓库" name="repositories">
-          <div class="tab-toolbar">
-            <el-button
-              type="primary"
-              plain
-              icon="el-icon-plus"
-              size="mini"
-              @click="handleAddRepository"
-              v-hasPermi="['req:repo:add']"
-            >新增仓库</el-button>
-          </div>
           <el-alert
             title="这里只维护团队共享的 Git 远端和默认分支。本机仓库目录由本地索引器临时读取，不保存到平台。"
             type="info"
@@ -51,56 +41,24 @@
             <el-table-column label="最近索引" prop="lastIndexedAt" width="170">
               <template slot-scope="scope">{{ parseTime(scope.row.lastIndexedAt) || "-" }}</template>
             </el-table-column>
-            <el-table-column label="操作" width="90" align="center">
-              <template slot-scope="scope">
-                <el-button
-                  type="text"
-                  size="mini"
-                  icon="el-icon-edit"
-                  @click="handleEditRepository(scope.row)"
-                  v-hasPermi="['req:repo:edit']"
-                >编辑</el-button>
-              </template>
-            </el-table-column>
           </el-table>
         </el-tab-pane>
 
-        <el-tab-pane label="客户基线" name="variants">
-          <div class="tab-toolbar">
-            <el-button
-              type="primary"
-              plain
-              icon="el-icon-plus"
-              size="mini"
-              @click="handleAddVariant"
-              v-hasPermi="['req:variant:add']"
-            >新增客户基线</el-button>
-          </div>
+        <el-tab-pane label="项目分支" name="variants">
           <el-table :data="variants" size="small">
-            <el-table-column label="客户线" prop="variantName" min-width="160" />
-            <el-table-column label="编码" prop="variantCode" min-width="130" />
-            <el-table-column label="客户名称" prop="customerName" min-width="140" />
-            <el-table-column label="基线分支" prop="baselineBranch" min-width="140" />
+            <el-table-column label="分支标签" prop="variantName" min-width="160" />
+            <el-table-column label="分支编码" prop="variantCode" min-width="130" />
+            <el-table-column label="真实分支" prop="baselineBranch" min-width="140" />
+            <el-table-column label="MCP Key" prop="mcpKey" min-width="170" :show-overflow-tooltip="true" />
             <el-table-column label="分支策略" prop="branchPolicy" min-width="140">
               <template slot-scope="scope">{{ optionLabel(branchPolicyOptions, scope.row.branchPolicy) }}</template>
-            </el-table-column>
-            <el-table-column label="操作" width="90" align="center">
-              <template slot-scope="scope">
-                <el-button
-                  type="text"
-                  size="mini"
-                  icon="el-icon-edit"
-                  @click="handleEditVariant(scope.row)"
-                  v-hasPermi="['req:variant:edit']"
-                >编辑</el-button>
-              </template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
 
         <el-tab-pane label="MCP 索引" name="index">
           <el-alert
-            title="本地 Codex 或索引 Agent 读取本机仓库后，通过 MCP tool publish_repository_index 推送结果。平台只保存 Git 地址、分支、commit、相对路径和影响面，不保存个人本机目录。"
+            title="本地 Codex 或索引 Agent 读取本机仓库后，通过 MCP tool publish_repository_index 推送结果。平台用 MCP key 识别项目分支，用 Git 地址识别仓库。"
             type="info"
             show-icon
             :closable="false"
@@ -191,13 +149,13 @@
       <el-form ref="variantForm" :model="variantForm" :rules="variantRules" label-width="100px">
         <el-row>
           <el-col :span="12">
-            <el-form-item label="客户线名称" prop="variantName">
-              <el-input v-model="variantForm.variantName" placeholder="请输入客户线名称" />
+            <el-form-item label="分支标签" prop="variantName">
+              <el-input v-model="variantForm.variantName" placeholder="请输入分支标签" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="客户线编码" prop="variantCode">
-              <el-input v-model="variantForm.variantCode" placeholder="请输入客户线编码" />
+            <el-form-item label="分支编码" prop="variantCode">
+              <el-input v-model="variantForm.variantCode" placeholder="请输入分支编码" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -236,7 +194,7 @@
           </el-col>
           <el-col :span="24">
             <el-form-item label="说明" prop="description">
-              <el-input v-model="variantForm.description" type="textarea" :rows="3" placeholder="请输入客户基线说明" />
+              <el-input v-model="variantForm.description" type="textarea" :rows="3" placeholder="请输入项目分支说明" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -276,7 +234,7 @@ export default {
       repoTypeOptions: [
         { value: "FRONTEND", label: "前端" },
         { value: "BACKEND", label: "后端" },
-        { value: "MONOREPO", label: "多端仓库" },
+        { value: "MONOREPO", label: "前后端同仓" },
         { value: "DOC", label: "文档仓库" },
         { value: "OTHER", label: "其他" }
       ],
@@ -303,10 +261,10 @@ export default {
       },
       variantRules: {
         variantName: [
-          { required: true, message: "客户线名称不能为空", trigger: "blur" }
+          { required: true, message: "分支标签不能为空", trigger: "blur" }
         ],
         variantCode: [
-          { required: true, message: "客户线编码不能为空", trigger: "blur" }
+          { required: true, message: "分支编码不能为空", trigger: "blur" }
         ],
         scopeType: [
           { required: true, message: "范围类型不能为空", trigger: "change" }
@@ -320,16 +278,22 @@ export default {
   computed: {
     mcpGuide() {
       const repoLines = this.repositories.map(repo => {
-        return "- repoId=" + (repo.repoId || repo.id) + "，" + repo.repoName + "，" + repo.repoType + "，" + repo.repoUrl
+        return "- " + repo.repoName + "，" + repo.repoType + "，" + repo.repoUrl
+      }).join("\n")
+      const branchLines = this.variants.map(branch => {
+        return "- mcpKey=" + (branch.mcpKey || "-") + "，" + branch.variantName + "，" + branch.baselineBranch
       }).join("\n")
       return [
         "MCP tool: publish_repository_index",
-        "projectId: " + (this.projectId || "-"),
+        "project: " + (this.project.projectCode || this.projectId || "-"),
+        "branches:",
+        branchLines || "- 暂无项目分支，请先在项目管理中维护。",
         "repositories:",
-        repoLines || "- 暂无仓库，请先在仓库管理中登记前后端仓库。",
+        repoLines || "- 暂无仓库，请先在项目管理中维护代码仓库。",
         "",
         "上传要求：",
-        "- branchName 使用当前索引分支或客户基线分支。",
+        "- 优先传 mcpKey 和 remoteUrl；平台会自动解析项目、分支和仓库。",
+        "- 兼容旧方式传 projectId、repoId 和 branchName。",
         "- commitHash 使用当前仓库提交号。",
         "- pages/apis/tables/permissions/documents 中只能写相对路径和结构化标识。",
         "- 不上传个人本机绝对路径。"
@@ -412,7 +376,7 @@ export default {
     },
     handleAddVariant() {
       this.resetVariantForm()
-      this.variantTitle = "新增客户基线"
+      this.variantTitle = "新增项目分支"
       this.variantOpen = true
     },
     handleEditVariant(row) {
@@ -421,7 +385,7 @@ export default {
         baselineBranch: row.baselineBranch || "main",
         status: row.status || "0"
       })
-      this.variantTitle = "编辑客户基线"
+      this.variantTitle = "编辑项目分支"
       this.variantOpen = true
     },
     submitVariant() {
@@ -429,7 +393,7 @@ export default {
         if (!valid) return
         const action = this.variantForm.variantId || this.variantForm.id ? updateVariant : addVariant
         action(this.variantForm).then(() => {
-          this.$modal.msgSuccess("客户基线已保存")
+          this.$modal.msgSuccess("项目分支已保存")
           this.variantOpen = false
           this.loadDetail()
         })
