@@ -50,6 +50,7 @@
 ## 项目索引契约
 
 - 项目接入中心读取 `/requirement/repository/list`、`/requirement/variant/list`、`/requirement/index/batch/list`、`/requirement/index/module/tree` 只读展示团队共享仓库、项目分支、索引批次和模块知识库；新增和编辑回到项目管理维护弹窗。
+- 当后端 companion 因部分迁移库缺少可选索引表而返回空索引批次或空模块知识库时，项目接入中心必须继续展示项目、仓库、项目分支和 MCP 指引，把索引内容视为“暂无数据”。
 - MCP 索引指引优先使用 `mcpKey + remoteUrl` 调用 `publish_repository_index`，兼容旧的 `projectId + repoId + branchName` 调用方式。
 - 新建或编辑需求时，选择项目、项目分支和模块后调用 `/requirement/index/impact/suggest`，请求携带 `projectId`、`variantId`、`moduleId`、`moduleCode`；后端按所选项目分支和最新索引批次返回 `pages`、`apis`、`tables`、`permissions`、`documents` 五类候选影响面。
 - 前端只展示和追加影响面推荐，不覆盖用户已输入内容。
