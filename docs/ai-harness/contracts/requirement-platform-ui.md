@@ -17,6 +17,7 @@
 | `demand.js` | `/requirement/demand` | 需求列表、详情、保存和状态流转 |
 | `package.js` | `/requirement/package` | Agent 交接资料列表、最新版本、保存新版本和生成草稿资料 |
 | `statistics.js` | `/requirement/statistics` | 使用统计 |
+| `harness.js` | `/requirement/project/*/harness-*` | 项目接入 harness 模板包查询和初始化结果登记 |
 
 ## 权限标识
 
@@ -37,6 +38,14 @@
 - 分支分区维护 `branchLabel`、`baselineBranch` 和后端回显的 `mcpKey`：`branchLabel` 是需求人员可见中文标签，`baselineBranch` 是真实 Git 分支名，`mcpKey` 用于 MCP 识别项目分支；前端可继续兼容 `variantName`、`variantCode`、`customerName` 等历史字段。
 - 项目列表会按项目调用 `/requirement/project/init/{projectId}` 派生初始化状态，状态口径来自 `initChecklist`：项目信息、仓库、分支配置、模块知识和索引。
 - 保存成功后刷新项目列表；用户选择“保存并进入接入中心”时跳转 `src/views/requirement/project/detail.vue`。
+
+## Harness 初始化下发契约
+
+- 项目接入中心展示平台内置 harness 模板版本、目标仓库、默认基线分支、任务分支前缀、workspace `AGENTS.md` 下发状态和子仓库初始化状态。
+- 用户触发 harness 初始化时，前端读取后端模板包；实际写入目标 workspace 的动作由 Codex 通过需求平台 MCP 或接口获取模板后完成，前端不直接操作用户本机文件系统。
+- 多仓项目必须同时展示 workspace 根目录入口 `AGENTS.md` 和各子仓库 `AGENTS.md` 的下发状态；workspace 入口只做分流，业务规则仍写入子仓库。
+- 初始化结果必须展示 Codex 回写的写入文件清单、校验命令、校验结果和失败原因；失败时保留“复制错误信息”和“重新生成初始化指引”入口。
+- 前端不得把个人本机绝对路径保存到项目配置；本地路径只允许作为用户当前初始化会话中的临时提示。
 
 ## 项目索引契约
 
@@ -60,6 +69,8 @@ execution_prompt
 review_prompt
 execution_report
 review_report
+harness_template
+harness_init_result
 ```
 
 生成草稿资料接口使用 `POST /requirement/package/generate/{demandId}`。保存 artifact 仍使用 `POST /requirement/package/{demandId}/{artifactType}`，保存行为必须追加新版本。
