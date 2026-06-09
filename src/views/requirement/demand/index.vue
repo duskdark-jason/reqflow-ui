@@ -150,7 +150,7 @@
             icon="el-icon-document"
             @click="handlePackage(scope.row)"
             v-hasPermi="['req:package:list']"
-          >执行包</el-button>
+          >Agent资料</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -203,7 +203,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="客户线" prop="variantId">
-              <el-select v-model="form.variantId" placeholder="请选择客户线" filterable style="width: 100%">
+              <el-select v-model="form.variantId" placeholder="请选择客户线" filterable style="width: 100%" @change="handleVariantChange">
                 <el-option
                   v-for="variant in filteredVariantOptions"
                   :key="variant.variantId || variant.id"
@@ -215,7 +215,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="模块" prop="moduleId">
-              <el-select v-model="form.moduleId" placeholder="请选择模块" clearable filterable style="width: 100%">
+              <el-select v-model="form.moduleId" placeholder="请选择模块" clearable filterable style="width: 100%" @change="handleModuleChange">
                 <el-option
                   v-for="module in filteredModuleOptions"
                   :key="module.moduleId || module.id"
@@ -242,6 +242,48 @@
           </el-col>
         </el-row>
         <el-divider content-position="left">影响范围</el-divider>
+        <el-alert
+          v-if="form.projectId && form.moduleId"
+          title="已根据项目和模块提供影响面推荐，可按需追加到下方字段，追加后仍可人工编辑。"
+          type="info"
+          show-icon
+          :closable="false"
+          class="mb8"
+        />
+        <el-row v-if="form.projectId && form.moduleId" class="mb8">
+          <el-col :span="24">
+            <el-button
+              type="primary"
+              plain
+              icon="el-icon-refresh"
+              size="mini"
+              :loading="impactSuggestLoading"
+              @click="loadImpactSuggest"
+              v-hasPermi="['req:index:list']"
+            >刷新推荐</el-button>
+            <el-button
+              type="success"
+              plain
+              icon="el-icon-plus"
+              size="mini"
+              :disabled="!hasImpactSuggest"
+              @click="appendImpactSuggest"
+            >追加推荐</el-button>
+          </el-col>
+          <el-col :span="24" v-if="hasImpactSuggest">
+            <div class="impact-suggest">
+              <div class="impact-group" v-for="group in visibleImpactGroups" :key="group.key">
+                <span class="impact-group-title">{{ group.label }}</span>
+                <el-tag
+                  v-for="item in group.items"
+                  :key="group.key + '-' + (item.impactId || item.itemKey || item.itemName)"
+                  size="mini"
+                  class="impact-tag"
+                >{{ item.itemName || item.itemKey || item.relativePath }}</el-tag>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
         <el-row>
           <el-col :span="12">
             <el-form-item label="影响页面" prop="impactPage">
@@ -287,6 +329,7 @@ import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
 import { listDemand, getDemand, addDemand, updateDemand, updateDemandStatus } from "@/api/requirement/demand"
+import { suggestImpact } from "@/api/requirement/index"
 
 export default {
   name: "RequirementDemand",
@@ -301,6 +344,14 @@ export default {
       projectOptions: [],
       variantOptions: [],
       moduleOptions: [],
+      impactSuggestLoading: false,
+      impactSuggest: {
+        pages: [],
+        apis: [],
+        tables: [],
+        permissions: [],
+        documents: []
+      },
       title: "",
       open: false,
       demandTypeOptions: [
@@ -369,6 +420,21 @@ export default {
         return this.moduleOptions
       }
       return this.moduleOptions.filter(item => String(item.projectId) === String(this.form.projectId))
+    },
+    impactGroups() {
+      return [
+        { key: "pages", label: "页面", items: this.impactSuggest.pages || [] },
+        { key: "apis", label: "接口", items: this.impactSuggest.apis || [] },
+        { key: "tables", label: "数据表", items: this.impactSuggest.tables || [] },
+        { key: "permissions", label: "权限", items: this.impactSuggest.permissions || [] },
+        { key: "documents", label: "文档", items: this.impactSuggest.documents || [] }
+      ]
+    },
+    visibleImpactGroups() {
+      return this.impactGroups.filter(group => group.items.length)
+    },
+    hasImpactSuggest() {
+      return this.visibleImpactGroups.length > 0
     }
   },
   created() {
@@ -421,6 +487,7 @@ export default {
         impactExportOrAsync: undefined,
         acceptanceText: undefined
       }
+      this.resetImpactSuggest()
       this.resetForm("form")
     },
     handleQuery() {
@@ -447,6 +514,7 @@ export default {
         this.form = response.data
         this.open = true
         this.title = "修改需求"
+        this.loadImpactSuggest()
       })
     },
     submitForm() {
@@ -509,6 +577,65 @@ export default {
       if (this.form.moduleId && !this.filteredModuleOptions.some(item => String(item.moduleId || item.id) === String(this.form.moduleId))) {
         this.form.moduleId = undefined
       }
+      this.resetImpactSuggest()
+      this.loadImpactSuggest()
+    },
+    handleVariantChange() {
+      this.loadImpactSuggest()
+    },
+    handleModuleChange() {
+      this.resetImpactSuggest()
+      this.loadImpactSuggest()
+    },
+    loadImpactSuggest() {
+      if (!this.form.projectId || !this.form.moduleId) {
+        return
+      }
+      const module = this.moduleOptions.find(item => String(item.moduleId || item.id) === String(this.form.moduleId))
+      this.impactSuggestLoading = true
+      suggestImpact({
+        projectId: this.form.projectId,
+        variantId: this.form.variantId,
+        moduleId: this.form.moduleId,
+        moduleCode: module ? module.moduleCode : undefined
+      }).then(response => {
+        this.impactSuggest = response.data || this.emptyImpactSuggest()
+        this.impactSuggestLoading = false
+      }).catch(() => {
+        this.impactSuggestLoading = false
+      })
+    },
+    appendImpactSuggest() {
+      this.form.impactPage = this.appendLines(this.form.impactPage, this.formatImpactItems(this.impactSuggest.pages))
+      this.form.impactApi = this.appendLines(this.form.impactApi, this.formatImpactItems(this.impactSuggest.apis))
+      this.form.impactData = this.appendLines(this.form.impactData, this.formatImpactItems(this.impactSuggest.tables))
+      this.form.impactPermission = this.appendLines(this.form.impactPermission, this.formatImpactItems(this.impactSuggest.permissions))
+      this.form.impactExportOrAsync = this.appendLines(this.form.impactExportOrAsync, this.formatImpactItems(this.impactSuggest.documents))
+    },
+    appendLines(current, lines) {
+      if (!lines) {
+        return current
+      }
+      return current ? current + "\n" + lines : lines
+    },
+    formatImpactItems(items) {
+      return (items || []).map(item => {
+        return [item.itemName, item.itemKey || item.apiPath || item.permissionKey || item.tableName || item.relativePath, item.summary]
+          .filter(Boolean)
+          .join(" - ")
+      }).join("\n")
+    },
+    resetImpactSuggest() {
+      this.impactSuggest = this.emptyImpactSuggest()
+    },
+    emptyImpactSuggest() {
+      return {
+        pages: [],
+        apis: [],
+        tables: [],
+        permissions: [],
+        documents: []
+      }
     },
     projectLabel(projectId) {
       const project = this.projectOptions.find(item => String(item.projectId || item.id) === String(projectId))
@@ -533,3 +660,33 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.impact-suggest {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.impact-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.impact-group-title {
+  width: 56px;
+  color: #606266;
+  font-size: 13px;
+}
+
+.impact-tag {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>

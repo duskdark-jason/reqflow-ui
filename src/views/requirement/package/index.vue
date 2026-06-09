@@ -17,7 +17,7 @@
           size="mini"
           @click="handleLoadPackage"
           v-hasPermi="['req:package:list']"
-        >加载执行包</el-button>
+        >加载资料</el-button>
         <el-button
           type="success"
           icon="el-icon-magic-stick"
@@ -25,13 +25,13 @@
           :disabled="!queryParams.demandId"
           @click="handleGenerate"
           v-hasPermi="['req:package:save']"
-        >生成执行包</el-button>
+        >生成资料</el-button>
       </el-form-item>
     </el-form>
 
     <el-alert
       v-if="!queryParams.demandId"
-      title="请输入需求ID或从需求列表进入执行包页面"
+      title="请输入需求ID或从需求列表进入 Agent 交接资料页面"
       type="info"
       show-icon
       :closable="false"
@@ -40,7 +40,7 @@
 
     <el-card shadow="never" class="package-card" v-loading="loading">
       <div slot="header" class="package-header">
-        <span>执行包制品</span>
+        <span>Agent 交接资料</span>
         <span class="package-meta" v-if="packageVersionTotal">版本数：{{ packageVersionTotal }}</span>
       </div>
 
@@ -210,7 +210,7 @@ export default {
         this.$modal.msgWarning("请先输入需求ID")
         return
       }
-      this.$modal.confirm("是否确认生成该需求的执行包？").then(() => {
+      this.$modal.confirm("是否确认生成该需求的 Agent 交接资料？").then(() => {
         return generatePackage(this.queryParams.demandId, {})
       }).then(response => {
         this.packageInfo = response.data || {}

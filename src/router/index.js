@@ -167,6 +167,34 @@ export const dynamicRoutes = [
         meta: { title: '修改生成配置', activeMenu: '/tool/gen' }
       }
     ]
+  },
+  {
+    path: '/requirement/project/detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['req:project:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/requirement/project/detail'),
+        name: 'RequirementProjectDetail',
+        meta: { title: '项目接入中心', activeMenu: '/requirement/project' }
+      }
+    ]
+  },
+  {
+    path: '/requirement/demand/detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['req:demand:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/requirement/demand/detail'),
+        name: 'RequirementDemandDetail',
+        meta: { title: '需求详情', activeMenu: '/requirement/demand' }
+      }
+    ]
   }
 ]
 

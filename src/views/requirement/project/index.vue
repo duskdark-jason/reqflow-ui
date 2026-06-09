@@ -86,8 +86,15 @@
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220">
         <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-connection"
+            @click="handleIntake(scope.row)"
+            v-hasPermi="['req:project:query']"
+          >接入</el-button>
           <el-button
             size="mini"
             type="text"
@@ -238,6 +245,10 @@ export default {
         this.open = true
         this.title = "修改项目"
       })
+    },
+    handleIntake(row) {
+      const projectId = row.projectId || row.id
+      this.$router.push({ path: "/requirement/project/detail", query: { projectId: projectId } })
     },
     submitForm() {
       this.$refs["form"].validate(valid => {

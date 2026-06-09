@@ -46,7 +46,7 @@
           @click="openPackage"
           :disabled="!demandId"
           v-hasPermi="['req:package:list']"
-        >查看执行包</el-button>
+        >Agent 交接资料</el-button>
       </div>
     </el-card>
   </div>
