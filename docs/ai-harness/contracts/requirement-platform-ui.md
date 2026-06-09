@@ -9,6 +9,7 @@
 | API 文件 | 后端路径 | 说明 |
 |---|---|---|
 | `project.js` | `/requirement/project` | 项目 CRUD |
+| `projectInit.js` | `/requirement/project/init` | 项目初始化聚合查询、新增和更新 |
 | `repository.js` | `/requirement/repository` | 仓库 CRUD 和初始化指令入口 |
 | `variant.js` | `/requirement/variant` | 客户定制线 CRUD |
 | `module.js` | `/requirement/module` | 模块功能点 CRUD |
@@ -29,6 +30,15 @@
 | 需求列表 | `req:demand:list`、`req:demand:add`、`req:demand:edit` |
 | Agent 交接资料 | `req:package:list`、`req:package:save` |
 | 使用统计 | `req:stats:view` |
+
+## 项目初始化契约
+
+- 项目管理菜单是项目初始化主入口；新增和修改项目均打开 `ProjectInitWizard` 项目维护弹窗，组件文件名沿用历史命名但交互不再使用分步向导。
+- 项目维护弹窗调用 `/requirement/project/init/**`，一次维护项目基础信息、前后端仓库、分支配置和初始化状态。
+- 仓库分区默认提供前端仓库和后端仓库两行，仓库数据只提交仓库名称、仓库类型、团队共享 Git 远端、默认分支、状态和索引状态字段；不得提交个人本机绝对路径。
+- 分支分区维护 `branchLabel` 和 `baselineBranch`：`branchLabel` 是需求人员可见中文标签，`baselineBranch` 是真实 Git 分支名；前端可继续兼容 `variantName`、`variantCode`、`customerName` 等历史字段。
+- 项目列表会按项目调用 `/requirement/project/init/{projectId}` 派生初始化状态，状态口径来自 `initChecklist`：项目信息、仓库、分支配置、模块知识和索引。
+- 保存成功后刷新项目列表；用户选择“保存并进入接入中心”时跳转 `src/views/requirement/project/detail.vue`。
 
 ## 项目索引契约
 

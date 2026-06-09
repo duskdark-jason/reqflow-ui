@@ -2,22 +2,25 @@
   <el-dialog
     :title="dialogTitle"
     :visible.sync="innerVisible"
-    width="980px"
+    width="1080px"
     append-to-body
     class="project-init-dialog"
     @close="handleClose"
   >
-    <div v-loading="loading">
-      <el-steps :active="activeStep" finish-status="success" simple class="init-steps">
-        <el-step title="项目信息" />
-        <el-step title="代码仓库" />
-        <el-step title="客户基线" />
-        <el-step title="模块初始化" />
-        <el-step title="确认保存" />
-      </el-steps>
+    <div v-loading="loading" class="project-init-body">
+      <el-alert
+        title="平台只保存团队共享 Git 信息、真实分支名和模块索引结果，不保存个人本机仓库目录。"
+        type="info"
+        show-icon
+        :closable="false"
+        class="section-alert"
+      />
 
-      <div v-show="activeStep === 0" class="wizard-pane">
-        <el-form ref="projectForm" :model="form.project" :rules="projectRules" label-width="100px">
+      <section class="form-section">
+        <div class="section-header">
+          <span class="section-title">项目信息</span>
+        </div>
+        <el-form ref="projectForm" :model="form.project" :rules="projectRules" label-width="92px">
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="项目名称" prop="projectName">
@@ -44,31 +47,25 @@
             </el-col>
             <el-col :span="24">
               <el-form-item label="项目说明" prop="description">
-                <el-input v-model="form.project.description" type="textarea" :rows="3" placeholder="请输入项目说明" />
+                <el-input v-model="form.project.description" type="textarea" :rows="2" placeholder="请输入项目说明" />
               </el-form-item>
             </el-col>
           </el-row>
         </el-form>
-      </div>
+      </section>
 
-      <div v-show="activeStep === 1" class="wizard-pane">
-        <el-alert
-          title="平台只保存团队共享 Git 远端、默认分支和索引结果；不会保存个人本机仓库目录。"
-          type="info"
-          show-icon
-          :closable="false"
-          class="mb8"
-        />
-        <div class="section-toolbar">
+      <section class="form-section">
+        <div class="section-header">
+          <span class="section-title">代码仓库</span>
           <el-button type="primary" plain size="mini" icon="el-icon-plus" @click="addRepository">新增仓库</el-button>
         </div>
         <el-table :data="form.repositories" size="small" border>
-          <el-table-column label="仓库名称" min-width="160">
+          <el-table-column label="仓库名称" min-width="150">
             <template slot-scope="scope">
               <el-input v-model="scope.row.repoName" size="small" placeholder="仓库名称" />
             </template>
           </el-table-column>
-          <el-table-column label="类型" width="130">
+          <el-table-column label="类型" width="128">
             <template slot-scope="scope">
               <el-select v-model="scope.row.repoType" size="small" placeholder="类型" style="width: 100%">
                 <el-option v-for="item in repoTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -93,115 +90,93 @@
               </el-select>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="80" align="center">
+          <el-table-column label="操作" width="72" align="center">
             <template slot-scope="scope">
               <el-button type="text" size="mini" icon="el-icon-delete" @click="removeRepository(scope.$index)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
-      </div>
+      </section>
 
-      <div v-show="activeStep === 2" class="wizard-pane">
-        <div class="section-toolbar">
-          <el-button type="primary" plain size="mini" icon="el-icon-plus" @click="addVariant">新增客户基线</el-button>
+      <section class="form-section">
+        <div class="section-header">
+          <span class="section-title">分支配置</span>
+          <el-button type="primary" plain size="mini" icon="el-icon-plus" @click="addVariant">新增分支</el-button>
         </div>
         <el-table :data="form.variants" size="small" border>
-          <el-table-column label="客户线名称" min-width="150">
+          <el-table-column label="中文标签" min-width="170">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.variantName" size="small" placeholder="客户线名称" />
+              <el-input v-model="scope.row.branchLabel" size="small" placeholder="例如：黑龙江医保" />
             </template>
           </el-table-column>
-          <el-table-column label="编码" width="130">
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.variantCode" size="small" placeholder="MAIN" />
-            </template>
-          </el-table-column>
-          <el-table-column label="客户名称" min-width="140">
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.customerName" size="small" placeholder="客户或地区" />
-            </template>
-          </el-table-column>
-          <el-table-column label="统一基线分支" min-width="160">
+          <el-table-column label="真实分支名" min-width="190">
             <template slot-scope="scope">
               <el-input v-model="scope.row.baselineBranch" size="small" placeholder="main" />
             </template>
           </el-table-column>
-          <el-table-column label="分支策略" width="130">
+          <el-table-column label="状态" width="100">
             <template slot-scope="scope">
-              <el-select v-model="scope.row.branchPolicy" size="small" style="width: 100%">
-                <el-option v-for="item in branchPolicyOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-select v-model="scope.row.status" size="small" style="width: 100%">
+                <el-option label="正常" value="0" />
+                <el-option label="停用" value="1" />
               </el-select>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="80" align="center">
+          <el-table-column label="备注" min-width="220">
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.remark" size="small" placeholder="可选" />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="72" align="center">
             <template slot-scope="scope">
               <el-button type="text" size="mini" icon="el-icon-delete" @click="removeVariant(scope.$index)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
-      </div>
+      </section>
 
-      <div v-show="activeStep === 3" class="wizard-pane">
-        <el-alert
-          title="模块功能点由 MCP 索引沉淀，也可以后续在模块功能点菜单人工校正；本步骤只展示当前初始化状态。"
-          type="info"
-          show-icon
-          :closable="false"
-          class="mb8"
-        />
+      <section class="form-section">
+        <div class="section-header">
+          <span class="section-title">模块初始化状态</span>
+          <span class="section-tip">{{ checklistText }}</span>
+        </div>
         <el-row :gutter="12" class="summary-row">
-          <el-col :span="8">
+          <el-col :span="6">
             <div class="summary-box">
               <div class="summary-label">模块总数</div>
               <div class="summary-value">{{ moduleSummary.totalModules || 0 }}</div>
             </div>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="6">
             <div class="summary-box">
               <div class="summary-label">索引模块</div>
               <div class="summary-value">{{ moduleSummary.indexedModules || 0 }}</div>
             </div>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="6">
             <div class="summary-box">
-              <div class="summary-label">人工模块</div>
-              <div class="summary-value">{{ moduleSummary.manualModules || 0 }}</div>
+              <div class="summary-label">已索引仓库</div>
+              <div class="summary-value">{{ indexSummary.indexedRepositoryCount || 0 }}</div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="summary-box">
+              <div class="summary-label">未索引仓库</div>
+              <div class="summary-value">{{ indexSummary.unindexedRepositoryCount || 0 }}</div>
             </div>
           </el-col>
         </el-row>
         <el-descriptions :column="2" border size="small" class="mt12">
           <el-descriptions-item label="最近索引">{{ parseTime(indexSummary.latestIndexedAt) || "-" }}</el-descriptions-item>
           <el-descriptions-item label="最近 Commit">{{ indexSummary.latestCommit || "-" }}</el-descriptions-item>
-          <el-descriptions-item label="已索引仓库">{{ indexSummary.indexedRepositoryCount || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="未索引仓库">{{ indexSummary.unindexedRepositoryCount || 0 }}</el-descriptions-item>
         </el-descriptions>
-      </div>
-
-      <div v-show="activeStep === 4" class="wizard-pane">
-        <el-descriptions :column="2" border size="small">
-          <el-descriptions-item label="项目">{{ form.project.projectName || "-" }}</el-descriptions-item>
-          <el-descriptions-item label="编码">{{ form.project.projectCode || "-" }}</el-descriptions-item>
-          <el-descriptions-item label="仓库数量">{{ form.repositories.length }}</el-descriptions-item>
-          <el-descriptions-item label="客户基线">{{ form.variants.length }}</el-descriptions-item>
-          <el-descriptions-item label="模块状态" :span="2">{{ checklistText }}</el-descriptions-item>
-        </el-descriptions>
-        <el-table :data="form.repositories" size="small" class="mt12">
-          <el-table-column label="仓库" prop="repoName" min-width="160" />
-          <el-table-column label="类型" prop="repoType" width="120">
-            <template slot-scope="scope">{{ optionLabel(repoTypeOptions, scope.row.repoType) }}</template>
-          </el-table-column>
-          <el-table-column label="Git 地址" prop="repoUrl" min-width="260" :show-overflow-tooltip="true" />
-          <el-table-column label="默认分支" prop="defaultBranch" width="130" />
-        </el-table>
-      </div>
+      </section>
     </div>
 
     <div slot="footer" class="dialog-footer">
       <el-button @click="innerVisible = false">取 消</el-button>
-      <el-button v-if="activeStep > 0" @click="prevStep">上一步</el-button>
-      <el-button v-if="activeStep < 4" type="primary" @click="nextStep">下一步</el-button>
-      <el-button v-if="activeStep === 4" :loading="saving" type="primary" @click="submit(false)">保存</el-button>
-      <el-button v-if="activeStep === 4" :loading="saving" type="success" @click="submit(true)">保存并进入接入中心</el-button>
+      <el-button :loading="saving" type="primary" @click="submit(false)">保 存</el-button>
+      <el-button :loading="saving" type="success" @click="submit(true)">保存并进入接入中心</el-button>
     </div>
   </el-dialog>
 </template>
@@ -226,7 +201,6 @@ export default {
       innerVisible: false,
       loading: false,
       saving: false,
-      activeStep: 0,
       moduleSummary: {},
       indexSummary: {},
       initChecklist: {},
@@ -237,11 +211,6 @@ export default {
         { value: "MONOREPO", label: "多端仓库" },
         { value: "DOC", label: "文档仓库" },
         { value: "OTHER", label: "其他" }
-      ],
-      branchPolicyOptions: [
-        { value: "SHARED", label: "共享分支" },
-        { value: "DEDICATED", label: "独立分支" },
-        { value: "RELEASE", label: "发布分支" }
       ],
       projectRules: {
         projectName: [
@@ -258,12 +227,12 @@ export default {
   },
   computed: {
     dialogTitle() {
-      return this.projectId ? "编辑项目初始化" : "新增项目初始化"
+      return this.projectId ? "编辑项目" : "新增项目"
     },
     checklistText() {
       const pending = []
       if (!this.initChecklist.repositoryReady) pending.push("补齐前后端仓库")
-      if (!this.initChecklist.variantReady) pending.push("补齐客户基线")
+      if (!this.initChecklist.variantReady) pending.push("补齐分支")
       if (!this.initChecklist.moduleReady) pending.push("沉淀模块知识")
       if (!this.initChecklist.indexReady) pending.push("完成仓库索引")
       return pending.length ? pending.join("、") : "基础初始化已完成"
@@ -273,7 +242,7 @@ export default {
     visible(value) {
       this.innerVisible = value
       if (value) {
-        this.openWizard()
+        this.openDialog()
       }
     },
     innerVisible(value) {
@@ -281,8 +250,7 @@ export default {
     }
   },
   methods: {
-    openWizard() {
-      this.activeStep = 0
+    openDialog() {
       if (this.projectId) {
         this.loadInit()
       } else {
@@ -299,8 +267,8 @@ export default {
         const data = response.data || {}
         this.form = {
           project: Object.assign({}, this.emptyProject(), data.project || {}),
-          repositories: (data.repositories && data.repositories.length ? data.repositories : this.defaultRepositories()).map(item => Object.assign({}, item)),
-          variants: (data.variants && data.variants.length ? data.variants : this.defaultVariants()).map(item => Object.assign({}, item)),
+          repositories: this.normalizeRepositories(data.repositories),
+          variants: this.normalizeVariants(data.variants),
           remark: data.remark
         }
         this.moduleSummary = data.moduleSummary || {}
@@ -338,16 +306,7 @@ export default {
     },
     defaultVariants() {
       return [
-        {
-          variantId: undefined,
-          variantName: "主线",
-          variantCode: "MAIN",
-          customerName: "通用",
-          scopeType: "PROJECT",
-          baselineBranch: "main",
-          branchPolicy: "SHARED",
-          status: "0"
-        }
+        this.newVariant("通用主线", "main")
       ]
     },
     newRepository(name, type) {
@@ -362,6 +321,38 @@ export default {
         status: "0"
       }
     },
+    newVariant(label, branchName) {
+      return {
+        variantId: undefined,
+        branchLabel: label || "",
+        variantName: label || "",
+        variantCode: undefined,
+        customerName: label || "",
+        scopeType: "BRANCH",
+        baselineBranch: branchName || "main",
+        branchPolicy: "SHARED",
+        status: "0",
+        remark: undefined
+      }
+    },
+    normalizeRepositories(repositories) {
+      const source = repositories && repositories.length ? repositories : this.defaultRepositories()
+      return source.map(item => Object.assign({}, item, { localPathHint: undefined }))
+    },
+    normalizeVariants(variants) {
+      const source = variants && variants.length ? variants : this.defaultVariants()
+      return source.map(item => {
+        const branchLabel = item.branchLabel || item.variantName || item.customerName || ""
+        return Object.assign({}, item, {
+          branchLabel: branchLabel,
+          variantName: branchLabel,
+          customerName: item.customerName || branchLabel,
+          scopeType: item.scopeType || "BRANCH",
+          branchPolicy: item.branchPolicy || "SHARED",
+          status: item.status || "0"
+        })
+      })
+    },
     addRepository() {
       this.form.repositories.push(this.newRepository("", "OTHER"))
     },
@@ -369,45 +360,10 @@ export default {
       this.form.repositories.splice(index, 1)
     },
     addVariant() {
-      this.form.variants.push({
-        variantId: undefined,
-        variantName: "",
-        variantCode: "",
-        customerName: "",
-        scopeType: "CUSTOMER",
-        baselineBranch: "main",
-        branchPolicy: "DEDICATED",
-        status: "0"
-      })
+      this.form.variants.push(this.newVariant("", "main"))
     },
     removeVariant(index) {
       this.form.variants.splice(index, 1)
-    },
-    prevStep() {
-      if (this.activeStep > 0) {
-        this.activeStep--
-      }
-    },
-    nextStep() {
-      this.validateCurrentStep().then(valid => {
-        if (valid && this.activeStep < 4) {
-          this.activeStep++
-        }
-      })
-    },
-    validateCurrentStep() {
-      if (this.activeStep === 0) {
-        return new Promise(resolve => {
-          this.$refs.projectForm.validate(valid => resolve(valid))
-        })
-      }
-      if (this.activeStep === 1) {
-        return Promise.resolve(this.validateRepositories())
-      }
-      if (this.activeStep === 2) {
-        return Promise.resolve(this.validateVariants())
-      }
-      return Promise.resolve(true)
     },
     validateAll() {
       return new Promise(resolve => {
@@ -435,12 +391,12 @@ export default {
     },
     validateVariants() {
       if (!this.form.variants.length) {
-        this.$modal.msgWarning("请至少维护一条客户基线")
+        this.$modal.msgWarning("请至少维护一条分支配置")
         return false
       }
-      const invalid = this.form.variants.some(item => !item.variantName || !item.variantCode || !item.baselineBranch || this.hasLocalPath(item.baselineBranch))
+      const invalid = this.form.variants.some(item => !item.branchLabel || !item.baselineBranch || this.hasLocalPath(item.baselineBranch))
       if (invalid) {
-        this.$modal.msgWarning("请补齐客户线名称、编码和统一基线分支，且不要填写本机绝对路径")
+        this.$modal.msgWarning("请补齐分支中文标签和真实分支名，且不要填写本机绝对路径")
         return false
       }
       return true
@@ -459,7 +415,7 @@ export default {
           const data = response.data || {}
           const savedProject = data.project || this.form.project
           const savedProjectId = savedProject.projectId || this.projectId
-          this.$modal.msgSuccess("项目初始化已保存")
+          this.$modal.msgSuccess("项目已保存")
           this.saving = false
           this.innerVisible = false
           this.$emit("success", savedProjectId)
@@ -480,7 +436,16 @@ export default {
           repository.localPathHint = undefined
           return repository
         }),
-        variants: this.form.variants.map(item => Object.assign({}, item)),
+        variants: this.form.variants.map(item => {
+          const branchLabel = item.branchLabel || item.variantName
+          return Object.assign({}, item, {
+            branchLabel: branchLabel,
+            variantName: branchLabel,
+            customerName: item.customerName || branchLabel,
+            scopeType: item.scopeType || "BRANCH",
+            branchPolicy: item.branchPolicy || "SHARED"
+          })
+        }),
         remark: this.form.remark
       }
     },
@@ -493,10 +458,6 @@ export default {
           this.$refs.projectForm.clearValidate()
         }
       })
-    },
-    optionLabel(options, value) {
-      const option = options.find(item => item.value === String(value))
-      return option ? option.label : value || "-"
     }
   }
 }
@@ -504,29 +465,60 @@ export default {
 
 <style scoped>
 .project-init-dialog ::v-deep .el-dialog__body {
+  padding-top: 12px;
+  padding-bottom: 8px;
+}
+
+.project-init-body {
+  max-height: 68vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.section-alert {
+  margin-bottom: 12px;
+}
+
+.form-section {
   padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid #ebeef5;
 }
 
-.init-steps {
-  margin-bottom: 16px;
+.form-section:first-of-type {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
 }
 
-.wizard-pane {
-  min-height: 360px;
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
-.section-toolbar {
-  margin-bottom: 8px;
+.section-title {
+  color: #303133;
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.section-tip {
+  color: #606266;
+  font-size: 13px;
 }
 
 .summary-row {
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .summary-box {
   border: 1px solid #ebeef5;
   border-radius: 4px;
-  padding: 16px;
+  padding: 12px 14px;
   background: #fff;
 }
 
@@ -536,10 +528,10 @@ export default {
 }
 
 .summary-value {
-  margin-top: 8px;
+  margin-top: 6px;
   color: #303133;
-  font-size: 24px;
-  line-height: 30px;
+  font-size: 22px;
+  line-height: 28px;
   font-weight: 600;
 }
 
