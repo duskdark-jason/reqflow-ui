@@ -16,9 +16,9 @@
 |---|---|---|---|
 | L0 文档/规范 | 文档没有个人路径、占位符和旧路径 | 修改 `docs/`、`AGENTS.md`、harness | `sh scripts/check-docs.sh` |
 | L1 编译/构建 | 代码能通过静态编译或打包 | 大多数代码修改 | `npm run build:prod` |
-| L2 单元/契约 | 核心逻辑、接口契约、组件契约可验证 | utils、API 封装、组件状态 | 当前未配置自动化单元测试，涉及契约时补充可重复检查命令并记录 |
-| L3 运行态冒烟 | 应用能启动，页面能真实运行 | 页面、路由、权限、配置 | `npm run dev` 后用浏览器或 Playwright 检查目标页面 |
-| L4 端到端/跨端 | 真实用户流程可用 | 保存、导出、异步任务、跨服务联调 | 与 `reqflow-be` 联调后执行对应用户流程并记录接口与页面结果 |
+| L2 单元/契约 | 核心逻辑、接口契约、组件契约可验证 | Service、utils、DTO/VO、组件状态 | `npm run build:prod` |
+| L3 运行态冒烟 | 应用能启动，接口/页面能真实运行 | Controller、页面、权限、配置 | `npm run dev` 后打开 `http://localhost` |
+| L4 端到端/跨端 | 真实用户流程可用 | 保存、导出、异步任务、跨服务联调 | `npx playwright test --grep @smoke --reporter=line` |
 
 只改纯文档时通常跑 L0。改代码至少跑 L1。改业务逻辑或契约应补 L2。改接口、配置、权限或用户可见页面应补 L3。影响跨端、导出、保存、异步任务或核心流程时应补 L4。
 
@@ -42,7 +42,7 @@ Windows 原生命令行可通过 `scripts\check-docs.cmd` 与 `scripts\check-har
 
 ## L1 编译或构建
 
-按项目技术栈替换为真实命令：
+前端生产构建命令：
 
 ```bash
 npm run build:prod
@@ -50,10 +50,10 @@ npm run build:prod
 
 ## L2 单元或契约测试
 
-按项目技术栈替换为真实命令：
+当前项目尚未配置独立单元测试脚本，页面或 API 封装变更先使用生产构建作为最低契约检查：
 
 ```bash
-echo "当前未配置自动化单元测试；涉及契约时在需求计划中补充专项检查命令"
+npm run build:prod
 ```
 
 ## L3 运行态冒烟
