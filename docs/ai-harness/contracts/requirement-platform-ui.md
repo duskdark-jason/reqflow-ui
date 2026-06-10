@@ -33,12 +33,13 @@
 
 ## 项目初始化契约
 
-- 项目管理菜单是项目初始化主入口；新增和修改项目均打开 `ProjectInitWizard` 项目维护弹窗，组件文件名沿用历史命名但交互不再使用分步向导。
-- 项目维护弹窗调用 `/requirement/project/init/**`，一次维护项目基础信息、代码仓库、项目分支和初始化状态。
+- 项目管理菜单是项目初始化主入口；新增和修改项目均打开 `/requirement/project/maintain` 项目维护页签，不再弹出项目维护 dialog。
+- 项目维护页签调用 `/requirement/project/init/**`，一次维护项目基础信息、代码仓库、项目分支和初始化状态。
 - 仓库分区默认提供一条空后端仓库行；仓库数据只提交仓库名称、仓库类型、团队共享 Git 远端、默认分支、状态和索引状态字段；允许纯后端服务只维护一条仓库，不得提交个人本机绝对路径。
 - 输入 Git 地址后，前端可自动推导仓库名称、项目名称和项目编码，用户可继续手工调整。
-- 分支分区维护 `branchLabel`、`baselineBranch` 和后端回显的 `mcpKey`：`branchLabel` 是需求人员可见中文标签，`baselineBranch` 是真实 Git 分支名，`mcpKey` 用于 MCP 识别项目分支；前端可继续兼容 `variantName`、`variantCode`、`customerName` 等历史字段。
-- 分支分区必须支持展开查看该分支的独立初始化状态，包括 `totalModules`、`manualModules`、`indexedModules`、`indexedRepositoryCount`、`unindexedRepositoryCount`、`latestIndexedAt` 和 `latestCommit`。
+- 分支分区维护 `branchLabel`、`baselineBranch` 和后端回显的 `initInstruction`：`branchLabel` 是需求人员可见中文标签，`baselineBranch` 是真实 Git 分支名，`initInstruction.content` 用于复制给 MCP 执行项目分支初始化；前端可继续兼容 `variantName`、`variantCode`、`customerName`、`mcpKey` 等历史字段。
+- `initInstruction` 至少包含 `actionType`、`targetMethod`、`token`、`tokenPrefix`、`prompt`、`content`、`copyLabel` 和 `expireTime`。复制内容必须直接使用 `content`，不得把人员 MCP Key、Web 登录 token 或本机路径拼入指令。
+- 分支分区必须展示该分支的独立初始化状态，包括 `totalModules`、`manualModules`、`indexedModules`、`indexedRepositoryCount`、`unindexedRepositoryCount`、`latestIndexedAt` 和 `latestCommit`；知识库详细内容通过 `/requirement/project/knowledge?projectId=...&variantId=...` 新页签展示，不在表格展开行内展示。
 - 项目列表会按项目调用 `/requirement/project/init/{projectId}` 派生初始化状态，状态口径来自 `initChecklist`：项目信息、仓库、分支配置、模块知识和索引。
 - 保存成功后刷新项目列表；用户选择“保存并进入接入中心”时跳转 `src/views/requirement/project/detail.vue`。
 
@@ -52,13 +53,20 @@
 
 ## 项目索引契约
 
-- 项目接入中心读取 `/requirement/project/init/{projectId}`、`/requirement/index/batch/list`、`/requirement/index/module/tree` 只读展示团队共享仓库、项目分支、索引批次和模块知识库；新增和编辑回到项目管理维护弹窗。
+- 项目接入中心读取 `/requirement/project/init/{projectId}`、`/requirement/index/batch/list`、`/requirement/index/module/tree` 只读展示团队共享仓库、项目分支、索引批次和模块知识库；新增和编辑回到项目管理维护页签。
 - 项目接入中心必须支持按项目分支筛选索引批次和模块知识库。模块知识库展示行必须有 `variantId`，分支为空的数据只能作为待迁移旧数据处理，不应默认混入选中分支。
-- 当后端 companion 因部分迁移库缺少可选索引表而返回空索引批次或空模块知识库时，项目接入中心必须继续展示项目、仓库、项目分支和 MCP 指引，把索引内容视为“暂无数据”。
-- MCP 索引指引优先使用 `mcpKey + remoteUrl` 调用 `publish_repository_index`，兼容旧的 `projectId + repoId + branchName` 调用方式。
+- 当后端 companion 因部分迁移库缺少可选索引表而返回空索引批次或空模块知识库时，项目接入中心必须继续展示项目、仓库、项目分支和初始化指令，把索引内容视为“暂无数据”。
+- MCP 索引指引优先使用 `actionToken + remoteUrl` 调用 `publish_repository_index`，兼容旧的 `mcpKey + remoteUrl` 和 `projectId + repoId + branchName` 调用方式。
 - 新建或编辑需求时，选择项目、项目分支和模块后调用 `/requirement/index/impact/suggest`，模块下拉必须按 `projectId + variantId` 过滤，请求携带 `projectId`、`variantId`、`moduleId`、`moduleCode`；后端按所选项目分支和最新索引批次返回 `pages`、`apis`、`tables`、`permissions`、`documents` 五类候选影响面。
+- 新建或编辑需求时，项目分支下拉必须读取 `/requirement/project/init/{projectId}` 的分支初始化上下文，只展示已初始化完成的项目分支。前端已初始化口径与后端兜底一致：分支 `totalModules > 0`、`indexedRepositoryCount > 0` 且 `unindexedRepositoryCount = 0`；查询筛选可以保留历史分支用于查老需求，但提交表单不能选择未初始化分支。
 - 前端只展示和追加影响面推荐，不覆盖用户已输入内容。
 - 前端不得向后端提交个人本机绝对路径；本地仓库目录只允许作为用户本次操作中的临时输入。
+
+## 统一品牌与看板契约
+
+- 用户可见系统名称为“统一需求流转平台”，登录页、浏览器标题、页脚、首页、导航栏和可见链接不得继续出现若依官网、若依文档或默认更新日志。
+- 登录页使用浅色需求管理风格背景图，登录框在桌面端靠右展示，移动端居中展示。
+- 后台首页是需求流转看板，复用统计接口展示需求总览、项目排行、活跃用户和快捷入口，不展示默认模板说明。
 
 ## Agent 交接资料 Artifact 类型
 

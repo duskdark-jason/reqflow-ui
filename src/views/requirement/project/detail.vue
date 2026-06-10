@@ -46,48 +46,14 @@
 
         <el-tab-pane label="项目分支" name="variants">
           <el-table :data="variants" size="small" row-key="variantId">
-            <el-table-column type="expand" width="42">
-              <template slot-scope="scope">
-                <div class="branch-detail-panel">
-                  <el-row :gutter="12">
-                    <el-col :span="6">
-                      <div class="branch-stat">
-                        <span>模块总数</span>
-                        <strong>{{ scope.row.totalModules || 0 }}</strong>
-                      </div>
-                    </el-col>
-                    <el-col :span="6">
-                      <div class="branch-stat">
-                        <span>索引模块</span>
-                        <strong>{{ scope.row.indexedModules || 0 }}</strong>
-                      </div>
-                    </el-col>
-                    <el-col :span="6">
-                      <div class="branch-stat">
-                        <span>已索引仓库</span>
-                        <strong>{{ scope.row.indexedRepositoryCount || 0 }}</strong>
-                      </div>
-                    </el-col>
-                    <el-col :span="6">
-                      <div class="branch-stat">
-                        <span>未索引仓库</span>
-                        <strong>{{ scope.row.unindexedRepositoryCount || 0 }}</strong>
-                      </div>
-                    </el-col>
-                  </el-row>
-                  <el-table :data="branchModules(scope.row)" size="mini" class="mt12" empty-text="该分支暂无模块知识">
-                    <el-table-column label="模块名称" prop="moduleName" min-width="160" />
-                    <el-table-column label="模块编码" prop="moduleCode" min-width="140" />
-                    <el-table-column label="仓库范围" prop="repoScope" width="110" />
-                    <el-table-column label="相对路径" prop="relativePath" min-width="220" :show-overflow-tooltip="true" />
-                  </el-table>
-                </div>
-              </template>
-            </el-table-column>
             <el-table-column label="分支标签" prop="variantName" min-width="160" />
             <el-table-column label="分支编码" prop="variantCode" min-width="130" />
             <el-table-column label="真实分支" prop="baselineBranch" min-width="140" />
-            <el-table-column label="MCP Key" prop="mcpKey" min-width="170" :show-overflow-tooltip="true" />
+            <el-table-column label="初始化指令" min-width="180">
+              <template slot-scope="scope">
+                <el-button type="text" icon="el-icon-document-copy" @click="copyInstruction(scope.row)">复制指令</el-button>
+              </template>
+            </el-table-column>
             <el-table-column label="模块" width="90" align="center">
               <template slot-scope="scope">
                 <el-tag size="mini" :type="(scope.row.totalModules || 0) > 0 ? 'success' : 'warning'">
@@ -98,12 +64,17 @@
             <el-table-column label="分支策略" prop="branchPolicy" min-width="140">
               <template slot-scope="scope">{{ optionLabel(branchPolicyOptions, scope.row.branchPolicy) }}</template>
             </el-table-column>
+            <el-table-column label="操作" width="120" align="center">
+              <template slot-scope="scope">
+                <el-button type="text" icon="el-icon-notebook-2" @click="openKnowledge(scope.row)">知识库</el-button>
+              </template>
+            </el-table-column>
           </el-table>
         </el-tab-pane>
 
         <el-tab-pane label="MCP 索引" name="index">
           <el-alert
-            title="本地 Codex 或索引 Agent 读取本机仓库后，通过 MCP tool publish_repository_index 推送结果。平台用 MCP key 识别项目分支，用 Git 地址识别仓库。"
+            title="本地 Codex 或索引 Agent 读取本机仓库后，通过 MCP tool publish_repository_index 推送结果。平台用初始化指令中的动作 token 识别项目分支和目标接口，用 Git 地址识别仓库。"
             type="info"
             show-icon
             :closable="false"
@@ -167,118 +138,11 @@
       </el-tabs>
     </el-card>
 
-    <el-dialog :title="repositoryTitle" :visible.sync="repositoryOpen" width="620px" append-to-body>
-      <el-form ref="repositoryForm" :model="repositoryForm" :rules="repositoryRules" label-width="90px">
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="仓库名称" prop="repoName">
-              <el-input v-model="repositoryForm.repoName" placeholder="请输入仓库名称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="仓库类型" prop="repoType">
-              <el-select v-model="repositoryForm.repoType" placeholder="请选择仓库类型" style="width: 100%">
-                <el-option
-                  v-for="item in repoTypeOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="Git 地址" prop="repoUrl">
-              <el-input v-model="repositoryForm.repoUrl" placeholder="请输入团队共享 Git 远端地址" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="默认分支" prop="defaultBranch">
-              <el-input v-model="repositoryForm.defaultBranch" placeholder="请输入默认分支" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="repositoryForm.status">
-                <el-radio label="0">正常</el-radio>
-                <el-radio label="1">停用</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitRepository">确 定</el-button>
-        <el-button @click="repositoryOpen = false">取 消</el-button>
-      </div>
-    </el-dialog>
-
-    <el-dialog :title="variantTitle" :visible.sync="variantOpen" width="620px" append-to-body>
-      <el-form ref="variantForm" :model="variantForm" :rules="variantRules" label-width="100px">
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="分支标签" prop="variantName">
-              <el-input v-model="variantForm.variantName" placeholder="请输入分支标签" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="分支编码" prop="variantCode">
-              <el-input v-model="variantForm.variantCode" placeholder="请输入分支编码" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="客户名称" prop="customerName">
-              <el-input v-model="variantForm.customerName" placeholder="请输入客户名称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="范围类型" prop="scopeType">
-              <el-select v-model="variantForm.scopeType" placeholder="请选择范围类型" style="width: 100%">
-                <el-option
-                  v-for="item in scopeTypeOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="基线分支" prop="baselineBranch">
-              <el-input v-model="variantForm.baselineBranch" placeholder="请输入统一基线分支" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="分支策略" prop="branchPolicy">
-              <el-select v-model="variantForm.branchPolicy" placeholder="请选择分支策略" style="width: 100%">
-                <el-option
-                  v-for="item in branchPolicyOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="说明" prop="description">
-              <el-input v-model="variantForm.description" type="textarea" :rows="3" placeholder="请输入项目分支说明" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitVariant">确 定</el-button>
-        <el-button @click="variantOpen = false">取 消</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script>
 import { getProjectInit } from "@/api/requirement/projectInit"
-import { addRepository, updateRepository } from "@/api/requirement/repository"
-import { addVariant, updateVariant } from "@/api/requirement/variant"
 import { listIndexBatch, listIndexModule } from "@/api/requirement/index"
 
 export default {
@@ -294,12 +158,6 @@ export default {
       indexBatches: [],
       allIndexModules: [],
       selectedVariantId: undefined,
-      repositoryOpen: false,
-      repositoryTitle: "",
-      repositoryForm: {},
-      variantOpen: false,
-      variantTitle: "",
-      variantForm: {},
       repoTypeOptions: [
         { value: "FRONTEND", label: "前端" },
         { value: "BACKEND", label: "后端" },
@@ -316,32 +174,7 @@ export default {
         { value: "SHARED", label: "共享分支" },
         { value: "DEDICATED", label: "独立分支" },
         { value: "RELEASE", label: "发布分支" }
-      ],
-      repositoryRules: {
-        repoName: [
-          { required: true, message: "仓库名称不能为空", trigger: "blur" }
-        ],
-        repoType: [
-          { required: true, message: "仓库类型不能为空", trigger: "change" }
-        ],
-        repoUrl: [
-          { required: true, message: "Git 地址不能为空", trigger: "blur" }
-        ]
-      },
-      variantRules: {
-        variantName: [
-          { required: true, message: "分支标签不能为空", trigger: "blur" }
-        ],
-        variantCode: [
-          { required: true, message: "分支编码不能为空", trigger: "blur" }
-        ],
-        scopeType: [
-          { required: true, message: "范围类型不能为空", trigger: "change" }
-        ],
-        baselineBranch: [
-          { required: true, message: "基线分支不能为空", trigger: "blur" }
-        ]
-      }
+      ]
     }
   },
   computed: {
@@ -362,7 +195,8 @@ export default {
         return "- " + repo.repoName + "，" + repo.repoType + "，" + repo.repoUrl
       }).join("\n")
       const branchLines = this.variants.map(branch => {
-        return "- mcpKey=" + (branch.mcpKey || "-") + "，" + branch.variantName + "，" + branch.baselineBranch
+        const token = branch.initInstruction && (branch.initInstruction.tokenPrefix || branch.initInstruction.token)
+        return "- actionToken=" + (token ? token + "..." : (branch.mcpKey || "-")) + "，" + branch.variantName + "，" + branch.baselineBranch
       }).join("\n")
       return [
         "MCP tool: publish_repository_index",
@@ -373,7 +207,8 @@ export default {
         repoLines || "- 暂无仓库，请先在项目管理中维护代码仓库。",
         "",
         "上传要求：",
-        "- 优先传 mcpKey 和 remoteUrl；平台会自动解析项目、分支和仓库。",
+        "- 优先复制分支初始化指令，MCP 会从 actionToken 解析项目、分支和目标接口。",
+        "- 上传索引时传 actionToken 和 remoteUrl；平台会自动解析项目、分支和仓库。",
         "- 兼容旧方式传 projectId、repoId 和 branchName。",
         "- commitHash 使用当前仓库提交号。",
         "- pages/apis/tables/permissions/documents 中只能写相对路径和结构化标识。",
@@ -383,8 +218,6 @@ export default {
   },
   created() {
     this.projectId = this.$route.query.projectId
-    this.resetRepositoryForm()
-    this.resetVariantForm()
     this.loadDetail()
   },
   methods: {
@@ -416,92 +249,49 @@ export default {
     goBack() {
       this.$router.back()
     },
-    handleAddRepository() {
-      this.resetRepositoryForm()
-      this.repositoryTitle = "新增仓库"
-      this.repositoryOpen = true
-    },
-    handleEditRepository(row) {
-      this.repositoryForm = Object.assign({}, row, {
-        projectId: this.projectId,
-        defaultBranch: row.defaultBranch || "main",
-        status: row.status || "0"
-      })
-      this.repositoryTitle = "编辑仓库"
-      this.repositoryOpen = true
-    },
-    submitRepository() {
-      this.$refs["repositoryForm"].validate(valid => {
-        if (!valid) return
-        const action = this.repositoryForm.repoId || this.repositoryForm.id ? updateRepository : addRepository
-        action(this.repositoryForm).then(() => {
-          this.$modal.msgSuccess("仓库已保存")
-          this.repositoryOpen = false
-          this.loadDetail()
-        })
-      })
-    },
-    resetRepositoryForm() {
-      this.repositoryForm = {
-        repoId: undefined,
-        projectId: this.projectId,
-        repoName: undefined,
-        repoType: "BACKEND",
-        repoUrl: undefined,
-        localPathHint: undefined,
-        defaultBranch: "main",
-        harnessStatus: "uninitialized",
-        status: "0"
-      }
-      this.$nextTick(() => {
-        if (this.$refs.repositoryForm) this.$refs.repositoryForm.clearValidate()
-      })
-    },
-    handleAddVariant() {
-      this.resetVariantForm()
-      this.variantTitle = "新增项目分支"
-      this.variantOpen = true
-    },
-    handleEditVariant(row) {
-      this.variantForm = Object.assign({}, row, {
-        projectId: this.projectId,
-        baselineBranch: row.baselineBranch || "main",
-        status: row.status || "0"
-      })
-      this.variantTitle = "编辑项目分支"
-      this.variantOpen = true
-    },
-    submitVariant() {
-      this.$refs["variantForm"].validate(valid => {
-        if (!valid) return
-        const action = this.variantForm.variantId || this.variantForm.id ? updateVariant : addVariant
-        action(this.variantForm).then(() => {
-          this.$modal.msgSuccess("项目分支已保存")
-          this.variantOpen = false
-          this.loadDetail()
-        })
-      })
-    },
-    resetVariantForm() {
-      this.variantForm = {
-        variantId: undefined,
-        projectId: this.projectId,
-        variantName: undefined,
-        variantCode: undefined,
-        customerName: undefined,
-        scopeType: "CUSTOMER",
-        baselineBranch: "main",
-        branchPolicy: "DEDICATED",
-        description: undefined,
-        status: "0"
-      }
-      this.$nextTick(() => {
-        if (this.$refs.variantForm) this.$refs.variantForm.clearValidate()
-      })
-    },
     branchModules(row) {
       if (!row || !row.variantId) return []
       return this.allIndexModules.filter(item => String(item.variantId) === String(row.variantId))
+    },
+    openKnowledge(row) {
+      if (!row || !row.variantId) return
+      const title = (row.branchLabel || row.variantName || "分支") + "知识库"
+      this.$tab.openPage(title, "/requirement/project/knowledge", { projectId: this.projectId, variantId: row.variantId })
+    },
+    instructionContent(row) {
+      if (!row) return ""
+      if (row.initInstruction && row.initInstruction.content) {
+        return row.initInstruction.content
+      }
+      if (row.mcpKey) {
+        return "请执行项目分支初始化，调用 publish_repository_index 发布当前仓库索引。\nactionToken: " + row.mcpKey
+      }
+      return ""
+    },
+    copyInstruction(row) {
+      const content = this.instructionContent(row)
+      if (!content) {
+        this.$modal.msgWarning("当前分支还没有初始化指令")
+        return
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(content).then(() => {
+          this.$modal.msgSuccess("复制成功")
+        }).catch(() => this.copyByTextarea(content))
+      } else {
+        this.copyByTextarea(content)
+      }
+    },
+    copyByTextarea(content) {
+      const textarea = document.createElement("textarea")
+      textarea.value = content
+      textarea.style.position = "fixed"
+      textarea.style.left = "-9999px"
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand("copy")
+      document.body.removeChild(textarea)
+      this.$modal.msgSuccess("复制成功")
     },
     variantLabel(variantId) {
       const variant = this.variants.find(item => String(item.variantId) === String(variantId))

@@ -213,7 +213,15 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="项目分支" prop="variantId">
-              <el-select v-model="form.variantId" placeholder="请选择项目分支" filterable style="width: 100%" @change="handleVariantChange">
+              <el-select
+                v-model="form.variantId"
+                placeholder="请选择已初始化分支"
+                filterable
+                style="width: 100%"
+                :disabled="!form.projectId"
+                :loading="formProjectInitLoading"
+                @change="handleVariantChange"
+              >
                 <el-option
                   v-for="variant in filteredVariantOptions"
                   :key="variant.variantId || variant.id"
@@ -221,6 +229,9 @@
                   :value="variant.variantId || variant.id"
                 />
               </el-select>
+              <div v-if="form.projectId && !formProjectInitLoading && filteredVariantOptions.length === 0" class="form-tip">
+                当前项目暂无已初始化完成的分支，请先在项目接入中心完成分支初始化。
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -338,6 +349,7 @@
 import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
+import { getProjectInit } from "@/api/requirement/projectInit"
 import { listDemand, getDemand, addDemand, updateDemand, updateDemandStatus } from "@/api/requirement/demand"
 import { suggestImpact } from "@/api/requirement/index"
 
@@ -353,6 +365,8 @@ export default {
       demandList: [],
       projectOptions: [],
       variantOptions: [],
+      formVariantOptions: [],
+      formProjectInitLoading: false,
       moduleOptions: [],
       impactSuggestLoading: false,
       impactSuggest: {
@@ -428,9 +442,9 @@ export default {
     },
     filteredVariantOptions() {
       if (!this.form.projectId) {
-        return this.variantOptions
+        return []
       }
-      return this.variantOptions.filter(item => String(item.projectId) === String(this.form.projectId))
+      return this.formVariantOptions.filter(this.isVariantInitialized)
     },
     filteredModuleOptions() {
       if (!this.form.projectId || !this.form.variantId) {
@@ -506,6 +520,7 @@ export default {
         impactExportOrAsync: undefined,
         acceptanceText: undefined
       }
+      this.formVariantOptions = []
       this.resetImpactSuggest()
       this.resetForm("form")
     },
@@ -533,12 +548,18 @@ export default {
         this.form = response.data
         this.open = true
         this.title = "修改需求"
-        this.loadImpactSuggest()
+        this.loadFormProjectInit(this.form.projectId, this.form.variantId).then(() => {
+          this.loadImpactSuggest()
+        })
       })
     },
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (!this.isSelectedFormBranchInitialized()) {
+            this.$modal.msgWarning("需求只能提交到已初始化完成的项目分支")
+            return
+          }
           if (this.form.demandId != undefined || this.form.id != undefined) {
             updateDemand(this.form).then(() => {
               this.$modal.msgSuccess("修改成功")
@@ -590,14 +611,11 @@ export default {
       this.$router.push({ path: "/requirement/package", query: { demandId: demandId } })
     },
     handleProjectChange() {
-      if (this.form.variantId && !this.filteredVariantOptions.some(item => String(item.variantId || item.id) === String(this.form.variantId))) {
-        this.form.variantId = undefined
-      }
-      if (this.form.moduleId && !this.filteredModuleOptions.some(item => String(item.moduleId || item.id) === String(this.form.moduleId))) {
-        this.form.moduleId = undefined
-      }
+      this.form.variantId = undefined
+      this.form.moduleId = undefined
+      this.formVariantOptions = []
       this.resetImpactSuggest()
-      this.loadImpactSuggest()
+      this.loadFormProjectInit(this.form.projectId)
     },
     handleVariantChange() {
       if (this.form.moduleId && !this.filteredModuleOptions.some(item => String(item.moduleId || item.id) === String(this.form.moduleId))) {
@@ -609,6 +627,39 @@ export default {
     handleModuleChange() {
       this.resetImpactSuggest()
       this.loadImpactSuggest()
+    },
+    loadFormProjectInit(projectId, selectedVariantId) {
+      if (!projectId) {
+        this.formVariantOptions = []
+        return Promise.resolve()
+      }
+      this.formProjectInitLoading = true
+      return getProjectInit(projectId).then(response => {
+        const data = response.data || {}
+        this.formVariantOptions = data.variants || []
+        this.formProjectInitLoading = false
+        if (selectedVariantId && !this.filteredVariantOptions.some(item => String(item.variantId || item.id) === String(selectedVariantId))) {
+          this.form.variantId = undefined
+          this.form.moduleId = undefined
+          this.resetImpactSuggest()
+          this.$modal.msgWarning("所选项目分支尚未初始化完成，不能提交需求")
+        }
+      }).catch(() => {
+        this.formVariantOptions = []
+        this.formProjectInitLoading = false
+      })
+    },
+    isVariantInitialized(variant) {
+      if (!variant || variant.status === "1") {
+        return false
+      }
+      const totalModules = Number(variant.totalModules || 0)
+      const indexedRepositoryCount = Number(variant.indexedRepositoryCount || 0)
+      const unindexedRepositoryCount = Number(variant.unindexedRepositoryCount || 0)
+      return totalModules > 0 && indexedRepositoryCount > 0 && unindexedRepositoryCount === 0
+    },
+    isSelectedFormBranchInitialized() {
+      return this.filteredVariantOptions.some(item => String(item.variantId || item.id) === String(this.form.variantId))
     },
     loadImpactSuggest() {
       if (!this.form.projectId || !this.form.variantId || !this.form.moduleId) {
@@ -717,5 +768,12 @@ export default {
   max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.form-tip {
+  margin-top: 6px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 18px;
 }
 </style>

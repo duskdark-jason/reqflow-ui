@@ -134,23 +134,15 @@
       @pagination="getList"
     />
 
-    <project-init-wizard
-      :visible.sync="initOpen"
-      :project-id="initProjectId"
-      @success="handleInitSuccess"
-      @intake="handleIntakeById"
-    />
   </div>
 </template>
 
 <script>
 import { listProject, delProject } from "@/api/requirement/project"
 import { getProjectInit } from "@/api/requirement/projectInit"
-import ProjectInitWizard from "./components/ProjectInitWizard"
 
 export default {
   name: "RequirementProject",
-  components: { ProjectInitWizard },
   data() {
     return {
       loading: true,
@@ -160,8 +152,6 @@ export default {
       showSearch: true,
       total: 0,
       projectList: [],
-      initOpen: false,
-      initProjectId: undefined,
       initStatusMap: {},
       statusOptions: [
         { value: "0", label: "正常", type: "success" },
@@ -206,13 +196,14 @@ export default {
       this.multiple = !selection.length
     },
     handleAdd() {
-      this.initProjectId = undefined
-      this.initOpen = true
+      this.$tab.openPage("新增项目", "/requirement/project/maintain")
     },
     handleUpdate(row) {
       const projectId = row.projectId || row.id || this.ids
-      this.initProjectId = Array.isArray(projectId) ? projectId[0] : projectId
-      this.initOpen = true
+      const targetProjectId = Array.isArray(projectId) ? projectId[0] : projectId
+      if (!targetProjectId) return
+      const title = (row.projectName || "项目") + "维护"
+      this.$tab.openPage(title, "/requirement/project/maintain", { projectId: targetProjectId })
     },
     handleIntake(row) {
       const projectId = row.projectId || row.id
@@ -220,10 +211,7 @@ export default {
     },
     handleIntakeById(projectId) {
       if (!projectId) return
-      this.$router.push({ path: "/requirement/project/detail", query: { projectId: projectId } })
-    },
-    handleInitSuccess() {
-      this.getList()
+      this.$tab.openPage("项目接入中心", "/requirement/project/detail", { projectId: projectId })
     },
     handleDelete(row) {
       const projectIds = row.projectId || row.id || this.ids

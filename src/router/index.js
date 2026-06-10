@@ -169,6 +169,20 @@ export const dynamicRoutes = [
     ]
   },
   {
+    path: '/requirement/project/maintain',
+    component: Layout,
+    hidden: true,
+    permissions: ['req:project:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/requirement/project/maintain'),
+        name: 'RequirementProjectMaintain',
+        meta: { title: '项目维护', activeMenu: '/requirement/project' }
+      }
+    ]
+  },
+  {
     path: '/requirement/project/detail',
     component: Layout,
     hidden: true,
@@ -179,6 +193,20 @@ export const dynamicRoutes = [
         component: () => import('@/views/requirement/project/detail'),
         name: 'RequirementProjectDetail',
         meta: { title: '项目接入中心', activeMenu: '/requirement/project' }
+      }
+    ]
+  },
+  {
+    path: '/requirement/project/knowledge',
+    component: Layout,
+    hidden: true,
+    permissions: ['req:project:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/requirement/project/knowledge'),
+        name: 'RequirementProjectKnowledge',
+        meta: { title: '分支知识库', activeMenu: '/requirement/project' }
       }
     ]
   },

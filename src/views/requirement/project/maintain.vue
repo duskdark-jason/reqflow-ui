@@ -1,15 +1,23 @@
 <template>
-  <el-dialog
-    :title="dialogTitle"
-    :visible.sync="innerVisible"
-    width="1080px"
-    append-to-body
-    class="project-init-dialog"
-    @close="handleClose"
-  >
-    <div v-loading="loading" class="project-init-body">
+  <div class="app-container project-maintain-page">
+    <el-page-header :content="pageTitle" @back="closePage" />
+
+    <div v-loading="loading" class="project-init-body maintain-shell">
+      <div class="maintain-hero">
+        <div>
+          <div class="maintain-eyebrow">项目维护</div>
+          <h2>{{ pageTitle }}</h2>
+          <p>统一维护项目、团队 Git 远端和分支初始化指令，保存后可直接进入接入中心或分支知识库。</p>
+        </div>
+        <el-steps :active="initStepActive" finish-status="success" simple class="maintain-steps">
+          <el-step title="项目信息" icon="el-icon-office-building" />
+          <el-step title="代码仓库" icon="el-icon-folder-opened" />
+          <el-step title="分支指令" icon="el-icon-key" />
+          <el-step title="知识索引" icon="el-icon-data-analysis" />
+        </el-steps>
+      </div>
       <el-alert
-        title="平台只保存团队共享 Git 信息、项目分支和分支级模块索引结果；每个分支单独初始化知识库，保存后生成 MCP key 识别项目与分支。"
+        title="平台只保存团队共享 Git 信息、项目分支和分支级模块索引结果；每个分支保存后生成初始化指令，复制给 MCP 即可识别项目、分支和目标接口。"
         type="info"
         show-icon
         :closable="false"
@@ -109,46 +117,6 @@
           <el-button type="primary" plain size="mini" icon="el-icon-plus" @click="addVariant">新增分支</el-button>
         </div>
         <el-table :data="form.variants" size="small" border row-key="variantId">
-          <el-table-column type="expand" width="42">
-            <template slot-scope="scope">
-              <div class="branch-detail-panel">
-                <el-row :gutter="12">
-                  <el-col :span="6">
-                    <div class="branch-stat">
-                      <span class="branch-stat-label">模块总数</span>
-                      <strong>{{ scope.row.totalModules || 0 }}</strong>
-                    </div>
-                  </el-col>
-                  <el-col :span="6">
-                    <div class="branch-stat">
-                      <span class="branch-stat-label">手工模块</span>
-                      <strong>{{ scope.row.manualModules || 0 }}</strong>
-                    </div>
-                  </el-col>
-                  <el-col :span="6">
-                    <div class="branch-stat">
-                      <span class="branch-stat-label">索引模块</span>
-                      <strong>{{ scope.row.indexedModules || 0 }}</strong>
-                    </div>
-                  </el-col>
-                  <el-col :span="6">
-                    <div class="branch-stat">
-                      <span class="branch-stat-label">已索引仓库</span>
-                      <strong>{{ scope.row.indexedRepositoryCount || 0 }}</strong>
-                    </div>
-                  </el-col>
-                </el-row>
-                <el-descriptions :column="2" border size="small" class="mt12">
-                  <el-descriptions-item label="最近索引">{{ parseTime(scope.row.latestIndexedAt) || "-" }}</el-descriptions-item>
-                  <el-descriptions-item label="最近 Commit">{{ scope.row.latestCommit || "-" }}</el-descriptions-item>
-                  <el-descriptions-item label="未索引仓库">{{ scope.row.unindexedRepositoryCount || 0 }}</el-descriptions-item>
-                  <el-descriptions-item label="初始化状态">
-                    <el-tag size="mini" :type="branchReadyType(scope.row)">{{ branchReadyText(scope.row) }}</el-tag>
-                  </el-descriptions-item>
-                </el-descriptions>
-              </div>
-            </template>
-          </el-table-column>
           <el-table-column label="中文标签" min-width="170">
             <template slot-scope="scope">
               <el-input v-model="scope.row.branchLabel" size="small" placeholder="例如：黑龙江医保" />
@@ -159,9 +127,11 @@
               <el-input v-model="scope.row.baselineBranch" size="small" placeholder="main" />
             </template>
           </el-table-column>
-          <el-table-column label="MCP Key" min-width="180">
+          <el-table-column label="初始化指令" min-width="240">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.mcpKey" size="small" readonly placeholder="保存后生成" />
+              <el-input :value="instructionPreview(scope.row)" size="small" readonly placeholder="保存后生成">
+                <el-button slot="append" icon="el-icon-document-copy" @click="copyInstruction(scope.row)">复制</el-button>
+              </el-input>
             </template>
           </el-table-column>
           <el-table-column label="知识库" width="112" align="center">
@@ -182,8 +152,9 @@
               <el-input v-model="scope.row.remark" size="small" placeholder="可选" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="72" align="center">
+          <el-table-column label="操作" width="150" align="center">
             <template slot-scope="scope">
+              <el-button type="text" size="mini" icon="el-icon-notebook-2" :disabled="!projectId || !scope.row.variantId" @click="openKnowledge(scope.row)">知识库</el-button>
               <el-button type="text" size="mini" icon="el-icon-delete" @click="removeVariant(scope.$index)">删除</el-button>
             </template>
           </el-table-column>
@@ -226,34 +197,23 @@
           <el-descriptions-item label="最近 Commit">{{ indexSummary.latestCommit || "-" }}</el-descriptions-item>
         </el-descriptions>
       </section>
+      <div class="maintain-actions">
+        <el-button @click="closePage">关 闭</el-button>
+        <el-button :loading="saving" type="primary" @click="submit(false)">保 存</el-button>
+        <el-button :loading="saving" type="success" @click="submit(true)">保存并进入接入中心</el-button>
+      </div>
     </div>
-
-    <div slot="footer" class="dialog-footer">
-      <el-button @click="innerVisible = false">取 消</el-button>
-      <el-button :loading="saving" type="primary" @click="submit(false)">保 存</el-button>
-      <el-button :loading="saving" type="success" @click="submit(true)">保存并进入接入中心</el-button>
-    </div>
-  </el-dialog>
+  </div>
 </template>
 
 <script>
 import { getProjectInit, addProjectInit, updateProjectInit } from "@/api/requirement/projectInit"
 
 export default {
-  name: "ProjectInitWizard",
-  props: {
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    projectId: {
-      type: [String, Number],
-      default: undefined
-    }
-  },
+  name: "RequirementProjectMaintain",
   data() {
     return {
-      innerVisible: false,
+      projectId: undefined,
       loading: false,
       saving: false,
       moduleSummary: {},
@@ -281,8 +241,15 @@ export default {
     }
   },
   computed: {
-    dialogTitle() {
+    pageTitle() {
       return this.projectId ? "编辑项目" : "新增项目"
+    },
+    initStepActive() {
+      if (!this.form.project.projectName || !this.form.project.projectCode) return 0
+      if (!this.form.repositories.length) return 1
+      if (!this.form.variants.length) return 2
+      if (!this.initChecklist.indexReady) return 3
+      return 4
     },
     checklistText() {
       const pending = []
@@ -293,19 +260,12 @@ export default {
       return pending.length ? pending.join("、") : "基础初始化已完成"
     }
   },
-  watch: {
-    visible(value) {
-      this.innerVisible = value
-      if (value) {
-        this.openDialog()
-      }
-    },
-    innerVisible(value) {
-      this.$emit("update:visible", value)
-    }
+  created() {
+    this.projectId = this.$route.query.projectId
+    this.openPage()
   },
   methods: {
-    openDialog() {
+    openPage() {
       if (this.projectId) {
         this.loadInit()
       } else {
@@ -496,10 +456,14 @@ export default {
           const savedProjectId = savedProject.projectId || this.projectId
           this.$modal.msgSuccess("项目已保存")
           this.saving = false
-          this.innerVisible = false
-          this.$emit("success", savedProjectId)
+          if (savedProjectId && !this.projectId) {
+            this.projectId = savedProjectId
+            this.$router.replace({ path: this.$route.path, query: { projectId: savedProjectId } })
+          }
           if (goIntake) {
-            this.$emit("intake", savedProjectId)
+            this.openIntake(savedProjectId, savedProject.projectName)
+          } else if (savedProjectId) {
+            this.loadInit()
           }
         }).catch(() => {
           this.saving = false
@@ -528,8 +492,63 @@ export default {
         remark: this.form.remark
       }
     },
-    handleClose() {
-      this.$emit("update:visible", false)
+    openIntake(projectId, projectName) {
+      if (!projectId) return
+      this.$tab.openPage((projectName || "项目") + "接入中心", "/requirement/project/detail", { projectId: projectId })
+    },
+    openKnowledge(row) {
+      if (!this.projectId || !row || !row.variantId) return
+      const title = (row.branchLabel || row.variantName || "分支") + "知识库"
+      this.$tab.openPage(title, "/requirement/project/knowledge", { projectId: this.projectId, variantId: row.variantId })
+    },
+    instructionPreview(row) {
+      if (!row) return ""
+      if (row.initInstruction && row.initInstruction.tokenPrefix) {
+        return row.initInstruction.copyLabel + "：" + row.initInstruction.tokenPrefix + "..."
+      }
+      if (row.initInstruction && row.initInstruction.token) {
+        return row.initInstruction.copyLabel + "：" + row.initInstruction.token
+      }
+      if (row.mcpKey) return "兼容 Key：" + row.mcpKey
+      return ""
+    },
+    instructionContent(row) {
+      if (!row) return ""
+      if (row.initInstruction && row.initInstruction.content) {
+        return row.initInstruction.content
+      }
+      if (row.mcpKey) {
+        return "请执行项目分支初始化，调用 publish_repository_index 发布当前仓库索引。\nactionToken: " + row.mcpKey
+      }
+      return ""
+    },
+    copyInstruction(row) {
+      const content = this.instructionContent(row)
+      if (!content) {
+        this.$modal.msgWarning("请先保存项目分支，生成初始化指令")
+        return
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(content).then(() => {
+          this.$modal.msgSuccess("复制成功")
+        }).catch(() => this.copyByTextarea(content))
+      } else {
+        this.copyByTextarea(content)
+      }
+    },
+    copyByTextarea(content) {
+      const textarea = document.createElement("textarea")
+      textarea.value = content
+      textarea.style.position = "fixed"
+      textarea.style.left = "-9999px"
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand("copy")
+      document.body.removeChild(textarea)
+      this.$modal.msgSuccess("复制成功")
+    },
+    closePage() {
+      this.$tab.closePage()
     },
     clearProjectValidate() {
       this.$nextTick(() => {
@@ -543,15 +562,63 @@ export default {
 </script>
 
 <style scoped>
-.project-init-dialog ::v-deep .el-dialog__body {
-  padding-top: 12px;
-  padding-bottom: 8px;
+.project-maintain-page {
+  background: #f4f8fb;
+  min-height: calc(100vh - 84px);
 }
 
 .project-init-body {
-  max-height: 68vh;
-  overflow-y: auto;
-  padding-right: 4px;
+  margin-top: 16px;
+}
+
+.maintain-shell {
+  background: #fff;
+  border: 1px solid #dbe8f3;
+  border-radius: 8px;
+  padding: 18px 18px 0;
+  box-shadow: 0 12px 28px rgba(38, 86, 120, 0.08);
+}
+
+.maintain-hero {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(360px, 520px);
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(230, 246, 255, 0.96), rgba(248, 252, 255, 0.98)),
+    radial-gradient(circle at 92% 12%, rgba(94, 179, 255, 0.2), transparent 30%);
+  border: 1px solid #d8edf9;
+}
+
+.maintain-eyebrow {
+  color: #2477a8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.maintain-hero h2 {
+  margin: 6px 0 8px;
+  color: #1f3f59;
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 700;
+}
+
+.maintain-hero p {
+  margin: 0;
+  max-width: 620px;
+  color: #5f7282;
+  font-size: 13px;
+  line-height: 22px;
+}
+
+.maintain-steps {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid #dcecf6;
+  border-radius: 8px;
 }
 
 .section-alert {
@@ -559,15 +626,15 @@ export default {
 }
 
 .form-section {
-  padding-top: 14px;
+  padding: 16px;
   margin-top: 14px;
-  border-top: 1px solid #ebeef5;
+  border: 1px solid #e3edf5;
+  border-radius: 8px;
+  background: #fbfdff;
 }
 
 .form-section:first-of-type {
   margin-top: 0;
-  border-top: 0;
-  padding-top: 0;
 }
 
 .section-header {
@@ -595,8 +662,8 @@ export default {
 }
 
 .summary-box {
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
+  border: 1px solid #dfeaf3;
+  border-radius: 8px;
   padding: 12px 14px;
   background: #fff;
 }
@@ -614,35 +681,26 @@ export default {
   font-weight: 600;
 }
 
-.branch-detail-panel {
-  padding: 10px 14px 12px 14px;
-  background: #fafafa;
-}
-
-.branch-stat {
-  min-height: 58px;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  padding: 9px 12px;
-  background: #fff;
-}
-
-.branch-stat-label {
-  display: block;
-  color: #606266;
-  font-size: 12px;
-  line-height: 18px;
-}
-
-.branch-stat strong {
-  display: block;
-  margin-top: 5px;
-  color: #303133;
-  font-size: 18px;
-  line-height: 22px;
+.maintain-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 0 16px;
+  margin-top: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), #fff 42%);
+  border-top: 1px solid #e3edf5;
 }
 
 .mt12 {
   margin-top: 12px;
+}
+
+@media (max-width: 960px) {
+  .maintain-hero {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
