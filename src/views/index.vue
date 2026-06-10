@@ -113,7 +113,7 @@ export default {
       quickActions: [
         { title: "需求列表", path: "/requirement/demand", icon: "el-icon-tickets", desc: "查看、提交和推进需求" },
         { title: "执行资料", path: "/requirement/package", icon: "el-icon-document-checked", desc: "生成或查看 Agent 交接资料" },
-        { title: "MCP 配置", path: "/requirement/mcpKey", icon: "el-icon-key", desc: "维护开发人员 MCP 访问 Key" }
+        { title: "MCP 管理", path: "/requirement/mcpKey", icon: "el-icon-key", desc: "管理人员 MCP 访问 Key" }
       ]
     }
   },

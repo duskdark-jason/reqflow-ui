@@ -17,14 +17,6 @@ export function getMcpKey(keyId) {
   })
 }
 
-// 查询MCP配置地址
-export function getMcpKeyConfig() {
-  return request({
-    url: '/requirement/mcp/key/config',
-    method: 'get'
-  })
-}
-
 // 查询MCP Key可绑定用户
 export function listMcpKeyUserOptions(query) {
   return request({

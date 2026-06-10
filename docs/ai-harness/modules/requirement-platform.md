@@ -13,7 +13,7 @@
 | 需求管理 | 分支知识库详情页签 | 按项目分支查看模块知识、索引批次和初始化指令 | `src/views/requirement/project/knowledge.vue` | `src/api/requirement/index.js`、`project.js` | `/requirement/index/module/tree`，`req:index:list`；`/requirement/index/batch/list`，`req:index:list` | `ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
 | 需求管理 | 需求列表 | 需求新增、编辑、查询、分支初始化校验和影响面推荐 | `src/views/requirement/demand/index.vue`、`detail.vue` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；`/requirement/index/impact/suggest`，`req:index:list` | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
 | 需求管理 | Agent 交接资料 | 查看和保存需求、计划、执行报告、Review 报告等 artifact | `src/views/requirement/package/index.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，`req:package:*` | `ReqPackageController`、`ReqPackageServiceImpl` |
-| 需求管理 | MCP 管理 | 管理人员 MCP Key、展示 MCP 地址和 Codex 配置片段 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqMcpController`、`McpService` |
+| 需求管理 | MCP 管理 | 管理人员 MCP Key，创建或重置后复制一次性 Key 和 Codex 安装包 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqMcpController`、`McpService` |
 | 需求管理 | 使用统计 | 展示需求、项目、用户和状态统计 | `src/views/requirement/statistics/index.vue` | `src/api/requirement/statistics.js` | `/requirement/statistics/**`，`req:stats:view` | `ReqStatisticsController`、`ReqStatisticsService` |
 | 需求管理 | 隐藏兼容能力 | 仓库、项目分支、人工模块兼容 CRUD，不作为左侧菜单独立入口 | `src/views/requirement/repository/index.vue`、`variant/index.vue`、`module/index.vue` | `src/api/requirement/repository.js`、`variant.js`、`module.js` | `/requirement/repository/**`、`/requirement/variant/**`、`/requirement/module/**` | `ReqRepositoryController`、`ReqVariantController`、`ReqModuleController` |
 
@@ -50,7 +50,7 @@
 - 需求表单的影响面推荐只追加候选内容，不强制覆盖人工输入。
 - Agent 交接资料内容使用 textarea，不引入 Markdown 编辑器依赖。
 - Harness 初始化模板由需求平台存储和下发给 Codex；前端不直接写文件，后端不直接执行 Git 或文件系统写入。
-- MCP 管理页面只管理绑定到人员的访问 Key。页面必须展示 MCP 地址、`X-MCP-Key` 请求头、Codex 配置、全局 Skill 包和 Codex 安装包；创建或重置后只在结果弹窗展示一次明文 Key、Codex 配置、全局 Skill 包和 Codex 安装包；列表不得展示明文或哈希。
+- MCP 管理页面只管理绑定到人员的访问 Key。页面不得常驻展示 MCP 地址、`X-MCP-Key` 请求头、Codex 配置、全局 Skill 包或 Codex 安装包；创建或重置后只在结果弹窗展示一次明文 Key 和 Codex 安装包，列表不得展示明文或哈希。
 - MCP 管理菜单和按钮必须使用 `req:mcp:key:*` 权限，提需求人员角色默认不分配这些权限。
 - 人员 MCP Key 不能替代项目分支动作 token：页面负责人员认证 Key，项目接入和索引指引中的 `actionToken` 是项目分支和目标动作识别 token。
 - 用户可见系统名称统一为“统一需求流转平台”，登录页、首页、导航入口和页脚不得保留若依官网、若依文档或默认更新日志入口。
