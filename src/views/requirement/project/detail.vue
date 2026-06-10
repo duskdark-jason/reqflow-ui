@@ -45,11 +45,56 @@
         </el-tab-pane>
 
         <el-tab-pane label="项目分支" name="variants">
-          <el-table :data="variants" size="small">
+          <el-table :data="variants" size="small" row-key="variantId">
+            <el-table-column type="expand" width="42">
+              <template slot-scope="scope">
+                <div class="branch-detail-panel">
+                  <el-row :gutter="12">
+                    <el-col :span="6">
+                      <div class="branch-stat">
+                        <span>模块总数</span>
+                        <strong>{{ scope.row.totalModules || 0 }}</strong>
+                      </div>
+                    </el-col>
+                    <el-col :span="6">
+                      <div class="branch-stat">
+                        <span>索引模块</span>
+                        <strong>{{ scope.row.indexedModules || 0 }}</strong>
+                      </div>
+                    </el-col>
+                    <el-col :span="6">
+                      <div class="branch-stat">
+                        <span>已索引仓库</span>
+                        <strong>{{ scope.row.indexedRepositoryCount || 0 }}</strong>
+                      </div>
+                    </el-col>
+                    <el-col :span="6">
+                      <div class="branch-stat">
+                        <span>未索引仓库</span>
+                        <strong>{{ scope.row.unindexedRepositoryCount || 0 }}</strong>
+                      </div>
+                    </el-col>
+                  </el-row>
+                  <el-table :data="branchModules(scope.row)" size="mini" class="mt12" empty-text="该分支暂无模块知识">
+                    <el-table-column label="模块名称" prop="moduleName" min-width="160" />
+                    <el-table-column label="模块编码" prop="moduleCode" min-width="140" />
+                    <el-table-column label="仓库范围" prop="repoScope" width="110" />
+                    <el-table-column label="相对路径" prop="relativePath" min-width="220" :show-overflow-tooltip="true" />
+                  </el-table>
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column label="分支标签" prop="variantName" min-width="160" />
             <el-table-column label="分支编码" prop="variantCode" min-width="130" />
             <el-table-column label="真实分支" prop="baselineBranch" min-width="140" />
             <el-table-column label="MCP Key" prop="mcpKey" min-width="170" :show-overflow-tooltip="true" />
+            <el-table-column label="模块" width="90" align="center">
+              <template slot-scope="scope">
+                <el-tag size="mini" :type="(scope.row.totalModules || 0) > 0 ? 'success' : 'warning'">
+                  {{ scope.row.totalModules || 0 }}
+                </el-tag>
+              </template>
+            </el-table-column>
             <el-table-column label="分支策略" prop="branchPolicy" min-width="140">
               <template slot-scope="scope">{{ optionLabel(branchPolicyOptions, scope.row.branchPolicy) }}</template>
             </el-table-column>
@@ -71,7 +116,17 @@
             readonly
             class="mb8"
           />
-          <el-table :data="indexBatches" size="small">
+          <div class="tab-toolbar">
+            <el-select v-model="selectedVariantId" placeholder="选择项目分支" clearable filterable style="width: 260px">
+              <el-option
+                v-for="item in variants"
+                :key="item.variantId"
+                :label="item.branchLabel || item.variantName"
+                :value="item.variantId"
+              />
+            </el-select>
+          </div>
+          <el-table :data="filteredIndexBatches" size="small">
             <el-table-column label="仓库ID" prop="repoId" width="90" />
             <el-table-column label="仓库类型" prop="repoType" width="110" />
             <el-table-column label="分支" prop="branchName" min-width="140" />
@@ -88,7 +143,20 @@
         </el-tab-pane>
 
         <el-tab-pane label="模块知识库" name="modules">
-          <el-table :data="indexModules" size="small">
+          <div class="tab-toolbar">
+            <el-select v-model="selectedVariantId" placeholder="选择项目分支" clearable filterable style="width: 260px">
+              <el-option
+                v-for="item in variants"
+                :key="item.variantId"
+                :label="item.branchLabel || item.variantName"
+                :value="item.variantId"
+              />
+            </el-select>
+          </div>
+          <el-table :data="filteredIndexModules" size="small">
+            <el-table-column label="项目分支" width="140">
+              <template slot-scope="scope">{{ variantLabel(scope.row.variantId) }}</template>
+            </el-table-column>
             <el-table-column label="模块名称" prop="moduleName" min-width="160" />
             <el-table-column label="模块编码" prop="moduleCode" min-width="140" />
             <el-table-column label="仓库范围" prop="repoScope" width="120" />
@@ -208,9 +276,9 @@
 </template>
 
 <script>
-import { getProject } from "@/api/requirement/project"
-import { listRepository, addRepository, updateRepository } from "@/api/requirement/repository"
-import { listVariant, addVariant, updateVariant } from "@/api/requirement/variant"
+import { getProjectInit } from "@/api/requirement/projectInit"
+import { addRepository, updateRepository } from "@/api/requirement/repository"
+import { addVariant, updateVariant } from "@/api/requirement/variant"
 import { listIndexBatch, listIndexModule } from "@/api/requirement/index"
 
 export default {
@@ -224,7 +292,8 @@ export default {
       repositories: [],
       variants: [],
       indexBatches: [],
-      indexModules: [],
+      allIndexModules: [],
+      selectedVariantId: undefined,
       repositoryOpen: false,
       repositoryTitle: "",
       repositoryForm: {},
@@ -276,6 +345,18 @@ export default {
     }
   },
   computed: {
+    selectedVariant() {
+      return this.variants.find(item => String(item.variantId) === String(this.selectedVariantId))
+    },
+    filteredIndexBatches() {
+      const branchName = this.selectedVariant && this.selectedVariant.baselineBranch
+      if (!branchName) return this.indexBatches
+      return this.indexBatches.filter(item => item.branchName === branchName)
+    },
+    filteredIndexModules() {
+      if (!this.selectedVariantId) return this.allIndexModules
+      return this.allIndexModules.filter(item => String(item.variantId) === String(this.selectedVariantId))
+    },
     mcpGuide() {
       const repoLines = this.repositories.map(repo => {
         return "- " + repo.repoName + "，" + repo.repoType + "，" + repo.repoUrl
@@ -314,17 +395,19 @@ export default {
       }
       this.loading = true
       Promise.all([
-        getProject(this.projectId),
-        listRepository({ pageNum: 1, pageSize: 1000, projectId: this.projectId }),
-        listVariant({ pageNum: 1, pageSize: 1000, projectId: this.projectId }),
+        getProjectInit(this.projectId),
         listIndexBatch({ pageNum: 1, pageSize: 20, projectId: this.projectId }),
         listIndexModule({ projectId: this.projectId, status: "0" })
-      ]).then(([projectRes, repoRes, variantRes, batchRes, moduleRes]) => {
-        this.project = projectRes.data || {}
-        this.repositories = repoRes.rows || repoRes.data || []
-        this.variants = variantRes.rows || variantRes.data || []
+      ]).then(([initRes, batchRes, moduleRes]) => {
+        const initData = initRes.data || {}
+        this.project = initData.project || {}
+        this.repositories = initData.repositories || []
+        this.variants = initData.variants || []
         this.indexBatches = batchRes.rows || batchRes.data || []
-        this.indexModules = moduleRes.data || moduleRes.rows || []
+        this.allIndexModules = moduleRes.data || moduleRes.rows || []
+        if (!this.selectedVariantId || !this.variants.some(item => String(item.variantId) === String(this.selectedVariantId))) {
+          this.selectedVariantId = this.variants.length ? this.variants[0].variantId : undefined
+        }
         this.loading = false
       }).catch(() => {
         this.loading = false
@@ -416,6 +499,14 @@ export default {
         if (this.$refs.variantForm) this.$refs.variantForm.clearValidate()
       })
     },
+    branchModules(row) {
+      if (!row || !row.variantId) return []
+      return this.allIndexModules.filter(item => String(item.variantId) === String(row.variantId))
+    },
+    variantLabel(variantId) {
+      const variant = this.variants.find(item => String(item.variantId) === String(variantId))
+      return variant ? (variant.branchLabel || variant.variantName) : (variantId || "-")
+    },
     optionLabel(options, value) {
       const option = options.find(item => item.value === String(value))
       return option ? option.label : value || "-"
@@ -450,5 +541,37 @@ export default {
   margin-top: 4px;
   color: #909399;
   font-size: 13px;
+}
+
+.branch-detail-panel {
+  padding: 12px 14px;
+  background: #fafafa;
+}
+
+.branch-stat {
+  min-height: 58px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 9px 12px;
+  background: #fff;
+}
+
+.branch-stat span {
+  display: block;
+  color: #606266;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.branch-stat strong {
+  display: block;
+  margin-top: 5px;
+  color: #303133;
+  font-size: 18px;
+  line-height: 22px;
+}
+
+.mt12 {
+  margin-top: 12px;
 }
 </style>

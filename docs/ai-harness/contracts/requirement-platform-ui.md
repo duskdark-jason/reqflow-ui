@@ -18,6 +18,7 @@
 | `package.js` | `/requirement/package` | Agent 交接资料列表、最新版本、保存新版本和生成草稿资料 |
 | `statistics.js` | `/requirement/statistics` | 使用统计 |
 | `harness.js` | `/requirement/project/*/harness-*` | 项目接入 harness 模板包查询和初始化结果登记 |
+| `mcpKey.js` | `/requirement/mcp/key` | MCP 人员 Key 列表、创建、修改、重置、删除和配置地址查询 |
 
 ## 权限标识
 
@@ -27,6 +28,7 @@
 | 项目索引 | `req:index:list`、`req:index:import` |
 | 需求列表 | `req:demand:list`、`req:demand:add`、`req:demand:edit` |
 | Agent 交接资料 | `req:package:list`、`req:package:save` |
+| MCP管理 | `req:mcp:key:list`、`req:mcp:key:query`、`req:mcp:key:add`、`req:mcp:key:edit`、`req:mcp:key:remove` |
 | 使用统计 | `req:stats:view` |
 
 ## 项目初始化契约
@@ -36,6 +38,7 @@
 - 仓库分区默认提供一条空后端仓库行；仓库数据只提交仓库名称、仓库类型、团队共享 Git 远端、默认分支、状态和索引状态字段；允许纯后端服务只维护一条仓库，不得提交个人本机绝对路径。
 - 输入 Git 地址后，前端可自动推导仓库名称、项目名称和项目编码，用户可继续手工调整。
 - 分支分区维护 `branchLabel`、`baselineBranch` 和后端回显的 `mcpKey`：`branchLabel` 是需求人员可见中文标签，`baselineBranch` 是真实 Git 分支名，`mcpKey` 用于 MCP 识别项目分支；前端可继续兼容 `variantName`、`variantCode`、`customerName` 等历史字段。
+- 分支分区必须支持展开查看该分支的独立初始化状态，包括 `totalModules`、`manualModules`、`indexedModules`、`indexedRepositoryCount`、`unindexedRepositoryCount`、`latestIndexedAt` 和 `latestCommit`。
 - 项目列表会按项目调用 `/requirement/project/init/{projectId}` 派生初始化状态，状态口径来自 `initChecklist`：项目信息、仓库、分支配置、模块知识和索引。
 - 保存成功后刷新项目列表；用户选择“保存并进入接入中心”时跳转 `src/views/requirement/project/detail.vue`。
 
@@ -49,10 +52,11 @@
 
 ## 项目索引契约
 
-- 项目接入中心读取 `/requirement/repository/list`、`/requirement/variant/list`、`/requirement/index/batch/list`、`/requirement/index/module/tree` 只读展示团队共享仓库、项目分支、索引批次和模块知识库；新增和编辑回到项目管理维护弹窗。
+- 项目接入中心读取 `/requirement/project/init/{projectId}`、`/requirement/index/batch/list`、`/requirement/index/module/tree` 只读展示团队共享仓库、项目分支、索引批次和模块知识库；新增和编辑回到项目管理维护弹窗。
+- 项目接入中心必须支持按项目分支筛选索引批次和模块知识库。模块知识库展示行必须有 `variantId`，分支为空的数据只能作为待迁移旧数据处理，不应默认混入选中分支。
 - 当后端 companion 因部分迁移库缺少可选索引表而返回空索引批次或空模块知识库时，项目接入中心必须继续展示项目、仓库、项目分支和 MCP 指引，把索引内容视为“暂无数据”。
 - MCP 索引指引优先使用 `mcpKey + remoteUrl` 调用 `publish_repository_index`，兼容旧的 `projectId + repoId + branchName` 调用方式。
-- 新建或编辑需求时，选择项目、项目分支和模块后调用 `/requirement/index/impact/suggest`，请求携带 `projectId`、`variantId`、`moduleId`、`moduleCode`；后端按所选项目分支和最新索引批次返回 `pages`、`apis`、`tables`、`permissions`、`documents` 五类候选影响面。
+- 新建或编辑需求时，选择项目、项目分支和模块后调用 `/requirement/index/impact/suggest`，模块下拉必须按 `projectId + variantId` 过滤，请求携带 `projectId`、`variantId`、`moduleId`、`moduleCode`；后端按所选项目分支和最新索引批次返回 `pages`、`apis`、`tables`、`permissions`、`documents` 五类候选影响面。
 - 前端只展示和追加影响面推荐，不覆盖用户已输入内容。
 - 前端不得向后端提交个人本机绝对路径；本地仓库目录只允许作为用户本次操作中的临时输入。
 
@@ -76,12 +80,22 @@ harness_init_result
 
 生成草稿资料接口使用 `POST /requirement/package/generate/{demandId}`。保存 artifact 仍使用 `POST /requirement/package/{demandId}/{artifactType}`，保存行为必须追加新版本。
 
+## MCP管理页面契约
+
+- 菜单路径为 `requirement/mcpKey/index`，后端菜单脚本路径为 `mcp-key`，菜单权限为 `req:mcp:key:list`。
+- 页面顶部读取 `/requirement/mcp/key/config` 并展示 MCP 地址、请求头名 `X-MCP-Key` 和 Codex 配置模板。
+- 列表读取 `/requirement/mcp/key/list`，一行对应一个 `req_mcp_user_key`，只能展示 Key 名称、Key 前缀、绑定用户、状态、最近使用时间和最近 IP。
+- 新增时必须选择启用用户并填写 Key 名称；后端返回的 `plainKey` 和 `codexConfig` 只在结果弹窗中展示，前端不得把明文 Key 写入列表或查询参数。
+- 修改只用于 Key 名称、状态和备注；重置使用 `/requirement/mcp/key/{keyId}/regenerate`，重置后旧 Key 立即失效并弹出新的明文 Key。
+- 提需求人员角色默认不分配 `req:mcp:key:*` 权限，因此看不到菜单，也不能调用页面 API。
+
 ## 数据粒度
 
 - 基础管理列表一行对应一个后端实体。
 - 需求列表一行对应一个需求。
 - 索引批次列表一行对应一次仓库索引上传。
-- 模块知识库一行对应一个索引模块或功能点。
+- 模块知识库一行对应一个项目分支下的索引模块或功能点。
 - 影响面推荐一行对应一个页面、接口、数据表、权限或相关文档。
 - Agent 交接资料页面当前 tab 展示一个 artifact type 的最新版本，保存时追加新版本。
+- MCP 管理列表一行对应一个人员 Key，绑定用户是多对一展示字段，不代表用户列表粒度。
 - 统计总览展示全平台聚合数据，项目排行一行对应一个项目，用户使用一行对应一个用户。

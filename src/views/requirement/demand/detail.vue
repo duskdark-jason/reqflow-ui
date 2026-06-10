@@ -129,7 +129,7 @@ export default {
     },
     variantLabel(variantId) {
       const variant = this.variantOptions.find(item => String(item.variantId || item.id) === String(variantId))
-      return variant ? variant.variantName : variantId || "-"
+      return variant ? (variant.branchLabel || variant.variantName) : variantId || "-"
     },
     moduleLabel(moduleId) {
       const module = this.moduleOptions.find(item => String(item.moduleId || item.id) === String(moduleId))

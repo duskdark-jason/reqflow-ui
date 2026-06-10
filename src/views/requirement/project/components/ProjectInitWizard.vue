@@ -9,7 +9,7 @@
   >
     <div v-loading="loading" class="project-init-body">
       <el-alert
-        title="平台只保存团队共享 Git 信息、项目分支和模块索引结果；保存后会生成 MCP key，用于识别项目和分支，不保存个人本机仓库目录。"
+        title="平台只保存团队共享 Git 信息、项目分支和分支级模块索引结果；每个分支单独初始化知识库，保存后生成 MCP key 识别项目与分支。"
         type="info"
         show-icon
         :closable="false"
@@ -108,7 +108,47 @@
           <span class="section-title">分支配置</span>
           <el-button type="primary" plain size="mini" icon="el-icon-plus" @click="addVariant">新增分支</el-button>
         </div>
-        <el-table :data="form.variants" size="small" border>
+        <el-table :data="form.variants" size="small" border row-key="variantId">
+          <el-table-column type="expand" width="42">
+            <template slot-scope="scope">
+              <div class="branch-detail-panel">
+                <el-row :gutter="12">
+                  <el-col :span="6">
+                    <div class="branch-stat">
+                      <span class="branch-stat-label">模块总数</span>
+                      <strong>{{ scope.row.totalModules || 0 }}</strong>
+                    </div>
+                  </el-col>
+                  <el-col :span="6">
+                    <div class="branch-stat">
+                      <span class="branch-stat-label">手工模块</span>
+                      <strong>{{ scope.row.manualModules || 0 }}</strong>
+                    </div>
+                  </el-col>
+                  <el-col :span="6">
+                    <div class="branch-stat">
+                      <span class="branch-stat-label">索引模块</span>
+                      <strong>{{ scope.row.indexedModules || 0 }}</strong>
+                    </div>
+                  </el-col>
+                  <el-col :span="6">
+                    <div class="branch-stat">
+                      <span class="branch-stat-label">已索引仓库</span>
+                      <strong>{{ scope.row.indexedRepositoryCount || 0 }}</strong>
+                    </div>
+                  </el-col>
+                </el-row>
+                <el-descriptions :column="2" border size="small" class="mt12">
+                  <el-descriptions-item label="最近索引">{{ parseTime(scope.row.latestIndexedAt) || "-" }}</el-descriptions-item>
+                  <el-descriptions-item label="最近 Commit">{{ scope.row.latestCommit || "-" }}</el-descriptions-item>
+                  <el-descriptions-item label="未索引仓库">{{ scope.row.unindexedRepositoryCount || 0 }}</el-descriptions-item>
+                  <el-descriptions-item label="初始化状态">
+                    <el-tag size="mini" :type="branchReadyType(scope.row)">{{ branchReadyText(scope.row) }}</el-tag>
+                  </el-descriptions-item>
+                </el-descriptions>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="中文标签" min-width="170">
             <template slot-scope="scope">
               <el-input v-model="scope.row.branchLabel" size="small" placeholder="例如：黑龙江医保" />
@@ -122,6 +162,11 @@
           <el-table-column label="MCP Key" min-width="180">
             <template slot-scope="scope">
               <el-input v-model="scope.row.mcpKey" size="small" readonly placeholder="保存后生成" />
+            </template>
+          </el-table-column>
+          <el-table-column label="知识库" width="112" align="center">
+            <template slot-scope="scope">
+              <el-tag size="mini" :type="branchReadyType(scope.row)">{{ scope.row.totalModules || 0 }} 个模块</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="状态" width="100">
@@ -147,7 +192,7 @@
 
       <section class="form-section">
         <div class="section-header">
-          <span class="section-title">模块初始化状态</span>
+          <span class="section-title">项目级汇总</span>
           <span class="section-tip">{{ checklistText }}</span>
         </div>
         <el-row :gutter="12" class="summary-row">
@@ -375,6 +420,12 @@ export default {
     removeVariant(index) {
       this.form.variants.splice(index, 1)
     },
+    branchReadyType(row) {
+      return (row.totalModules || 0) > 0 ? "success" : "warning"
+    },
+    branchReadyText(row) {
+      return (row.totalModules || 0) > 0 ? "已初始化" : "待初始化"
+    },
     handleRepositoryUrlChange(row) {
       const repoName = this.inferRepoName(row.repoUrl)
       if (!repoName) return
@@ -561,6 +612,34 @@ export default {
   font-size: 22px;
   line-height: 28px;
   font-weight: 600;
+}
+
+.branch-detail-panel {
+  padding: 10px 14px 12px 14px;
+  background: #fafafa;
+}
+
+.branch-stat {
+  min-height: 58px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 9px 12px;
+  background: #fff;
+}
+
+.branch-stat-label {
+  display: block;
+  color: #606266;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.branch-stat strong {
+  display: block;
+  margin-top: 5px;
+  color: #303133;
+  font-size: 18px;
+  line-height: 22px;
 }
 
 .mt12 {

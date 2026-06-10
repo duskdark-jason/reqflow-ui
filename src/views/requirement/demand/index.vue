@@ -20,12 +20,22 @@
         />
       </el-form-item>
       <el-form-item label="所属项目" prop="projectId">
-        <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px">
+        <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px" @change="handleDemandQueryProjectChange">
           <el-option
             v-for="project in projectOptions"
             :key="project.projectId || project.id"
             :label="project.projectName"
             :value="project.projectId || project.id"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="项目分支" prop="variantId">
+        <el-select v-model="queryParams.variantId" placeholder="请选择分支" clearable filterable style="width: 180px">
+          <el-option
+            v-for="variant in queryVariantOptions"
+            :key="variant.variantId || variant.id"
+            :label="variant.branchLabel || variant.variantName"
+            :value="variant.variantId || variant.id"
           />
         </el-select>
       </el-form-item>
@@ -207,7 +217,7 @@
                 <el-option
                   v-for="variant in filteredVariantOptions"
                   :key="variant.variantId || variant.id"
-                  :label="variant.variantName"
+                  :label="variant.branchLabel || variant.variantName"
                   :value="variant.variantId || variant.id"
                 />
               </el-select>
@@ -243,14 +253,14 @@
         </el-row>
         <el-divider content-position="left">影响范围</el-divider>
         <el-alert
-          v-if="form.projectId && form.moduleId"
-          title="已根据项目和模块提供影响面推荐，可按需追加到下方字段，追加后仍可人工编辑。"
+          v-if="form.projectId && form.variantId && form.moduleId"
+          title="已根据项目、分支和模块提供影响面推荐，可按需追加到下方字段，追加后仍可人工编辑。"
           type="info"
           show-icon
           :closable="false"
           class="mb8"
         />
-        <el-row v-if="form.projectId && form.moduleId" class="mb8">
+        <el-row v-if="form.projectId && form.variantId && form.moduleId" class="mb8">
           <el-col :span="24">
             <el-button
               type="primary"
@@ -380,6 +390,7 @@ export default {
         title: undefined,
         demandType: undefined,
         projectId: undefined,
+        variantId: undefined,
         status: undefined
       },
       form: {},
@@ -409,6 +420,12 @@ export default {
     }
   },
   computed: {
+    queryVariantOptions() {
+      if (!this.queryParams.projectId) {
+        return this.variantOptions
+      }
+      return this.variantOptions.filter(item => String(item.projectId) === String(this.queryParams.projectId))
+    },
     filteredVariantOptions() {
       if (!this.form.projectId) {
         return this.variantOptions
@@ -416,10 +433,12 @@ export default {
       return this.variantOptions.filter(item => String(item.projectId) === String(this.form.projectId))
     },
     filteredModuleOptions() {
-      if (!this.form.projectId) {
-        return this.moduleOptions
+      if (!this.form.projectId || !this.form.variantId) {
+        return []
       }
-      return this.moduleOptions.filter(item => String(item.projectId) === String(this.form.projectId))
+      return this.moduleOptions.filter(item => {
+        return String(item.projectId) === String(this.form.projectId) && String(item.variantId) === String(this.form.variantId)
+      })
     },
     impactGroups() {
       return [
@@ -581,6 +600,10 @@ export default {
       this.loadImpactSuggest()
     },
     handleVariantChange() {
+      if (this.form.moduleId && !this.filteredModuleOptions.some(item => String(item.moduleId || item.id) === String(this.form.moduleId))) {
+        this.form.moduleId = undefined
+      }
+      this.resetImpactSuggest()
       this.loadImpactSuggest()
     },
     handleModuleChange() {
@@ -588,7 +611,7 @@ export default {
       this.loadImpactSuggest()
     },
     loadImpactSuggest() {
-      if (!this.form.projectId || !this.form.moduleId) {
+      if (!this.form.projectId || !this.form.variantId || !this.form.moduleId) {
         return
       }
       const module = this.moduleOptions.find(item => String(item.moduleId || item.id) === String(this.form.moduleId))
@@ -637,13 +660,19 @@ export default {
         documents: []
       }
     },
+    handleDemandQueryProjectChange() {
+      const variant = this.queryVariantOptions.find(item => String(item.variantId || item.id) === String(this.queryParams.variantId))
+      if (!variant) {
+        this.queryParams.variantId = undefined
+      }
+    },
     projectLabel(projectId) {
       const project = this.projectOptions.find(item => String(item.projectId || item.id) === String(projectId))
       return project ? project.projectName : projectId
     },
     variantLabel(variantId) {
       const variant = this.variantOptions.find(item => String(item.variantId || item.id) === String(variantId))
-      return variant ? variant.variantName : variantId
+      return variant ? (variant.branchLabel || variant.variantName) : variantId
     },
     moduleLabel(moduleId) {
       const module = this.moduleOptions.find(item => String(item.moduleId || item.id) === String(moduleId))

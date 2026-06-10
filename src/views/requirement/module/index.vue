@@ -2,12 +2,22 @@
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
       <el-form-item label="所属项目" prop="projectId">
-        <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 220px">
+        <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 220px" @change="handleQueryProjectChange">
           <el-option
             v-for="project in projectOptions"
             :key="project.projectId || project.id"
             :label="project.projectName"
             :value="project.projectId || project.id"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="项目分支" prop="variantId">
+        <el-select v-model="queryParams.variantId" placeholder="请选择分支" clearable filterable style="width: 200px">
+          <el-option
+            v-for="variant in queryVariantOptions"
+            :key="variant.variantId || variant.id"
+            :label="variant.branchLabel || variant.variantName"
+            :value="variant.variantId || variant.id"
           />
         </el-select>
       </el-form-item>
@@ -82,6 +92,9 @@
       <el-table-column label="所属项目" align="center" min-width="150" :show-overflow-tooltip="true">
         <template slot-scope="scope">{{ projectLabel(scope.row.projectId) }}</template>
       </el-table-column>
+      <el-table-column label="项目分支" align="center" min-width="140" :show-overflow-tooltip="true">
+        <template slot-scope="scope">{{ variantLabel(scope.row.variantId) }}</template>
+      </el-table-column>
       <el-table-column label="模块类型" align="center" prop="moduleType" width="120">
         <template slot-scope="scope">{{ optionLabel(moduleTypeOptions, scope.row.moduleType) }}</template>
       </el-table-column>
@@ -132,6 +145,18 @@
                   :key="project.projectId || project.id"
                   :label="project.projectName"
                   :value="project.projectId || project.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="项目分支" prop="variantId">
+              <el-select v-model="form.variantId" placeholder="请选择项目分支" filterable style="width: 100%" @change="handleVariantChange">
+                <el-option
+                  v-for="variant in formVariantOptions"
+                  :key="variant.variantId || variant.id"
+                  :label="variant.branchLabel || variant.variantName"
+                  :value="variant.variantId || variant.id"
                 />
               </el-select>
             </el-form-item>
@@ -217,6 +242,7 @@
 
 <script>
 import { listProject } from "@/api/requirement/project"
+import { listVariant } from "@/api/requirement/variant"
 import { listModule, getModule, delModule, addModule, updateModule } from "@/api/requirement/module"
 
 export default {
@@ -228,6 +254,7 @@ export default {
       moduleList: [],
       rawModuleList: [],
       projectOptions: [],
+      variantOptions: [],
       title: "",
       open: false,
       isExpandAll: true,
@@ -251,6 +278,7 @@ export default {
       ],
       queryParams: {
         projectId: undefined,
+        variantId: undefined,
         moduleName: undefined,
         moduleType: undefined,
         status: undefined
@@ -259,6 +287,9 @@ export default {
       rules: {
         projectId: [
           { required: true, message: "所属项目不能为空", trigger: "change" }
+        ],
+        variantId: [
+          { required: true, message: "项目分支不能为空", trigger: "change" }
         ],
         parentId: [
           { required: true, message: "上级模块不能为空", trigger: "change" }
@@ -279,15 +310,30 @@ export default {
     }
   },
   computed: {
+    queryVariantOptions() {
+      if (!this.queryParams.projectId) {
+        return this.variantOptions
+      }
+      return this.variantOptions.filter(item => String(item.projectId) === String(this.queryParams.projectId))
+    },
+    formVariantOptions() {
+      if (!this.form.projectId) {
+        return this.variantOptions
+      }
+      return this.variantOptions.filter(item => String(item.projectId) === String(this.form.projectId))
+    },
     parentModuleOptions() {
       if (!this.form.projectId) {
         return this.rawModuleList
       }
-      return this.rawModuleList.filter(item => String(item.projectId) === String(this.form.projectId))
+      return this.rawModuleList.filter(item => {
+        return String(item.projectId) === String(this.form.projectId) && String(item.variantId) === String(this.form.variantId)
+      })
     }
   },
   created() {
     this.getProjectOptions()
+    this.getVariantOptions()
     this.getList()
   },
   methods: {
@@ -306,6 +352,11 @@ export default {
         this.projectOptions = response.rows || response.data || []
       })
     },
+    getVariantOptions() {
+      listVariant({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
+        this.variantOptions = response.rows || response.data || []
+      })
+    },
     cancel() {
       this.open = false
       this.reset()
@@ -314,6 +365,7 @@ export default {
       this.form = {
         moduleId: undefined,
         projectId: undefined,
+        variantId: undefined,
         parentId: 0,
         moduleName: undefined,
         moduleCode: undefined,
@@ -336,6 +388,7 @@ export default {
       this.reset()
       if (row) {
         this.form.projectId = row.projectId
+        this.form.variantId = row.variantId
         this.form.parentId = row.moduleId || row.id
       }
       this.open = true
@@ -382,11 +435,24 @@ export default {
       }).catch(() => {})
     },
     handleProjectChange() {
+      const variant = this.formVariantOptions.find(item => String(item.variantId || item.id) === String(this.form.variantId))
+      if (!variant) {
+        this.form.variantId = undefined
+      }
+      this.handleVariantChange()
+    },
+    handleVariantChange() {
       if (this.form.parentId !== 0) {
         const parent = this.parentModuleOptions.find(item => String(item.moduleId || item.id) === String(this.form.parentId))
         if (!parent) {
           this.form.parentId = 0
         }
+      }
+    },
+    handleQueryProjectChange() {
+      const variant = this.queryVariantOptions.find(item => String(item.variantId || item.id) === String(this.queryParams.variantId))
+      if (!variant) {
+        this.queryParams.variantId = undefined
       }
     },
     toggleExpandAll() {
@@ -399,6 +465,10 @@ export default {
     projectLabel(projectId) {
       const project = this.projectOptions.find(item => String(item.projectId || item.id) === String(projectId))
       return project ? project.projectName : projectId
+    },
+    variantLabel(variantId) {
+      const variant = this.variantOptions.find(item => String(item.variantId || item.id) === String(variantId))
+      return variant ? (variant.branchLabel || variant.variantName) : (variantId || "-")
     },
     optionLabel(options, value) {
       const option = options.find(item => item.value === String(value))
