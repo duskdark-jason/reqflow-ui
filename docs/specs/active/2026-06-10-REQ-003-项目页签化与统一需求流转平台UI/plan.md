@@ -21,10 +21,11 @@
 4. 初始化指令展示：在项目维护页和项目接入中心中把分支 `MCP Key` 列调整为“初始化指令”，展示复制按钮、token 前缀、安全提示和后端返回的指令内容，覆盖 AC-UI-003。
 5. 知识库详情页签：新增 `src/views/requirement/project/knowledge.vue`，按 `projectId + variantId` 加载项目初始化上下文、索引批次和模块知识，提供模块、页面、接口、表、权限、文档分区，覆盖 AC-UI-004。
 6. 项目接入中心整理：修改 `src/views/requirement/project/detail.vue`，取消项目分支表格 expand 详情，把知识库入口改为“查看知识库”页签按钮，并同步 MCP 索引指引文案，覆盖 AC-UI-003、AC-UI-004。
-7. 登录页视觉：修改 `src/views/login.vue` 和必要图片资源，制作浅色需求流转背景图或 CSS 背景，桌面端登录框右移，移动端居中，覆盖 AC-UI-005。
-8. 首页看板：重写 `src/views/index.vue`，复用 `src/api/requirement/statistics.js` 展示需求总览、执行资料状态、项目排行和活跃用户，覆盖 AC-UI-007。
-9. 品牌清理：修改 `.env.development`、`.env.production`、`.env.staging`、`vue.config.js`、`package.json`、`src/settings.js`、`src/layout/components/Navbar.vue`、`src/layout/components/Sidebar/Logo.vue` 等用户可见品牌信息，移除若依源码和文档入口，覆盖 AC-UI-006。
-10. Harness 更新：同步 `docs/ai-harness/contracts/requirement-platform-ui.md`、`docs/ai-harness/modules/requirement-platform.md` 和 `docs/domains/requirement-platform/README.md`，覆盖 AC-UI-008。
+7. 需求提交收束：修改 `src/views/requirement/demand/index.vue`，表单分支下拉读取项目初始化上下文并仅展示已初始化完成的分支，覆盖 AC-UI-009。
+8. 登录页视觉：修改 `src/views/login.vue` 和必要图片资源，制作浅色需求流转背景图或 CSS 背景，桌面端登录框右移，移动端居中，覆盖 AC-UI-005。
+9. 首页看板：重写 `src/views/index.vue`，复用 `src/api/requirement/statistics.js` 展示需求总览、执行资料状态、项目排行和活跃用户，覆盖 AC-UI-007。
+10. 品牌清理：修改 `.env.development`、`.env.production`、`.env.staging`、`vue.config.js`、`package.json`、`src/settings.js`、`src/layout/components/Navbar.vue`、`src/layout/components/Sidebar/Logo.vue` 等用户可见品牌信息，移除若依源码和文档入口，覆盖 AC-UI-006。
+11. Harness 更新：同步 `docs/ai-harness/contracts/requirement-platform-ui.md`、`docs/ai-harness/modules/requirement-platform.md` 和 `docs/domains/requirement-platform/README.md`，覆盖 AC-UI-008、AC-UI-009。
 
 ## 文件改动范围
 
@@ -37,6 +38,7 @@
 | 修改 | `src/views/requirement/project/detail.vue` | 移除表格展开详情，增加知识库页签入口和指令展示 |
 | 修改 | `src/views/login.vue` | 登录页浅色背景图和右移登录框 |
 | 修改 | `src/views/index.vue` | 后台首页改造为需求流转看板 |
+| 修改 | `src/views/requirement/demand/index.vue` | 新增和编辑需求时只允许选择已初始化完成的项目分支 |
 | 修改 | `.env.development`、`.env.production`、`.env.staging`、`vue.config.js`、`package.json`、`src/settings.js` | 系统名称和品牌信息 |
 | 修改 | `src/layout/components/Navbar.vue`、`src/layout/components/Sidebar/Logo.vue` | 移除若依入口，展示统一需求流转平台 |
 | 修改 | `docs/ai-harness/contracts/requirement-platform-ui.md` | 同步前端契约 |
@@ -54,9 +56,10 @@
 7. 修改项目接入中心，移除项目分支表格 expand 列，增加“查看知识库”和“复制初始化指令”按钮；模块知识库 tab 保留列表能力但不再作为唯一详情入口。
 8. 重写登录页视觉：浅色背景图可以先用 CSS 多层线性渐变和流程节点图案实现，桌面端 `.login` 使用 `justify-content: flex-end`，登录框右侧留白，移动端居中。
 9. 重写首页看板：复用统计 API，增加需求总览卡、执行资料漏斗、项目排行表、活跃用户表和近期行动入口；移除若依说明、外链和更新日志。
-10. 品牌清理：把 `VUE_APP_TITLE`、构建标题、页脚、包描述、导航右侧若依源码和文档入口替换为统一需求流转平台相关信息；不改底层 `src/utils/ruoyi.js` 文件名。
-11. 更新前端 harness 和领域文档，说明项目维护页签、指令字段、知识库详情页和品牌边界。
-12. 运行构建、文档检查和页面冒烟；页面冒烟至少覆盖桌面登录页、移动登录页、首页、项目管理、维护页、接入中心和知识库详情页。
+10. 修改需求表单分支选择：项目变更后读取 `/requirement/project/init/{projectId}`，只展示 `totalModules > 0`、`indexedRepositoryCount > 0` 且 `unindexedRepositoryCount = 0` 的项目分支；查询筛选继续保留全部分支。
+11. 品牌清理：把 `VUE_APP_TITLE`、构建标题、页脚、包描述、导航右侧若依源码和文档入口替换为统一需求流转平台相关信息；不改底层 `src/utils/ruoyi.js` 文件名。
+12. 更新前端 harness 和领域文档，说明项目维护页签、指令字段、知识库详情页、需求分支提交收束和品牌边界。
+13. 运行构建、文档检查和页面冒烟；页面冒烟至少覆盖桌面登录页、移动登录页、首页、项目管理、维护页、接入中心、知识库详情页和需求表单分支下拉。
 
 ## 验证计划
 
@@ -78,6 +81,7 @@
 | AC-UI-006 | 品牌清理 | 文案搜索、页面冒烟 |
 | AC-UI-007 | 首页看板 | 页面冒烟、统计接口联调 |
 | AC-UI-008 | Harness 更新 | `sh scripts/check-docs.sh` 和 harness 完成态检查 |
+| AC-UI-009 | 需求提交分支收束 | 页面冒烟、后端服务测试 |
 
 ## 执行约束
 

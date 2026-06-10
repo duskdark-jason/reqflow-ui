@@ -4,8 +4,10 @@
 
 已将项目维护从 dialog 改为 TagsView 页签，新增分支知识库详情页签，并把分支主展示字段从裸 `MCP Key` 调整为后端 `initInstruction.content` 初始化指令复制入口。登录页、后台首页、导航可见入口和构建标题已调整为“统一需求流转平台”的浅色需求管理风格。
 
+本次补充将需求新增/编辑表单的项目分支选择收束到已初始化完成的分支：表单按项目读取初始化上下文，只展示 `totalModules > 0`、`indexedRepositoryCount > 0` 且 `unindexedRepositoryCount = 0` 的分支；查询筛选仍保留全部分支，便于查历史需求。
+
 - 分支：`feature/REQ-20260610-003-project-tabs-ui`
-- 提交：`d555249`（feat: 项目维护页签化与平台视觉改造）、`967ec04`（fix: 移除项目接入中心残留维护弹窗）
+- 提交：`d555249`（feat: 项目维护页签化与平台视觉改造）、`967ec04`（fix: 移除项目接入中心残留维护弹窗）；本次补充提交待回填
 - Review 阶段：未授权，未写 Review 报告，未将 spec 切换为 complete
 
 ## 修改内容
@@ -17,8 +19,9 @@
 - `src/views/requirement/project/detail.vue`：移除分支表格展开详情，增加“知识库”页签入口和初始化指令复制按钮。
 - `src/views/login.vue`、`src/assets/images/login-reqflow-bg.jpg`：重做登录页背景图和右侧登录框。
 - `src/views/index.vue`：重写后台首页为需求流转看板。
+- `src/views/requirement/demand/index.vue`：新增/编辑需求的项目分支下拉改为从项目初始化上下文读取，只展示已初始化完成的分支，并在无可用分支时提示先完成初始化。
 - `.env.*`、`vue.config.js`、`package.json`、`src/settings.js`、`src/layout/components/Navbar.vue` 等：清理用户可见若依入口和系统标题。
-- `docs/ai-harness/**`、`docs/domains/**`：同步页签化、初始化指令、知识库详情和品牌契约。
+- `docs/ai-harness/**`、`docs/domains/**`：同步页签化、初始化指令、知识库详情、需求提交分支收束和品牌契约。
 
 ## 验收覆盖
 
@@ -32,6 +35,7 @@
 | AC-UI-006 | 通过。用户可见系统名、页脚、导航外链和模板说明已替换为统一需求流转平台语义；底层 `ruoyi` 工具文件名保留兼容。 |
 | AC-UI-007 | 通过。后台首页改为需求流转看板，复用统计接口展示总览、项目排行、活跃用户和快捷入口。 |
 | AC-UI-008 | 通过。前端 harness 和领域文档已同步本次页面、契约和验证路径变化。 |
+| AC-UI-009 | 通过。需求表单只展示已初始化完成的分支；无可用分支时显示先完成分支初始化提示。 |
 
 ## 验证记录
 

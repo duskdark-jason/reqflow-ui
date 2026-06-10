@@ -34,6 +34,7 @@
 - 分支知识库详情必须通过新页签展示，项目接入中心的分支表不再使用展开行承载知识库详情。
 - MCP 索引用 `actionToken + remoteUrl` 识别项目、分支和代码仓库；旧 `mcpKey + remoteUrl` 仅作为兼容路径。
 - 模块和知识库必须同时关联项目与项目分支。需求表单选择模块时按 `projectId + variantId` 过滤，项目接入中心的索引批次和模块知识库也按选中分支展示。
+- 新增和编辑需求的项目分支下拉只能展示已初始化完成的分支，数据来自项目初始化上下文的分支行级 `totalModules`、`indexedRepositoryCount` 和 `unindexedRepositoryCount`。需求列表查询筛选可以继续展示全部分支，避免历史需求不可检索。
 - 需求表单的影响面推荐只追加候选内容，不强制覆盖人工输入。
 - Agent 交接资料内容使用 textarea，不引入 Markdown 编辑器依赖。
 - Harness 初始化模板由需求平台存储和下发给 Codex；前端不直接写文件，后端不直接执行 Git 或文件系统写入。
