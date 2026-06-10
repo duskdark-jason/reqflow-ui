@@ -1,53 +1,5 @@
 <template>
   <div class="app-container mcp-key-page">
-    <div class="mcp-config">
-      <div class="config-item">
-        <span class="config-label">MCP地址</span>
-        <el-input v-model="mcpConfig.mcpAddress" size="small" readonly>
-          <el-button slot="append" icon="el-icon-document-copy" @click="copyText(mcpConfig.mcpAddress)">复制</el-button>
-        </el-input>
-      </div>
-      <div class="config-item header-item">
-        <span class="config-label">请求头</span>
-        <el-input v-model="mcpConfig.headerName" size="small" readonly>
-          <el-button slot="append" icon="el-icon-document-copy" @click="copyText(mcpConfig.headerName)">复制</el-button>
-        </el-input>
-      </div>
-      <div class="config-item config-snippet">
-        <span class="config-label">Codex配置</span>
-        <el-input
-          v-model="mcpConfig.codexConfigTemplate"
-          type="textarea"
-          :autosize="{ minRows: 4, maxRows: 8 }"
-          readonly
-        />
-      </div>
-      <div class="config-item config-snippet">
-        <span class="config-label">全局Skill包</span>
-        <el-input
-          :value="formatSkillPackage(mcpConfig.codexGlobalSkillPackage)"
-          type="textarea"
-          :autosize="{ minRows: 7, maxRows: 14 }"
-          readonly
-        />
-        <div class="copy-line">
-          <el-button size="mini" icon="el-icon-document-copy" @click="copyText(formatSkillPackage(mcpConfig.codexGlobalSkillPackage))">复制Skill包</el-button>
-        </div>
-      </div>
-      <div class="config-item config-snippet">
-        <span class="config-label">Codex安装包</span>
-        <el-input
-          :value="formatSkillPackage(mcpConfig.codexSetupPackage)"
-          type="textarea"
-          :autosize="{ minRows: 8, maxRows: 16 }"
-          readonly
-        />
-        <div class="copy-line">
-          <el-button size="mini" icon="el-icon-document-copy" @click="copyText(formatSkillPackage(mcpConfig.codexSetupPackage))">复制安装包</el-button>
-        </div>
-      </div>
-    </div>
-
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
       <el-form-item label="Key名称" prop="keyName">
         <el-input
@@ -227,27 +179,7 @@
       <div class="result-grid">
         <div class="result-field">
           <span class="config-label">明文Key</span>
-          <el-input v-model="createResult.plainKey" readonly>
-            <el-button slot="append" icon="el-icon-document-copy" @click="copyText(createResult.plainKey)">复制</el-button>
-          </el-input>
-        </div>
-        <div class="result-field">
-          <span class="config-label">Codex配置</span>
-          <el-input
-            v-model="createResult.codexConfig"
-            type="textarea"
-            :autosize="{ minRows: 7, maxRows: 12 }"
-            readonly
-          />
-        </div>
-        <div class="result-field">
-          <span class="config-label">全局Skill包</span>
-          <el-input
-            :value="formatSkillPackage(createResult.codexGlobalSkillPackage)"
-            type="textarea"
-            :autosize="{ minRows: 7, maxRows: 14 }"
-            readonly
-          />
+          <el-input v-model="createResult.plainKey" readonly />
         </div>
         <div class="result-field">
           <span class="config-label">Codex安装包</span>
@@ -260,8 +192,7 @@
         </div>
       </div>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" icon="el-icon-document-copy" @click="copyText(createResult.codexConfig)">复制配置</el-button>
-        <el-button icon="el-icon-document-copy" @click="copyText(formatSkillPackage(createResult.codexGlobalSkillPackage))">复制Skill包</el-button>
+        <el-button type="primary" icon="el-icon-document-copy" @click="copyText(createResult.plainKey)">复制Key</el-button>
         <el-button icon="el-icon-document-copy" @click="copyText(formatSkillPackage(createResult.codexSetupPackage))">复制安装包</el-button>
         <el-button @click="resultOpen = false">关 闭</el-button>
       </div>
@@ -270,7 +201,7 @@
 </template>
 
 <script>
-import { listMcpKey, getMcpKey, getMcpKeyConfig, listMcpKeyUserOptions, addMcpKey, updateMcpKey, regenerateMcpKey, delMcpKey } from "@/api/requirement/mcpKey"
+import { listMcpKey, getMcpKey, listMcpKeyUserOptions, addMcpKey, updateMcpKey, regenerateMcpKey, delMcpKey } from "@/api/requirement/mcpKey"
 
 export default {
   name: "RequirementMcpKey",
@@ -288,17 +219,8 @@ export default {
       title: "",
       open: false,
       resultOpen: false,
-      mcpConfig: {
-        mcpAddress: "",
-        headerName: "X-MCP-Key",
-        codexConfigTemplate: "",
-        codexGlobalSkillPackage: null,
-        codexSetupPackage: null
-      },
       createResult: {
         plainKey: "",
-        codexConfig: "",
-        codexGlobalSkillPackage: null,
         codexSetupPackage: null
       },
       statusOptions: [
@@ -327,16 +249,10 @@ export default {
     }
   },
   created() {
-    this.getConfig()
     this.getList()
     this.searchUsers("")
   },
   methods: {
-    getConfig() {
-      getMcpKeyConfig().then(response => {
-        this.mcpConfig = response.data || this.mcpConfig
-      })
-    },
     getList() {
       this.loading = true
       listMcpKey(this.queryParams).then(response => {
@@ -441,7 +357,7 @@ export default {
       }).catch(() => {})
     },
     showCreateResult(data) {
-      this.createResult = data || { plainKey: "", codexConfig: "", codexGlobalSkillPackage: null, codexSetupPackage: null }
+      this.createResult = data || { plainKey: "", codexSetupPackage: null }
       this.resultOpen = true
     },
     formatSkillPackage(skillPackage) {
@@ -504,24 +420,8 @@ export default {
   min-width: 0;
 }
 
-.mcp-config {
-  display: grid;
-  grid-template-columns: minmax(260px, 1.2fr) minmax(180px, 0.8fr);
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  background: #f8fafc;
-}
-
-.config-item,
 .result-field {
   min-width: 0;
-}
-
-.config-snippet {
-  grid-column: 1 / -1;
 }
 
 .config-label {
@@ -532,24 +432,8 @@ export default {
   line-height: 18px;
 }
 
-.copy-line {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
-
 .result-grid {
   display: grid;
   gap: 14px;
-}
-
-@media (max-width: 768px) {
-  .mcp-config {
-    grid-template-columns: 1fr;
-  }
-
-  .header-item {
-    grid-column: 1;
-  }
 }
 </style>
