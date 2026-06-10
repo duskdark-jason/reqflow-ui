@@ -34,6 +34,18 @@
           <el-button size="mini" icon="el-icon-document-copy" @click="copyText(formatSkillPackage(mcpConfig.codexGlobalSkillPackage))">复制Skill包</el-button>
         </div>
       </div>
+      <div class="config-item config-snippet">
+        <span class="config-label">Codex安装包</span>
+        <el-input
+          :value="formatSkillPackage(mcpConfig.codexSetupPackage)"
+          type="textarea"
+          :autosize="{ minRows: 8, maxRows: 16 }"
+          readonly
+        />
+        <div class="copy-line">
+          <el-button size="mini" icon="el-icon-document-copy" @click="copyText(formatSkillPackage(mcpConfig.codexSetupPackage))">复制安装包</el-button>
+        </div>
+      </div>
     </div>
 
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -237,10 +249,20 @@
             readonly
           />
         </div>
+        <div class="result-field">
+          <span class="config-label">Codex安装包</span>
+          <el-input
+            :value="formatSkillPackage(createResult.codexSetupPackage)"
+            type="textarea"
+            :autosize="{ minRows: 8, maxRows: 16 }"
+            readonly
+          />
+        </div>
       </div>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" icon="el-icon-document-copy" @click="copyText(createResult.codexConfig)">复制配置</el-button>
         <el-button icon="el-icon-document-copy" @click="copyText(formatSkillPackage(createResult.codexGlobalSkillPackage))">复制Skill包</el-button>
+        <el-button icon="el-icon-document-copy" @click="copyText(formatSkillPackage(createResult.codexSetupPackage))">复制安装包</el-button>
         <el-button @click="resultOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
@@ -270,12 +292,14 @@ export default {
         mcpAddress: "",
         headerName: "X-MCP-Key",
         codexConfigTemplate: "",
-        codexGlobalSkillPackage: null
+        codexGlobalSkillPackage: null,
+        codexSetupPackage: null
       },
       createResult: {
         plainKey: "",
         codexConfig: "",
-        codexGlobalSkillPackage: null
+        codexGlobalSkillPackage: null,
+        codexSetupPackage: null
       },
       statusOptions: [
         { value: "0", label: "正常", type: "success" },
@@ -417,7 +441,7 @@ export default {
       }).catch(() => {})
     },
     showCreateResult(data) {
-      this.createResult = data || { plainKey: "", codexConfig: "", codexGlobalSkillPackage: null }
+      this.createResult = data || { plainKey: "", codexConfig: "", codexGlobalSkillPackage: null, codexSetupPackage: null }
       this.resultOpen = true
     },
     formatSkillPackage(skillPackage) {
