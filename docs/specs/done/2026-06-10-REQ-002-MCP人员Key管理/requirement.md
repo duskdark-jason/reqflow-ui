@@ -88,4 +88,4 @@ MCP Key 列表一行代表一个人员 Key 管理记录：
 
 - 页面使用现有 RuoYi-Vue、Vue 2 和 Element UI，不引入新依赖。
 - MCP 地址优先使用后端 `/requirement/mcp/key/config` 返回值；如果后端只返回相对路径，前端按当前访问源和 `VUE_APP_BASE_API` 组合展示。
-- 系统用户选择可复用现有 `/system/user/list` 接口和权限；如执行阶段发现权限不足，应在计划内补充只读用户选择接口或调整为输入用户 ID。
+- 系统用户选择使用后端 MCP 管理接口 `/requirement/mcp/key/user-options`；前端不得调用 `/system/user/list`，避免要求 MCP 维护人员同时具备系统用户菜单权限。

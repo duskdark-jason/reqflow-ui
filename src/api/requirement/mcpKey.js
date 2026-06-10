@@ -25,6 +25,15 @@ export function getMcpKeyConfig() {
   })
 }
 
+// 查询MCP Key可绑定用户
+export function listMcpKeyUserOptions(query) {
+  return request({
+    url: '/requirement/mcp/key/user-options',
+    method: 'get',
+    params: query
+  })
+}
+
 // 新增MCP人员Key
 export function addMcpKey(data) {
   return request({

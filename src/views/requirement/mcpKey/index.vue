@@ -226,8 +226,7 @@
 </template>
 
 <script>
-import { listUser } from "@/api/system/user"
-import { listMcpKey, getMcpKey, getMcpKeyConfig, addMcpKey, updateMcpKey, regenerateMcpKey, delMcpKey } from "@/api/requirement/mcpKey"
+import { listMcpKey, getMcpKey, getMcpKeyConfig, listMcpKeyUserOptions, addMcpKey, updateMcpKey, regenerateMcpKey, delMcpKey } from "@/api/requirement/mcpKey"
 
 export default {
   name: "RequirementMcpKey",
@@ -302,11 +301,10 @@ export default {
     },
     searchUsers(keyword) {
       this.userLoading = true
-      listUser({
+      listMcpKeyUserOptions({
         pageNum: 1,
         pageSize: 20,
-        userName: keyword,
-        status: "0"
+        userName: keyword
       }).then(response => {
         this.userOptions = response.rows || response.data || []
         this.userLoading = false

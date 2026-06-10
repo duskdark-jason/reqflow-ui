@@ -85,8 +85,9 @@ harness_init_result
 - 菜单路径为 `requirement/mcpKey/index`，后端菜单脚本路径为 `mcp-key`，菜单权限为 `req:mcp:key:list`。
 - 页面顶部读取 `/requirement/mcp/key/config` 并展示 MCP 地址、请求头名 `X-MCP-Key` 和 Codex 配置模板。
 - 列表读取 `/requirement/mcp/key/list`，一行对应一个 `req_mcp_user_key`，只能展示 Key 名称、Key 前缀、绑定用户、状态、最近使用时间和最近 IP。
-- 新增时必须选择启用用户并填写 Key 名称；后端返回的 `plainKey` 和 `codexConfig` 只在结果弹窗中展示，前端不得把明文 Key 写入列表或查询参数。
-- 修改只用于 Key 名称、状态和备注；重置使用 `/requirement/mcp/key/{keyId}/regenerate`，重置后旧 Key 立即失效并弹出新的明文 Key。
+- 新增时通过 `/requirement/mcp/key/user-options` 查询可绑定用户，不调用 `/system/user/list`，避免要求 MCP 维护人员同时具备系统用户菜单权限。
+- 新增时必须选择启用用户并填写 Key 名称；后端返回的 `plainKey` 和 `codexConfig` 只在结果弹窗中展示，前端不得把明文 Key 写入列表、查询参数或本地持久化。
+- 修改只用于 Key 名称、状态和备注；前端禁用绑定用户选择，后端也会拒绝换绑；重置使用 `/requirement/mcp/key/{keyId}/regenerate`，重置后旧 Key 立即失效并弹出新的明文 Key。
 - 提需求人员角色默认不分配 `req:mcp:key:*` 权限，因此看不到菜单，也不能调用页面 API。
 
 ## 数据粒度
