@@ -40,6 +40,10 @@
 | L3 部分 | `npm_config_port=8081 npm run dev -- --host 127.0.0.1` | 沙箱内绑定端口失败：`listen EPERM: operation not permitted 0.0.0.0:8081`；经用户授权后在沙箱外启动成功，输出 `Compiled successfully` 和 `http://127.0.0.1:8081/` |
 | L3 部分 | `curl -I http://127.0.0.1:8081/` | 沙箱内连接失败；经用户授权后在沙箱外返回 `HTTP/1.1 200 OK` |
 
+## 提交记录
+
+- 提交：0724df3 `fix: 修复 MCP Key 用户选择权限边界`
+
 ## 未执行项
 
 - L3 页面服务只完成前端 dev server 和首页 HTTP 访问检查；未用浏览器打开菜单执行真实接口。本地未发现 Playwright 包或 CLI，未新增依赖做浏览器自动化。
