@@ -2,9 +2,9 @@
 
 ## 执行结论
 
-- 状态：已完成，待提交
+- 状态：已完成
 - 分支：feature/REQ-20260610-010-mcp-key-config-cleanup
-- commit：待提交后回填
+- commit：a620583d1276fe97b658c584b02812a828898cb2（主体实现提交；闭环文档回填见本分支最新提交）
 
 ## 修改摘要
 
@@ -45,7 +45,7 @@
 
 ## 运行态证据
 
-- 执行目录：`/Users/dusk/Projects/reqflow/reqflow-ui`
+- 执行目录：当前 `reqflow-ui` 子仓库根目录
 - 启动命令：`npm run dev -- --port 8081`
 - profile/env/mode：Vue dev server，API 代理默认指向 `http://localhost:8080`
 - 检查命令：Browser 打开 `http://localhost:8081/` 和 `http://localhost:8081/requirement/mcpKey`
