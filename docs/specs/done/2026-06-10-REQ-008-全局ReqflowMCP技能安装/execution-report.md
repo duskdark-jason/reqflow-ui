@@ -8,7 +8,7 @@
 - 新增或重置 MCP Key 后的结果弹窗新增“全局Skill包”只读展示和复制按钮。
 - 页面以格式化 JSON 展示后端返回的 `codexGlobalSkillPackage`，不拼接本机路径、不生成单一操作系统安装命令。
 
-提交：当前任务分支提交，最终 hash 见完成说明。
+提交：`f135bd1 feat: 展示全局 reqflow MCP skill 包`
 
 ## 修改文件
 
