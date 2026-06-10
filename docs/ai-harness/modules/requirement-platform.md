@@ -4,19 +4,31 @@
 
 本模块覆盖 `reqflow-ui/src/api/requirement/**` 和 `reqflow-ui/src/views/requirement/**`。页面基于 RuoYi-Vue、Vue 2 和 Element UI 实现，不引入新依赖。
 
-## 入口文件
+## 菜单与功能入口
 
-| 功能点 | 代码路径 |
-|---|---|
-| 项目管理 | `src/views/requirement/project/index.vue` |
-| 项目维护页签 | `src/views/requirement/project/maintain.vue` |
-| 项目接入中心 | `src/views/requirement/project/detail.vue` |
-| 分支知识库详情页签 | `src/views/requirement/project/knowledge.vue` |
-| 需求列表与提交 | `src/views/requirement/demand/index.vue`、`src/views/requirement/demand/detail.vue` |
-| Agent 交接资料 | `src/views/requirement/package/index.vue` |
-| MCP管理 | `src/views/requirement/mcpKey/index.vue` |
-| 使用统计 | `src/views/requirement/statistics/index.vue` |
-| API 封装 | `src/api/requirement/*.js` |
+| 菜单目录 | 子菜单/页面 | 功能说明 | 前端文件 | API 封装 | 后端接口与权限 | 后端核心文件 |
+|---|---|---|---|---|---|---|
+| 需求管理 | 项目管理 | 项目列表、项目维护入口、初始化状态和接入中心入口 | `src/views/requirement/project/index.vue`、`maintain.vue` | `src/api/requirement/project.js`、`projectInit.js` | `/requirement/project/**`，`req:project:*`；`/requirement/project/init/**`，`req:project:*` | `ReqProjectController`、`ReqProjectInitController`、`ReqProjectInitServiceImpl` |
+| 需求管理 | 项目接入中心 | 展示仓库、项目分支、索引批次、模块知识库和初始化指令 | `src/views/requirement/project/detail.vue` | `src/api/requirement/project.js`、`index.js` | `/requirement/project/init/{projectId}`，`req:project:query`；`/requirement/index/**`，`req:index:*` | `ReqProjectInitController`、`ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
+| 需求管理 | 分支知识库详情页签 | 按项目分支查看模块知识、索引批次和初始化指令 | `src/views/requirement/project/knowledge.vue` | `src/api/requirement/index.js`、`project.js` | `/requirement/index/module/tree`，`req:index:list`；`/requirement/index/batch/list`，`req:index:list` | `ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
+| 需求管理 | 需求列表 | 需求新增、编辑、查询、分支初始化校验和影响面推荐 | `src/views/requirement/demand/index.vue`、`detail.vue` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；`/requirement/index/impact/suggest`，`req:index:list` | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
+| 需求管理 | Agent 交接资料 | 查看和保存需求、计划、执行报告、Review 报告等 artifact | `src/views/requirement/package/index.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，`req:package:*` | `ReqPackageController`、`ReqPackageServiceImpl` |
+| 需求管理 | MCP 管理 | 管理人员 MCP Key、展示 MCP 地址和 Codex 配置片段 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqMcpController`、`McpService` |
+| 需求管理 | 使用统计 | 展示需求、项目、用户和状态统计 | `src/views/requirement/statistics/index.vue` | `src/api/requirement/statistics.js` | `/requirement/statistics/**`，`req:stats:view` | `ReqStatisticsController`、`ReqStatisticsService` |
+| 需求管理 | 隐藏兼容能力 | 仓库、项目分支、人工模块兼容 CRUD，不作为左侧菜单独立入口 | `src/views/requirement/repository/index.vue`、`variant/index.vue`、`module/index.vue` | `src/api/requirement/repository.js`、`variant.js`、`module.js` | `/requirement/repository/**`、`/requirement/variant/**`、`/requirement/module/**` | `ReqRepositoryController`、`ReqVariantController`、`ReqModuleController` |
+
+## 模块文件索引
+
+| 类型 | 优先查看文件 | 说明 |
+|---|---|---|
+| 路由入口 | `src/router/index.js` | 需求管理隐藏页签和页面路由。 |
+| 项目页面 | `src/views/requirement/project/*.vue` | 项目列表、维护页签、接入中心和分支知识库详情。 |
+| 需求页面 | `src/views/requirement/demand/*.vue` | 需求列表、新增、编辑和详情。 |
+| 交接资料 | `src/views/requirement/package/index.vue` | Agent artifact 保存和展示。 |
+| MCP 管理 | `src/views/requirement/mcpKey/index.vue` | 人员 MCP Key 管理。 |
+| 使用统计 | `src/views/requirement/statistics/index.vue` | 看板统计。 |
+| API 封装 | `src/api/requirement/*.js` | 与后端 `/requirement/**` 契约保持一致。 |
+| 后端契约 | `docs/ai-harness/contracts/requirement-platform-ui.md` | 前端请求、响应和 UI 状态约束。 |
 
 ## 不变量
 

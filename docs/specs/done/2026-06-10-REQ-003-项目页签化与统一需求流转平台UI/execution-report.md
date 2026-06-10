@@ -23,6 +23,13 @@
 - `.env.*`、`vue.config.js`、`package.json`、`src/settings.js`、`src/layout/components/Navbar.vue` 等：清理用户可见若依入口和系统标题。
 - `docs/ai-harness/**`、`docs/domains/**`：同步页签化、初始化指令、知识库详情、需求提交分支收束和品牌契约。
 
+## 模块知识库沉淀
+
+- 影响模块：需求管理/项目管理、需求管理/项目接入中心、需求管理/分支知识库详情、需求管理/需求列表、需求管理/MCP 管理、需求管理/使用统计。
+- 模块知识库动作：更新。
+- 模块知识库文档：`docs/ai-harness/modules/requirement-platform.md`。
+- 无需更新原因：不适用。
+
 ## 验收覆盖
 
 | 验收项 | 结果 |
