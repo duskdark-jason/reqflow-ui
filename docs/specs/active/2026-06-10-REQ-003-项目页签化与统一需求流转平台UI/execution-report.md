@@ -5,7 +5,7 @@
 已将项目维护从 dialog 改为 TagsView 页签，新增分支知识库详情页签，并把分支主展示字段从裸 `MCP Key` 调整为后端 `initInstruction.content` 初始化指令复制入口。登录页、后台首页、导航可见入口和构建标题已调整为“统一需求流转平台”的浅色需求管理风格。
 
 - 分支：`feature/REQ-20260610-003-project-tabs-ui`
-- 提交：待完成任务分支提交
+- 提交：`d555249`（feat: 项目维护页签化与平台视觉改造）
 - Review 阶段：未授权，未写 Review 报告，未将 spec 切换为 complete
 
 ## 修改内容
