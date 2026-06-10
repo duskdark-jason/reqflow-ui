@@ -7,7 +7,7 @@
 本次补充将需求新增/编辑表单的项目分支选择收束到已初始化完成的分支：表单按项目读取初始化上下文，只展示 `totalModules > 0`、`indexedRepositoryCount > 0` 且 `unindexedRepositoryCount = 0` 的分支；查询筛选仍保留全部分支，便于查历史需求。
 
 - 分支：`feature/REQ-20260610-003-project-tabs-ui`
-- 提交：`d555249`（feat: 项目维护页签化与平台视觉改造）、`967ec04`（fix: 移除项目接入中心残留维护弹窗）；本次补充提交待回填
+- 提交：`d555249`（feat: 项目维护页签化与平台视觉改造）、`967ec04`（fix: 移除项目接入中心残留维护弹窗）、`5134cd0`（feat: 收束需求表单分支选择）
 - Review 阶段：未授权，未写 Review 报告，未将 spec 切换为 complete
 
 ## 修改内容
