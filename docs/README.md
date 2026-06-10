@@ -37,5 +37,5 @@
 - 已完成但仍有参考价值的方案移入 `specs/done/`。
 - 重要技术或业务决策写入 `ai-harness/decisions/`。
 - 不要把个人本机路径、临时草稿和过期计划作为新需求默认入口。
-- Harness 初始化完成后运行 `sh scripts/check-harness.sh init`；Review Agent 完成审查后运行 `sh scripts/check-harness.sh review`；Execution Agent 完成返修和收尾后运行 `sh scripts/check-harness.sh complete`。
+- Harness 初始化完成后运行 `sh scripts/check-harness.sh init`；Review Agent 刚写完 `review-report.md`、尚未返修时运行 `sh scripts/check-harness.sh review` 作为中间交接检查；Execution Agent 完成返修、Review Agent 最终复审通过后，运行 `sh scripts/check-harness.sh complete`。
 - Windows 原生命令行可通过 `scripts\check-docs.cmd` 与 `scripts\check-harness.cmd init|review|complete` 调用 Git Bash；WSL 用户进入 WSL shell 后直接运行同名 `.sh`。

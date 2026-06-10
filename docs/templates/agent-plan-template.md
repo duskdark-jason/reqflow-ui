@@ -52,4 +52,4 @@
 - 如发现计划缺失、契约冲突或验证无法执行，停止实现并更新 `execution-report.md`。
 - 任务分支模式下，完成修改和验证后必须直接 commit，并在 `execution-report.md` 记录 commit、验证命令和结果；merge、push、rebase 仍需用户确认。
 - `execution-report.md` 必须记录模块知识库动作、模块文档路径和无需更新原因；新增或更新动作必须有实际 `docs/ai-harness/modules/*.md` 路径。
-- Execution Agent 不得自我 Review；进入 Review 必须有明确 Review 授权或独立 Review 请求。
+- Execution Agent 不得自我 Review；执行完成后默认自动交给 Review Agent 审查，发现 `RF-*` 后自动返修并复审，直到最终 Review 通过。

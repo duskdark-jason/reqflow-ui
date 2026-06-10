@@ -27,7 +27,7 @@
 - 检查通过后，必须基于当前开发基线分支创建 ASCII 任务分支，不得直接在基线分支开发。
 - 创建任务分支后，将需求详细设计和开发计划落地到 `docs/specs/active/YYYY-MM-DD-REQ-001-中文需求标题/`，再按计划执行开发。
 - 落地 `meta.md` 时必须记录需求平台返回的影响模块，并声明模块知识库动作。涉及菜单、页面、接口、权限、核心流程或数据口径时，必须更新 `docs/ai-harness/modules/*.md`。
-- 开发完成后进入自动 Review 循环：Review 阶段只读审查并写 `review-report.md`；发现 `RF-*` 后切回执行阶段修复并回填 `execution-report.md`，直到 Review 允许结束。
+- 开发完成后进入自动 Review 循环：Review 阶段只读审查并写 `review-report.md`；发现 `RF-*` 后自动切回执行阶段修复并回填 `execution-report.md`，再自动复审，直到最终 Review 结论为 `通过`。
 - 完成后通知开发人员确认；merge、push、rebase 或删除远端分支仍需明确授权。
 
 ## 模式三：项目接入初始化模式

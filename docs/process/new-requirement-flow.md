@@ -21,7 +21,8 @@
 - 用户描述问题、选择方案、确认方向或同意建议，只代表允许进入需求说明和计划阶段。
 - Plan Agent 可以据此完善 `requirement.md` 和 `plan.md`，但必须在计划完成后停止，不得自动开始实现。
 - 开始实现必须有明确执行授权，例如“开始执行”“按计划实现”“允许改代码”或“创建任务分支执行”。
-- 进入 Review 必须有明确 Review 授权或独立 Review 请求；Execution Agent 不得把自己的实现直接写成 Review 完成。
+- 明确执行授权默认包含执行完成后的自动 Review、自动返修和复审循环；用户明确要求只执行不 Review 时除外。
+- Execution Agent 不得把自己的实现直接写成 Review 完成；自动 Review 必须切换到 Review Agent 或等价的独立审查角色。
 - 新需求执行不使用 worktree，必须从目标基线分支创建 ASCII 任务分支；当前分支为 `main` 或 `master` 时，除只读分析和明确的小文档修正外，不得开始功能实现。
 - 当前需求平台自身建设阶段，可以不通过 MCP 回写设计文档，但必须在本地 `docs/specs` 按阶段记录；后期平台自举接入后，默认改走需求平台 Key 流程。
 
@@ -60,9 +61,9 @@ docs/specs/active/YYYY-MM-DD-REQ-001-中文需求标题/
 ## 3. 多 Agent 协作入口
 
 - 计划阶段：由 Plan Agent 输出 `requirement.md` 和 `plan.md`，锁定目标、契约、验证计划和不做范围。
-- 执行阶段：由 Execution Agent 按 `plan.md` 实现并写 `execution-report.md`，不得自行扩大范围。
+- 执行阶段：由 Execution Agent 按 `plan.md` 实现并写 `execution-report.md`，不得自行扩大范围；完成验证后自动把 `meta.md` 切到 `review`，填写 `Review 授权：已授权`，交给 Review Agent。
 - 审查阶段：由 Review Agent 只读审查并写 `review-report.md`，结论为 `通过`、`有条件通过` 或 `阻断`。
-- 返修阶段：Review Agent 产生 `RF-*` 后停止交接；Execution Agent 返修并在 `execution-report.md` 回填同 ID 的 `Review 返修记录`；Review Agent 再复审。
+- 返修阶段：Review Agent 产生 `RF-*` 后自动回到 Execution Agent；Execution Agent 返修并在 `execution-report.md` 回填同 ID 的 `Review 返修记录`；Review Agent 再复审。循环持续到最终 Review 结论为 `通过`。
 - 任一阶段发现计划缺失、契约冲突或验证无法执行，必须回到计划阶段补齐文件。
 - 阶段切换必须更新 `meta.md`，并记录执行模式、执行授权和 Review 授权状态。
 
@@ -123,7 +124,7 @@ sh scripts/check-docs.sh
 sh scripts/check-harness.sh complete
 ```
 
-Review Agent 刚写完 `review-report.md`、尚未返修时，运行 `sh scripts/check-harness.sh review`；完成态或准备移入 `specs/done/` 前，运行 `sh scripts/check-harness.sh complete`。
+Review Agent 刚写完 `review-report.md`、尚未返修时，运行 `sh scripts/check-harness.sh review` 作为中间交接检查；完成态或准备移入 `specs/done/` 前，运行 `sh scripts/check-harness.sh complete`，此时最终 Review 必须为 `通过`。
 
 ## 8. 完成沉淀
 

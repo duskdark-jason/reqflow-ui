@@ -60,7 +60,7 @@
 
 ## Review 返修记录
 
-Review Agent 未产生返修项时填写“无”。
+Review Agent 未产生返修项时填写“无”。如 Review 产生 `RF-*`，Execution Agent 必须逐项返修、回填同 ID 处理结果和验证命令，然后自动交回 Review Agent 复审，直到最终 Review 通过。
 
 | 修复 ID | 关联验收 ID | 处理结果 | 修改文件 | 验证命令 | 结果 |
 |---|---|---|---|---|---|

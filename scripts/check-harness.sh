@@ -316,7 +316,7 @@ check_repair_handoff() {
     fail "Review 结论必须是通过/有条件通过/阻断：$review_file"
   fi
 
-  if grep -E '结论：.*(阻断|有条件通过)' "$review_file" >/dev/null 2>&1; then
+  if grep -E '结论[：:].*(阻断|有条件通过)' "$review_file" >/dev/null 2>&1; then
     check_pattern "$review_file" '返修交接清单' "Review 报告缺少返修交接清单"
     check_pattern "$review_file" 'RF-[0-9][0-9][0-9]' "Review 报告缺少返修 ID"
   fi
@@ -325,9 +325,9 @@ check_repair_handoff() {
     return
   fi
 
-  if grep -E '结论：.*阻断' "$review_file" >/dev/null 2>&1 &&
-     ! grep -E '(复审结论|最终结论|用户接受).*(通过|有条件通过)' "$review_file" >/dev/null 2>&1; then
-    fail "Review 结论仍为阻断，不能进入完成态：$review_file"
+  if grep -E '结论[：:].*(阻断|有条件通过)' "$review_file" >/dev/null 2>&1 &&
+     ! grep -E '(复审结论|最终结论)[：:][[:space:]]*通过' "$review_file" >/dev/null 2>&1; then
+    fail "Review 结论未最终通过，不能进入完成态：$review_file"
   fi
 
   repair_ids=$(grep -Eo 'RF-[0-9][0-9][0-9]' "$review_file" 2>/dev/null | sort -u || true)
