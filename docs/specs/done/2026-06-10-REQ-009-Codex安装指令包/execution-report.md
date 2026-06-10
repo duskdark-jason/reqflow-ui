@@ -9,7 +9,7 @@
 - 页面以格式化 JSON 展示后端返回的 `codexSetupPackage`，不拼接本机路径、不向安装包追加明文 Key 或一次性 `actionToken`。
 - 保留原 MCP 地址、请求头、Codex 配置和全局 Skill 包展示。
 
-提交：当前任务分支提交，最终 hash 见完成说明。
+提交：`76a7b24 feat: 展示codex安装指令包`。
 
 ## 修改文件
 
