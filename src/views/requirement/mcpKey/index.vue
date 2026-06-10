@@ -22,6 +22,18 @@
           readonly
         />
       </div>
+      <div class="config-item config-snippet">
+        <span class="config-label">全局Skill包</span>
+        <el-input
+          :value="formatSkillPackage(mcpConfig.codexGlobalSkillPackage)"
+          type="textarea"
+          :autosize="{ minRows: 7, maxRows: 14 }"
+          readonly
+        />
+        <div class="copy-line">
+          <el-button size="mini" icon="el-icon-document-copy" @click="copyText(formatSkillPackage(mcpConfig.codexGlobalSkillPackage))">复制Skill包</el-button>
+        </div>
+      </div>
     </div>
 
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -216,9 +228,19 @@
             readonly
           />
         </div>
+        <div class="result-field">
+          <span class="config-label">全局Skill包</span>
+          <el-input
+            :value="formatSkillPackage(createResult.codexGlobalSkillPackage)"
+            type="textarea"
+            :autosize="{ minRows: 7, maxRows: 14 }"
+            readonly
+          />
+        </div>
       </div>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" icon="el-icon-document-copy" @click="copyText(createResult.codexConfig)">复制配置</el-button>
+        <el-button icon="el-icon-document-copy" @click="copyText(formatSkillPackage(createResult.codexGlobalSkillPackage))">复制Skill包</el-button>
         <el-button @click="resultOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
@@ -247,11 +269,13 @@ export default {
       mcpConfig: {
         mcpAddress: "",
         headerName: "X-MCP-Key",
-        codexConfigTemplate: ""
+        codexConfigTemplate: "",
+        codexGlobalSkillPackage: null
       },
       createResult: {
         plainKey: "",
-        codexConfig: ""
+        codexConfig: "",
+        codexGlobalSkillPackage: null
       },
       statusOptions: [
         { value: "0", label: "正常", type: "success" },
@@ -393,8 +417,12 @@ export default {
       }).catch(() => {})
     },
     showCreateResult(data) {
-      this.createResult = data || { plainKey: "", codexConfig: "" }
+      this.createResult = data || { plainKey: "", codexConfig: "", codexGlobalSkillPackage: null }
       this.resultOpen = true
+    },
+    formatSkillPackage(skillPackage) {
+      if (!skillPackage) return ""
+      return JSON.stringify(skillPackage, null, 2)
     },
     copyText(text) {
       if (!text) return
@@ -478,6 +506,12 @@ export default {
   color: #606266;
   font-size: 13px;
   line-height: 18px;
+}
+
+.copy-line {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
 
 .result-grid {
