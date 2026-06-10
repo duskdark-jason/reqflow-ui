@@ -13,7 +13,7 @@
 | 需求管理 | 分支知识库详情页签 | 按项目分支查看模块知识、索引批次和初始化指令 | `src/views/requirement/project/knowledge.vue` | `src/api/requirement/index.js`、`project.js` | `/requirement/index/module/tree`，`req:index:list`；`/requirement/index/batch/list`，`req:index:list` | `ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
 | 需求管理 | 需求列表 | 需求新增、编辑、查询、分支初始化校验和影响面推荐 | `src/views/requirement/demand/index.vue`、`detail.vue` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；`/requirement/index/impact/suggest`，`req:index:list` | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
 | 需求管理 | Agent 交接资料 | 查看和保存需求、计划、执行报告、Review 报告等 artifact | `src/views/requirement/package/index.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，`req:package:*` | `ReqPackageController`、`ReqPackageServiceImpl` |
-| 需求管理 | MCP 管理 | 管理人员 MCP Key，创建或重置后复制一次性 Key 和 Codex 安装包 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqMcpController`、`McpService` |
+| 需求管理 | MCP 管理 | 管理人员 MCP Key，创建或重置后复制一次性 Key 和多平台 Codex 安装命令 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`/requirement/codex/install.*`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqCodexInstallController`、`ReqMcpController`、`McpService` |
 | 需求管理 | 使用统计 | 展示需求、项目、用户和状态统计 | `src/views/requirement/statistics/index.vue` | `src/api/requirement/statistics.js` | `/requirement/statistics/**`，`req:stats:view` | `ReqStatisticsController`、`ReqStatisticsService` |
 | 需求管理 | 隐藏兼容能力 | 仓库、项目分支、人工模块兼容 CRUD，不作为左侧菜单独立入口 | `src/views/requirement/repository/index.vue`、`variant/index.vue`、`module/index.vue` | `src/api/requirement/repository.js`、`variant.js`、`module.js` | `/requirement/repository/**`、`/requirement/variant/**`、`/requirement/module/**` | `ReqRepositoryController`、`ReqVariantController`、`ReqModuleController` |
 
@@ -45,6 +45,7 @@
 - 项目分支维护中文标签、真实分支名和后端生成的初始化指令；指令复制内容必须来自 `initInstruction.content`，包含简短提示词和 `actionToken`，旧 `mcpKey` 只作为兼容降级展示。
 - 分支知识库详情必须通过新页签展示，项目接入中心的分支表不再使用展开行承载知识库详情。
 - MCP 索引用 `actionToken + remoteUrl` 识别项目、分支和代码仓库；旧 `mcpKey + remoteUrl` 仅作为兼容路径。
+- MCP 管理创建或重置 Key 后，结果弹窗必须优先展示 `codexSetupPackage.installCommands` 的多平台代码块命令；前端只在当前页面会话内把一次性 `plainKey` 填入命令并允许重复打开复制，刷新后不得恢复明文 Key。完整 JSON 安装包只作为高级配置/调试信息。
 - 模块和知识库必须同时关联项目与项目分支。需求表单选择模块时按 `projectId + variantId` 过滤，项目接入中心的索引批次和模块知识库也按选中分支展示。
 - 新增和编辑需求的项目分支下拉只能展示已初始化完成的分支，数据来自项目初始化上下文的分支行级 `totalModules`、`indexedRepositoryCount` 和 `unindexedRepositoryCount`。需求列表查询筛选可以继续展示全部分支，避免历史需求不可检索。
 - 需求表单的影响面推荐只追加候选内容，不强制覆盖人工输入。

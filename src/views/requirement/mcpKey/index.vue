@@ -68,6 +68,16 @@
           v-hasPermi="['req:mcp:key:remove']"
         >删除</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          v-if="lastInstallResult && lastInstallResult.plainKey"
+          type="info"
+          plain
+          icon="el-icon-document-copy"
+          size="mini"
+          @click="reopenInstallCommands"
+        >重新打开安装命令</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -175,25 +185,47 @@
       </div>
     </el-dialog>
 
-    <el-dialog title="MCP Key" :visible.sync="resultOpen" width="720px" append-to-body>
+    <el-dialog title="MCP Key" :visible.sync="resultOpen" width="860px" append-to-body>
       <div class="result-grid">
         <div class="result-field">
           <span class="config-label">明文Key</span>
           <el-input v-model="createResult.plainKey" readonly />
         </div>
         <div class="result-field">
-          <span class="config-label">Codex安装包</span>
-          <el-input
-            :value="formatSkillPackage(createResult.codexSetupPackage)"
-            type="textarea"
-            :autosize="{ minRows: 8, maxRows: 16 }"
-            readonly
-          />
+          <span class="config-label">Codex安装命令</span>
+          <div class="install-command-list">
+            <div
+              v-for="command in renderedInstallCommands"
+              :key="command.platform"
+              class="install-command-card"
+            >
+              <div class="install-command-header">
+                <div>
+                  <span class="install-command-title">{{ command.label }}</span>
+                  <el-tag size="mini" type="info">{{ command.language }}</el-tag>
+                </div>
+                <el-button size="mini" icon="el-icon-document-copy" @click="copyInstallCommand(command)">复制命令</el-button>
+              </div>
+              <pre class="markdown-code-block"><code>{{ command.renderedCommand }}</code></pre>
+            </div>
+          </div>
         </div>
+        <el-collapse class="advanced-install-package">
+          <el-collapse-item title="高级配置/调试信息" name="setup-package">
+            <el-input
+              :value="formatSkillPackage(createResult.codexSetupPackage)"
+              type="textarea"
+              :autosize="{ minRows: 6, maxRows: 12 }"
+              readonly
+            />
+            <div class="copy-line">
+              <el-button size="mini" icon="el-icon-document-copy" @click="copyText(formatSkillPackage(createResult.codexSetupPackage))">复制高级配置</el-button>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
       </div>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" icon="el-icon-document-copy" @click="copyText(createResult.plainKey)">复制Key</el-button>
-        <el-button icon="el-icon-document-copy" @click="copyText(formatSkillPackage(createResult.codexSetupPackage))">复制安装包</el-button>
         <el-button @click="resultOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
@@ -223,6 +255,7 @@ export default {
         plainKey: "",
         codexSetupPackage: null
       },
+      lastInstallResult: null,
       statusOptions: [
         { value: "0", label: "正常", type: "success" },
         { value: "1", label: "停用", type: "info" }
@@ -251,6 +284,11 @@ export default {
   created() {
     this.getList()
     this.searchUsers("")
+  },
+  computed: {
+    renderedInstallCommands() {
+      return this.installCommandsFor(this.createResult)
+    }
   },
   methods: {
     getList() {
@@ -358,7 +396,32 @@ export default {
     },
     showCreateResult(data) {
       this.createResult = data || { plainKey: "", codexSetupPackage: null }
+      if (this.createResult.plainKey) {
+        this.lastInstallResult = JSON.parse(JSON.stringify(this.createResult))
+      }
       this.resultOpen = true
+    },
+    reopenInstallCommands() {
+      if (!this.lastInstallResult || !this.lastInstallResult.plainKey) return
+      this.createResult = JSON.parse(JSON.stringify(this.lastInstallResult))
+      this.resultOpen = true
+    },
+    installCommandsFor(result) {
+      const setupPackage = result && result.codexSetupPackage
+      const commands = setupPackage && Array.isArray(setupPackage.installCommands) ? setupPackage.installCommands : []
+      return commands.map(command => {
+        return Object.assign({}, command, {
+          renderedCommand: this.renderInstallCommand(command.command, result.plainKey)
+        })
+      })
+    },
+    renderInstallCommand(command, plainKey) {
+      if (!command) return ""
+      return command.replace(/\$\{REQFLOW_MCP_KEY\}/g, plainKey || "创建或重置后返回的Key")
+    },
+    copyInstallCommand(command) {
+      if (!command) return
+      this.copyText(command.renderedCommand || "")
     },
     formatSkillPackage(skillPackage) {
       if (!skillPackage) return ""
@@ -435,5 +498,53 @@ export default {
 .result-grid {
   display: grid;
   gap: 14px;
+}
+
+.install-command-list {
+  display: grid;
+  gap: 12px;
+}
+
+.install-command-card {
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.install-command-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.install-command-title {
+  margin-right: 8px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.markdown-code-block {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  color: #dcdfe6;
+  background: #202124;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.advanced-install-package {
+  border-top: none;
+}
+
+.copy-line {
+  margin-top: 8px;
+  text-align: right;
 }
 </style>
