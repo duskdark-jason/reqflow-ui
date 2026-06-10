@@ -46,48 +46,14 @@
 
         <el-tab-pane label="项目分支" name="variants">
           <el-table :data="variants" size="small" row-key="variantId">
-            <el-table-column type="expand" width="42">
-              <template slot-scope="scope">
-                <div class="branch-detail-panel">
-                  <el-row :gutter="12">
-                    <el-col :span="6">
-                      <div class="branch-stat">
-                        <span>模块总数</span>
-                        <strong>{{ scope.row.totalModules || 0 }}</strong>
-                      </div>
-                    </el-col>
-                    <el-col :span="6">
-                      <div class="branch-stat">
-                        <span>索引模块</span>
-                        <strong>{{ scope.row.indexedModules || 0 }}</strong>
-                      </div>
-                    </el-col>
-                    <el-col :span="6">
-                      <div class="branch-stat">
-                        <span>已索引仓库</span>
-                        <strong>{{ scope.row.indexedRepositoryCount || 0 }}</strong>
-                      </div>
-                    </el-col>
-                    <el-col :span="6">
-                      <div class="branch-stat">
-                        <span>未索引仓库</span>
-                        <strong>{{ scope.row.unindexedRepositoryCount || 0 }}</strong>
-                      </div>
-                    </el-col>
-                  </el-row>
-                  <el-table :data="branchModules(scope.row)" size="mini" class="mt12" empty-text="该分支暂无模块知识">
-                    <el-table-column label="模块名称" prop="moduleName" min-width="160" />
-                    <el-table-column label="模块编码" prop="moduleCode" min-width="140" />
-                    <el-table-column label="仓库范围" prop="repoScope" width="110" />
-                    <el-table-column label="相对路径" prop="relativePath" min-width="220" :show-overflow-tooltip="true" />
-                  </el-table>
-                </div>
-              </template>
-            </el-table-column>
             <el-table-column label="分支标签" prop="variantName" min-width="160" />
             <el-table-column label="分支编码" prop="variantCode" min-width="130" />
             <el-table-column label="真实分支" prop="baselineBranch" min-width="140" />
-            <el-table-column label="MCP Key" prop="mcpKey" min-width="170" :show-overflow-tooltip="true" />
+            <el-table-column label="初始化指令" min-width="180">
+              <template slot-scope="scope">
+                <el-button type="text" icon="el-icon-document-copy" @click="copyInstruction(scope.row)">复制指令</el-button>
+              </template>
+            </el-table-column>
             <el-table-column label="模块" width="90" align="center">
               <template slot-scope="scope">
                 <el-tag size="mini" :type="(scope.row.totalModules || 0) > 0 ? 'success' : 'warning'">
@@ -98,12 +64,17 @@
             <el-table-column label="分支策略" prop="branchPolicy" min-width="140">
               <template slot-scope="scope">{{ optionLabel(branchPolicyOptions, scope.row.branchPolicy) }}</template>
             </el-table-column>
+            <el-table-column label="操作" width="120" align="center">
+              <template slot-scope="scope">
+                <el-button type="text" icon="el-icon-notebook-2" @click="openKnowledge(scope.row)">知识库</el-button>
+              </template>
+            </el-table-column>
           </el-table>
         </el-tab-pane>
 
         <el-tab-pane label="MCP 索引" name="index">
           <el-alert
-            title="本地 Codex 或索引 Agent 读取本机仓库后，通过 MCP tool publish_repository_index 推送结果。平台用 MCP key 识别项目分支，用 Git 地址识别仓库。"
+            title="本地 Codex 或索引 Agent 读取本机仓库后，通过 MCP tool publish_repository_index 推送结果。平台用初始化指令中的动作 token 识别项目分支和目标接口，用 Git 地址识别仓库。"
             type="info"
             show-icon
             :closable="false"
@@ -362,7 +333,8 @@ export default {
         return "- " + repo.repoName + "，" + repo.repoType + "，" + repo.repoUrl
       }).join("\n")
       const branchLines = this.variants.map(branch => {
-        return "- mcpKey=" + (branch.mcpKey || "-") + "，" + branch.variantName + "，" + branch.baselineBranch
+        const token = branch.initInstruction && (branch.initInstruction.tokenPrefix || branch.initInstruction.token)
+        return "- actionToken=" + (token ? token + "..." : (branch.mcpKey || "-")) + "，" + branch.variantName + "，" + branch.baselineBranch
       }).join("\n")
       return [
         "MCP tool: publish_repository_index",
@@ -373,7 +345,8 @@ export default {
         repoLines || "- 暂无仓库，请先在项目管理中维护代码仓库。",
         "",
         "上传要求：",
-        "- 优先传 mcpKey 和 remoteUrl；平台会自动解析项目、分支和仓库。",
+        "- 优先复制分支初始化指令，MCP 会从 actionToken 解析项目、分支和目标接口。",
+        "- 上传索引时传 actionToken 和 remoteUrl；平台会自动解析项目、分支和仓库。",
         "- 兼容旧方式传 projectId、repoId 和 branchName。",
         "- commitHash 使用当前仓库提交号。",
         "- pages/apis/tables/permissions/documents 中只能写相对路径和结构化标识。",
@@ -502,6 +475,46 @@ export default {
     branchModules(row) {
       if (!row || !row.variantId) return []
       return this.allIndexModules.filter(item => String(item.variantId) === String(row.variantId))
+    },
+    openKnowledge(row) {
+      if (!row || !row.variantId) return
+      const title = (row.branchLabel || row.variantName || "分支") + "知识库"
+      this.$tab.openPage(title, "/requirement/project/knowledge", { projectId: this.projectId, variantId: row.variantId })
+    },
+    instructionContent(row) {
+      if (!row) return ""
+      if (row.initInstruction && row.initInstruction.content) {
+        return row.initInstruction.content
+      }
+      if (row.mcpKey) {
+        return "请执行项目分支初始化，调用 publish_repository_index 发布当前仓库索引。\nactionToken: " + row.mcpKey
+      }
+      return ""
+    },
+    copyInstruction(row) {
+      const content = this.instructionContent(row)
+      if (!content) {
+        this.$modal.msgWarning("当前分支还没有初始化指令")
+        return
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(content).then(() => {
+          this.$modal.msgSuccess("复制成功")
+        }).catch(() => this.copyByTextarea(content))
+      } else {
+        this.copyByTextarea(content)
+      }
+    },
+    copyByTextarea(content) {
+      const textarea = document.createElement("textarea")
+      textarea.value = content
+      textarea.style.position = "fixed"
+      textarea.style.left = "-9999px"
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand("copy")
+      document.body.removeChild(textarea)
+      this.$modal.msgSuccess("复制成功")
     },
     variantLabel(variantId) {
       const variant = this.variants.find(item => String(item.variantId) === String(variantId))
