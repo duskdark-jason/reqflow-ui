@@ -14,7 +14,7 @@
 | `variant.js` | `/requirement/variant` | 项目分支内部兼容查询 |
 | `module.js` | `/requirement/module` | 人工模块兼容接口，左侧菜单不再暴露 |
 | `index.js` | `/requirement/index` | 仓库索引批次、模块知识和影响面推荐 |
-| `demand.js` | `/requirement/demand` | 需求列表、维护页签、详情、保存和状态流转 |
+| `demand.js` | `/requirement/demand` | 需求列表、维护页签、详情、保存、状态流转和 MCP 编排指令 |
 | `package.js` | `/requirement/package` | Agent 交接资料列表、最新版本、保存新版本和生成草稿资料 |
 | `statistics.js` | `/requirement/statistics` | 使用统计 |
 | `harness.js` | `/requirement/project/*/harness-*` | 项目接入 harness 模板包查询和初始化结果登记 |
@@ -58,12 +58,28 @@
 - 分支知识库页签必须支持按项目分支筛选索引批次和模块知识库。模块知识库展示行必须有 `variantId`，分支为空的数据只能作为待迁移旧数据处理，不应默认混入选中分支。
 - 当后端 companion 因部分迁移库缺少可选索引表而返回空索引批次或空模块知识库时，项目维护和分支知识库页签必须继续展示项目、仓库和项目分支，把索引内容视为“暂无数据”，不能误判为初始化完成。
 - MCP 索引指引优先使用 `actionToken + remoteUrl` 调用 `publish_repository_index`，兼容旧的 `mcpKey + remoteUrl` 和 `projectId + repoId + branchName` 调用方式。
-- 新建或编辑需求时，列表页只打开 `/requirement/demand/maintain` 隐藏页签，不在列表页弹出维护 dialog。新增页签不展示需求编号，修改页签可只读展示后端已生成的编号。
+- 新建或编辑需求时，列表页只打开 `/requirement/demand/maintain` 隐藏页签，不在列表页弹出维护 dialog。新增页签不展示需求编号和创建人 ID；修改页签用文本展示后端已生成的编号，不使用 input 只读框。
 - 需求维护页签选择项目、项目分支和模块后调用 `/requirement/index/impact/suggest`，模块下拉必须按 `projectId + variantId` 过滤，优先读取 `/requirement/index/module/tree` 的知识库模块，并兼容人工模块；请求携带 `projectId`、`variantId`、`moduleId`、`moduleCode`；后端按所选项目分支和最新索引批次返回 `pages`、`apis`、`tables`、`permissions`、`documents` 五类候选影响面。
 - 新建或编辑需求时，项目分支下拉必须读取 `/requirement/project/init/{projectId}` 的分支初始化上下文，只展示已初始化完成的项目分支。前端已初始化口径与后端兜底一致：分支 `indexedRepositoryCount > 0` 且 `unindexedRepositoryCount = 0`；新功能提需允许当前分支暂时没有既有模块知识，查询筛选可以保留历史分支用于查老需求，但提交表单不能选择未初始化分支。
 - 需求维护页签允许不选择既有模块，改为填写新功能名称；新功能名称通过需求备注兼容提交，用于列表、详情和执行包上下文展示，不写入项目分支知识库。
+- 需求维护页签保存 payload 必须删除 `demandNo`、`creatorId` 和 `status`，避免客户端伪造编号、创建人或绕过状态机。后端新增默认 `draft`，普通编辑只允许创建人修改 `draft` 需求。
 - 影响范围字段不在需求维护页签和需求详情页展示。保存前由前端按知识库推荐自动填充后端影响字段；没有推荐内容时提交空值，不阻断需求保存。
 - 前端不得向后端提交个人本机绝对路径；本地仓库目录只允许作为用户本次操作中的临时输入。
+
+## 需求状态与详情契约
+
+- 需求列表和详情复用 `src/views/requirement/demand/status.js` 中的状态定义和按钮定义，避免文案分叉。
+- 新主状态文案为：`draft=未提交`、`submitted=待生成需求说明、执行计划`、`plan_ready=资料待确认`、`confirmed=待执行开发`、`developing=开发中`、`review=待验收`、`completed=已完成`。
+- 兼容状态文案为：`plan_pending=资料生成中`、`repairing=返修中`、`archived=已归档`。
+- 列表操作列只保留详情、可编辑草稿的修改按钮和当前状态的下一步按钮，不展示 Agent 资料入口。
+- 详情页在 `submitted`、`plan_pending` 或 `plan_ready` 状态可调用 `/requirement/demand/{demandId}/plan-instruction` 获取复制内容；复制内容由后端生成，前端不得拼接 actionToken。
+- 详情页读取 `/requirement/package/{demandId}/requirement/latest` 和 `/requirement/package/{demandId}/plan/latest` 展示最新需求设计和执行方案；没有资料时展示空状态，不阻断页面打开。
+
+## 标签页与布局契约
+
+- 后台布局固定为浅色左侧菜单，`sideTheme=theme-light`、`navType=1`；前端不得在用户菜单中展示布局设置入口。
+- `layout-setting` 中历史保存的 `sideTheme` 和 `navType` 不得覆盖固定布局，其余 tagsView、字号、主题色等低风险偏好可继续沿用。
+- 隐藏页签通过 `parentPath`、`backPath` 或路由 `meta.activeMenu` 记录父菜单；调用 `$tab.closePage()` 时优先跳回父菜单，再退回最后打开标签。
 
 ## 统一品牌与看板契约
 

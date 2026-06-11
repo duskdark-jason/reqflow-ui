@@ -42,3 +42,11 @@ export function updateDemandStatus(demandId, status) {
     method: 'post'
   })
 }
+
+// 获取生成需求说明和执行计划的 MCP 编排指令
+export function getDemandPlanInstruction(demandId) {
+  return request({
+    url: '/requirement/demand/' + demandId + '/plan-instruction',
+    method: 'get'
+  })
+}

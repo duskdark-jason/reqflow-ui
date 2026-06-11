@@ -110,20 +110,19 @@
       <el-table-column label="模块" align="center" min-width="130" :show-overflow-tooltip="true">
         <template slot-scope="scope">{{ demandModuleLabel(scope.row) }}</template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status" width="120">
+      <el-table-column label="状态" align="center" prop="status" width="190">
         <template slot-scope="scope">
           <el-tag :type="demandStatusTagType(scope.row.status)" size="mini">
             {{ optionLabel(demandStatusOptions, scope.row.status) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建人" align="center" prop="creatorId" width="100" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="260">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -133,34 +132,22 @@
             v-hasPermi="['req:demand:query']"
           >详情</el-button>
           <el-button
+            v-if="canEditDemand(scope.row)"
             size="mini"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['req:demand:edit']"
           >修改</el-button>
-          <el-dropdown
-            size="mini"
-            @command="command => handleStatusCommand(command, scope.row)"
-            v-hasPermi="['req:demand:edit']"
-          >
-            <el-button size="mini" type="text" icon="el-icon-refresh">状态</el-button>
-            <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item
-                v-for="item in nextStatusOptions(scope.row.status)"
-                :key="item.value"
-                :command="item.value"
-              >{{ item.label }}</el-dropdown-item>
-              <el-dropdown-item v-if="nextStatusOptions(scope.row.status).length === 0" disabled>暂无可流转状态</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
           <el-button
+            v-if="primaryStatusAction(scope.row.status)"
             size="mini"
-            type="text"
-            icon="el-icon-document"
-            @click="handlePackage(scope.row)"
-            v-hasPermi="['req:package:list']"
-          >Agent资料</el-button>
+            plain
+            :type="primaryStatusAction(scope.row.status).type"
+            :icon="primaryStatusAction(scope.row.status).icon"
+            @click="handleStatusCommand(primaryStatusAction(scope.row.status), scope.row)"
+            v-hasPermi="['req:demand:edit']"
+          >{{ primaryStatusAction(scope.row.status).label }}</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -181,6 +168,15 @@ import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
 import { listDemand, updateDemandStatus } from "@/api/requirement/demand"
 import { listIndexModule } from "@/api/requirement/index"
+import { mapGetters } from "vuex"
+import {
+  canEditDemand as canEditDemandRow,
+  demandStatusOptions,
+  demandStatusTagType,
+  nextStatusOptions,
+  optionLabel,
+  primaryStatusAction as getPrimaryStatusAction
+} from "./status"
 
 export default {
   name: "RequirementDemand",
@@ -188,6 +184,7 @@ export default {
     return {
       loading: true,
       ids: [],
+      selectedRows: [],
       single: true,
       showSearch: true,
       total: 0,
@@ -202,18 +199,7 @@ export default {
         { value: "RESEARCH", label: "调研任务" },
         { value: "OTHER", label: "其他" }
       ],
-      demandStatusOptions: [
-        { value: "draft", label: "草稿", type: "info" },
-        { value: "submitted", label: "已提交", type: "" },
-        { value: "plan_pending", label: "待出计划", type: "warning" },
-        { value: "plan_ready", label: "计划就绪", type: "warning" },
-        { value: "confirmed", label: "已确认", type: "success" },
-        { value: "developing", label: "开发中", type: "primary" },
-        { value: "review", label: "Review 中", type: "warning" },
-        { value: "repairing", label: "返修中", type: "danger" },
-        { value: "completed", label: "已完成", type: "success" },
-        { value: "archived", label: "已归档", type: "info" }
-      ],
+      demandStatusOptions: demandStatusOptions,
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -227,6 +213,9 @@ export default {
     }
   },
   computed: {
+    ...mapGetters([
+      "id"
+    ]),
     queryVariantOptions() {
       if (!this.queryParams.projectId) {
         return this.variantOptions
@@ -276,22 +265,30 @@ export default {
     },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.demandId || item.id)
+      this.selectedRows = selection
       this.single = selection.length != 1
     },
     handleAdd() {
-      this.$tab.openPage("新增需求", "/requirement/demand/maintain")
+      this.$tab.openPage("新增需求", "/requirement/demand/maintain", { parentPath: "/requirement/demand" })
     },
     handleUpdate(row) {
-      const demandId = row.demandId || row.id || this.ids
+      const target = row && (row.demandId || row.id) ? row : this.selectedRows[0]
+      const demandId = target ? (target.demandId || target.id) : this.ids
       const targetDemandId = Array.isArray(demandId) ? demandId[0] : demandId
       if (!targetDemandId) return
-      const title = (row.title || "需求") + "维护"
-      this.$tab.openPage(title, "/requirement/demand/maintain", { demandId: targetDemandId })
+      if (!target || !this.canEditDemand(target)) {
+        this.$modal.msgWarning("只有未提交需求的创建人可以修改")
+        return
+      }
+      const title = (target.title || "需求") + "维护"
+      this.$tab.openPage(title, "/requirement/demand/maintain", { demandId: targetDemandId, parentPath: "/requirement/demand" })
     },
-    handleStatusCommand(status, row) {
+    handleStatusCommand(action, row) {
       const demandId = row.demandId || row.id
-      const label = this.optionLabel(this.demandStatusOptions, status)
-      this.$modal.confirm('是否确认将需求"' + row.title + '"状态调整为"' + label + '"？').then(function() {
+      const status = typeof action === "string" ? action : action.value
+      const label = typeof action === "string" ? this.optionLabel(this.demandStatusOptions, status) : action.label
+      const confirmText = (action && action.confirm) || ('是否确认将需求"' + row.title + '"状态调整为"' + label + '"？')
+      this.$modal.confirm(confirmText).then(function() {
         return updateDemandStatus(demandId, status)
       }).then(() => {
         this.getList()
@@ -299,28 +296,11 @@ export default {
       }).catch(() => {})
     },
     nextStatusOptions(status) {
-      const transitions = {
-        draft: ["submitted"],
-        submitted: ["plan_pending"],
-        plan_pending: ["plan_ready"],
-        plan_ready: ["confirmed"],
-        confirmed: ["developing"],
-        developing: ["review"],
-        review: ["repairing", "completed"],
-        repairing: ["review"],
-        completed: ["archived"]
-      }
-      return (transitions[String(status)] || []).map(value => {
-        return this.demandStatusOptions.find(item => item.value === value)
-      }).filter(Boolean)
+      return nextStatusOptions(status)
     },
     handleDetail(row) {
       const demandId = row.demandId || row.id
-      this.$router.push({ path: "/requirement/demand/detail", query: { demandId: demandId } })
-    },
-    handlePackage(row) {
-      const demandId = row.demandId || row.id
-      this.$router.push({ path: "/requirement/package", query: { demandId: demandId } })
+      this.$tab.openPage("需求详情", "/requirement/demand/detail", { demandId: demandId, parentPath: "/requirement/demand" })
     },
     handleDemandQueryProjectChange() {
       const variant = this.queryVariantOptions.find(item => String(item.variantId || item.id) === String(this.queryParams.variantId))
@@ -361,12 +341,16 @@ export default {
       return result
     },
     optionLabel(options, value) {
-      const option = options.find(item => item.value === String(value))
-      return option ? option.label : value
+      return optionLabel(options, value)
     },
     demandStatusTagType(value) {
-      const option = this.demandStatusOptions.find(item => item.value === String(value))
-      return option ? option.type : ""
+      return demandStatusTagType(value)
+    },
+    primaryStatusAction(status) {
+      return getPrimaryStatusAction(status)
+    },
+    canEditDemand(row) {
+      return canEditDemandRow(row, this.id)
     }
   }
 }

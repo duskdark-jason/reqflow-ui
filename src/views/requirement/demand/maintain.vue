@@ -3,7 +3,7 @@
     <el-page-header :content="pageTitle" @back="closePage" />
 
     <div v-loading="loading" class="demand-maintain-shell">
-      <el-form ref="form" :model="form" :rules="rules" label-width="104px">
+      <el-form ref="form" :model="form" :rules="rules" label-width="104px" :disabled="isReadonlyDemand">
         <section class="form-section">
           <div class="section-header">
             <span class="section-title">基础信息</span>
@@ -24,7 +24,7 @@
             </el-col>
             <el-col :span="12" v-if="form.demandNo">
               <el-form-item label="需求编号">
-                <el-input v-model="form.demandNo" readonly />
+                <div class="readonly-value">{{ form.demandNo }}</div>
               </el-form-item>
             </el-col>
             <el-col :span="24">
@@ -32,7 +32,7 @@
                 <el-input v-model="form.title" placeholder="请输入需求标题" />
               </el-form-item>
             </el-col>
-            <el-col :span="8">
+            <el-col :span="12">
               <el-form-item label="所属项目" prop="projectId">
                 <el-select v-model="form.projectId" placeholder="请选择项目" filterable style="width: 100%" @change="handleProjectChange">
                   <el-option
@@ -44,7 +44,7 @@
                 </el-select>
               </el-form-item>
             </el-col>
-            <el-col :span="8">
+            <el-col :span="12">
               <el-form-item label="项目分支" prop="variantId">
                 <el-select
                   v-model="form.variantId"
@@ -65,11 +65,6 @@
                 <div v-if="form.projectId && !formProjectInitLoading && filteredVariantOptions.length === 0" class="form-tip">
                   当前项目暂无已初始化完成的分支，请先在项目维护中完成分支初始化。
                 </div>
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="创建人ID" prop="creatorId">
-                <el-input v-model="form.creatorId" placeholder="默认当前用户" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -146,7 +141,7 @@
 
       <div class="maintain-actions">
         <el-button @click="closePage">关 闭</el-button>
-        <el-button type="primary" :loading="saving || impactSuggestLoading" @click="submitForm">保 存</el-button>
+        <el-button type="primary" :loading="saving || impactSuggestLoading" :disabled="isReadonlyDemand" @click="submitForm">保 存</el-button>
       </div>
     </div>
   </div>
@@ -209,6 +204,9 @@ export default {
     pageTitle() {
       return this.demandId ? "修改需求" : "新增需求"
     },
+    isReadonlyDemand() {
+      return !!this.demandId && !!this.form.status && String(this.form.status) !== "draft"
+    },
     filteredVariantOptions() {
       if (!this.form.projectId) {
         return []
@@ -269,8 +267,7 @@ export default {
         variantId: undefined,
         moduleId: undefined,
         featureId: undefined,
-        status: "submitted",
-        creatorId: undefined,
+        status: "draft",
         businessBackground: undefined,
         expectedResult: undefined,
         impactPage: undefined,
@@ -372,9 +369,9 @@ export default {
         this.applyImpactSuggest().then(() => {
           const action = this.form.demandId != undefined || this.form.id != undefined ? updateDemand : addDemand
           const payload = Object.assign({}, this.form)
-          if (!payload.demandId && !payload.id) {
-            payload.demandNo = undefined
-          }
+          delete payload.creatorId
+          delete payload.demandNo
+          delete payload.status
           action(payload).then(() => {
             this.$modal.msgSuccess(this.demandId ? "修改成功" : "新增成功")
             this.saving = false
@@ -496,6 +493,13 @@ export default {
 .form-tip {
   margin-top: 6px;
   line-height: 18px;
+}
+
+.readonly-value {
+  min-height: 32px;
+  line-height: 32px;
+  color: #303133;
+  font-weight: 600;
 }
 
 .maintain-actions {

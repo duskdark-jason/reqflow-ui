@@ -1,21 +1,22 @@
 <template>
-  <div class="sidebar-logo-container" :class="{'collapse':collapse}" :style="{ backgroundColor: sideTheme === 'theme-dark' && navType !== 3 ? variables.menuBackground : variables.menuLightBackground }">
+  <div class="sidebar-logo-container" :class="{'collapse':collapse}">
     <transition name="sidebarLogoFade">
       <router-link v-if="collapse" key="collapse" class="sidebar-logo-link" to="/">
-        <img v-if="logo" :src="logo" class="sidebar-logo" />
-        <h1 v-else class="sidebar-title" :style="{ color: sideTheme === 'theme-dark' && navType !== 3 ? variables.logoTitleColor : variables.logoLightTitleColor }">{{ title }} </h1>
+        <img :src="logo" class="sidebar-logo" />
       </router-link>
       <router-link v-else key="expand" class="sidebar-logo-link" to="/">
-        <img v-if="logo" :src="logo" class="sidebar-logo" />
-        <h1 class="sidebar-title" :style="{ color: sideTheme === 'theme-dark' && navType !== 3 ? variables.logoTitleColor : variables.logoLightTitleColor }">{{ title }} </h1>
+        <img :src="logo" class="sidebar-logo" />
+        <span class="brand-copy">
+          <strong>ReqFlow</strong>
+          <small>需求流转平台</small>
+        </span>
       </router-link>
     </transition>
   </div>
 </template>
 
 <script>
-import logoImg from '@/assets/logo/logo.png'
-import variables from '@/assets/styles/variables.scss'
+import logoImg from '@/assets/logo/reqflow-logo.svg'
 
 export default {
   name: 'SidebarLogo',
@@ -25,20 +26,8 @@ export default {
       required: true
     }
   },
-  computed: {
-    variables() {
-      return variables
-    },
-    sideTheme() {
-      return this.$store.state.settings.sideTheme
-    },
-    navType() {
-      return this.$store.state.settings.navType
-    }
-  },
   data() {
     return {
-      title: process.env.VUE_APP_TITLE,
       logo: logoImg
     }
   }
@@ -58,37 +47,56 @@ export default {
 .sidebar-logo-container {
   position: relative;
   height: 50px;
-  line-height: 50px;
-  background: #2b2f3a;
-  text-align: center;
+  background: #fff;
+  border-right: 1px solid #e8eaf0;
+  border-bottom: 1px solid #edf0f5;
   overflow: hidden;
 
   & .sidebar-logo-link {
+    display: flex;
+    align-items: center;
     height: 100%;
     width: 100%;
+    padding: 0 14px;
+    box-sizing: border-box;
 
     & .sidebar-logo {
       width: 32px;
       height: 32px;
-      vertical-align: middle;
-      margin-right: 12px;
+      flex: 0 0 auto;
+      margin-right: 10px;
     }
 
-    & .sidebar-title {
-      display: inline-block;
+    & .brand-copy {
+      display: inline-flex;
+      flex-direction: column;
+      min-width: 0;
       margin: 0;
-      color: #fff;
-      font-weight: 600;
-      line-height: 50px;
-      font-size: 14px;
+      color: #1f2937;
       font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
-      vertical-align: middle;
+      line-height: 1.1;
+
+      strong {
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      small {
+        margin-top: 3px;
+        color: #6b7280;
+        font-size: 11px;
+      }
     }
   }
 
   &.collapse {
+    .sidebar-logo-link {
+      justify-content: center;
+      padding: 0;
+    }
+
     .sidebar-logo {
-      margin-right: 0px;
+      margin-right: 0;
     }
   }
 }

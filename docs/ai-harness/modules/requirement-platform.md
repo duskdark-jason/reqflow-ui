@@ -10,7 +10,7 @@
 |---|---|---|---|---|---|---|
 | 需求管理 | 项目管理 | 项目列表、项目维护入口和初始化状态 | `src/views/requirement/project/index.vue`、`maintain.vue` | `src/api/requirement/project.js`、`projectInit.js` | `/requirement/project/**`，`req:project:*`；`/requirement/project/init/**`，`req:project:*` | `ReqProjectController`、`ReqProjectInitController`、`ReqProjectInitServiceImpl` |
 | 需求管理 | 分支知识库详情页签 | 按项目分支查看模块知识、索引批次和初始化指令 | `src/views/requirement/project/knowledge.vue` | `src/api/requirement/index.js`、`project.js` | `/requirement/index/module/tree`，`req:index:list`；`/requirement/index/batch/list`，`req:index:list` | `ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
-| 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、分支初始化校验和影响面自动关联 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；`/requirement/index/impact/suggest`，`req:index:list` | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
+| 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、状态按钮、详情资料展示和 MCP 编排指令复制 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue`、`status.js` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；`/requirement/index/impact/suggest`，`req:index:list` | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
 | 需求管理 | Agent 交接资料 | 查看和保存需求、计划、执行报告、Review 报告等 artifact | `src/views/requirement/package/index.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，`req:package:*` | `ReqPackageController`、`ReqPackageServiceImpl` |
 | 需求管理 | MCP 管理 | 管理人员 MCP Key，创建或重置后复制一次性 Key 和多平台 Codex 安装命令 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`/requirement/codex/install.*`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqCodexInstallController`、`ReqMcpController`、`McpService` |
 | 需求管理 | 使用统计 | 展示需求、项目、用户和状态统计 | `src/views/requirement/statistics/index.vue` | `src/api/requirement/statistics.js` | `/requirement/statistics/**`，`req:stats:view` | `ReqStatisticsController`、`ReqStatisticsService` |
@@ -21,6 +21,7 @@
 | 类型 | 优先查看文件 | 说明 |
 |---|---|---|
 | 路由入口 | `src/router/index.js` | 需求管理隐藏页签和页面路由。 |
+| 全局布局 | `src/layout/**`、`src/settings.js`、`src/plugins/tab.js` | 固定左侧浅色布局、标签页返回和品牌入口。 |
 | 项目页面 | `src/views/requirement/project/*.vue` | 项目列表、维护页签和分支知识库详情。 |
 | 需求页面 | `src/views/requirement/demand/*.vue` | 需求列表、新增、编辑和详情。 |
 | 交接资料 | `src/views/requirement/package/index.vue` | Agent artifact 保存和展示。 |
@@ -55,6 +56,12 @@
 - MCP 管理菜单和按钮必须使用 `req:mcp:key:*` 权限，提需求人员角色默认不分配这些权限。
 - 人员 MCP Key 不能替代项目分支动作 token：页面负责人员认证 Key，项目接入和索引指引中的 `actionToken` 是项目分支和目标动作识别 token。
 - 用户可见系统名称统一为“统一需求流转平台”，登录页、首页、导航入口和页脚不得保留若依官网、若依文档或默认更新日志入口。
+- 后台布局固定为浅色左侧菜单，用户可见入口不得再提供布局设置抽屉；历史本地 `layout-setting` 中的 `sideTheme` 和 `navType` 不应覆盖目标布局。
+- 隐藏页签从父菜单打开时必须携带 `parentPath` 或依赖路由 `meta.activeMenu`；关闭/返回时优先回父菜单，不得跳到最后打开的无关标签。
+- 新增需求维护页签不得展示需求编号和创建人 ID；保存 payload 不提交 `demandNo`、`creatorId` 和状态字段，编号、创建人和默认状态由后端生成。
+- 修改需求维护页签中需求编号只能用文本展示，不允许使用 input 样式；非 `draft` 需求进入维护页签时前端应只读，后端仍负责最终拦截。
+- 需求列表操作列不展示 Agent 交接资料入口；详情页可以展示 Agent 交接资料入口、最新需求设计、最新执行方案和复制 MCP 编排指令按钮。
+- 需求状态文案以 `src/views/requirement/demand/status.js` 为准：新主流程为未提交、待生成需求说明和执行计划、资料待确认、待执行开发、开发中、待验收、已完成；旧 `资料生成中`、`返修中`、`已归档` 仅作为兼容状态展示。
 
 ## 风险点
 
