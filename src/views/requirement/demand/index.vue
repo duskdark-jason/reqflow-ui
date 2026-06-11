@@ -108,7 +108,7 @@
         <template slot-scope="scope">{{ variantLabel(scope.row.variantId) }}</template>
       </el-table-column>
       <el-table-column label="模块" align="center" min-width="130" :show-overflow-tooltip="true">
-        <template slot-scope="scope">{{ moduleLabel(scope.row.moduleId) }}</template>
+        <template slot-scope="scope">{{ demandModuleLabel(scope.row) }}</template>
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="120">
         <template slot-scope="scope">
@@ -172,176 +172,6 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
-
-    <el-dialog :title="title" :visible.sync="open" width="860px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-        <el-divider content-position="left">基础信息</el-divider>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="需求编号" prop="demandNo">
-              <el-input v-model="form.demandNo" placeholder="请输入需求编号" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="需求类型" prop="demandType">
-              <el-select v-model="form.demandType" placeholder="请选择需求类型" style="width: 100%">
-                <el-option
-                  v-for="item in demandTypeOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="需求标题" prop="title">
-              <el-input v-model="form.title" placeholder="请输入需求标题" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="所属项目" prop="projectId">
-              <el-select v-model="form.projectId" placeholder="请选择项目" filterable style="width: 100%" @change="handleProjectChange">
-                <el-option
-                  v-for="project in projectOptions"
-                  :key="project.projectId || project.id"
-                  :label="project.projectName"
-                  :value="project.projectId || project.id"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="项目分支" prop="variantId">
-              <el-select
-                v-model="form.variantId"
-                placeholder="请选择已初始化分支"
-                filterable
-                style="width: 100%"
-                :disabled="!form.projectId"
-                :loading="formProjectInitLoading"
-                @change="handleVariantChange"
-              >
-                <el-option
-                  v-for="variant in filteredVariantOptions"
-                  :key="variant.variantId || variant.id"
-                  :label="variant.branchLabel || variant.variantName"
-                  :value="variant.variantId || variant.id"
-                />
-              </el-select>
-              <div v-if="form.projectId && !formProjectInitLoading && filteredVariantOptions.length === 0" class="form-tip">
-                当前项目暂无已初始化完成的分支，请先在项目接入中心完成分支初始化。
-              </div>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="模块" prop="moduleId">
-              <el-select v-model="form.moduleId" placeholder="请选择模块" clearable filterable style="width: 100%" @change="handleModuleChange">
-                <el-option
-                  v-for="module in filteredModuleOptions"
-                  :key="module.moduleId || module.id"
-                  :label="module.moduleName"
-                  :value="module.moduleId || module.id"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="创建人ID" prop="creatorId">
-              <el-input v-model="form.creatorId" placeholder="请输入创建人用户ID" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="业务背景" prop="businessBackground">
-              <el-input v-model="form.businessBackground" type="textarea" :rows="4" placeholder="请输入业务背景、问题描述和目标说明" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="预期结果" prop="expectedResult">
-              <el-input v-model="form.expectedResult" type="textarea" :rows="3" placeholder="请输入需求完成后的预期结果" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-divider content-position="left">影响范围</el-divider>
-        <el-alert
-          v-if="form.projectId && form.variantId && form.moduleId"
-          title="已根据项目、分支和模块提供影响面推荐，可按需追加到下方字段，追加后仍可人工编辑。"
-          type="info"
-          show-icon
-          :closable="false"
-          class="mb8"
-        />
-        <el-row v-if="form.projectId && form.variantId && form.moduleId" class="mb8">
-          <el-col :span="24">
-            <el-button
-              type="primary"
-              plain
-              icon="el-icon-refresh"
-              size="mini"
-              :loading="impactSuggestLoading"
-              @click="loadImpactSuggest"
-              v-hasPermi="['req:index:list']"
-            >刷新推荐</el-button>
-            <el-button
-              type="success"
-              plain
-              icon="el-icon-plus"
-              size="mini"
-              :disabled="!hasImpactSuggest"
-              @click="appendImpactSuggest"
-            >追加推荐</el-button>
-          </el-col>
-          <el-col :span="24" v-if="hasImpactSuggest">
-            <div class="impact-suggest">
-              <div class="impact-group" v-for="group in visibleImpactGroups" :key="group.key">
-                <span class="impact-group-title">{{ group.label }}</span>
-                <el-tag
-                  v-for="item in group.items"
-                  :key="group.key + '-' + (item.impactId || item.itemKey || item.itemName)"
-                  size="mini"
-                  class="impact-tag"
-                >{{ item.itemName || item.itemKey || item.relativePath }}</el-tag>
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="影响页面" prop="impactPage">
-              <el-input v-model="form.impactPage" type="textarea" :rows="3" placeholder="请输入影响页面或菜单" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="影响接口" prop="impactApi">
-              <el-input v-model="form.impactApi" type="textarea" :rows="3" placeholder="请输入影响接口或服务" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="影响数据" prop="impactData">
-              <el-input v-model="form.impactData" type="textarea" :rows="3" placeholder="请输入影响表、字段或数据口径" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="影响权限" prop="impactPermission">
-              <el-input v-model="form.impactPermission" type="textarea" :rows="3" placeholder="请输入影响权限点或角色" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="导出/异步" prop="impactExportOrAsync">
-              <el-input v-model="form.impactExportOrAsync" type="textarea" :rows="3" placeholder="请输入导出、批处理、异步任务或消息影响" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-divider content-position="left">验收标准</el-divider>
-        <el-form-item label="验收标准" prop="acceptanceText">
-          <el-input v-model="form.acceptanceText" type="textarea" :rows="6" placeholder="请输入可验证的验收标准" />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -349,9 +179,8 @@
 import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
-import { getProjectInit } from "@/api/requirement/projectInit"
-import { listDemand, getDemand, addDemand, updateDemand, updateDemandStatus } from "@/api/requirement/demand"
-import { suggestImpact } from "@/api/requirement/index"
+import { listDemand, updateDemandStatus } from "@/api/requirement/demand"
+import { listIndexModule } from "@/api/requirement/index"
 
 export default {
   name: "RequirementDemand",
@@ -365,19 +194,7 @@ export default {
       demandList: [],
       projectOptions: [],
       variantOptions: [],
-      formVariantOptions: [],
-      formProjectInitLoading: false,
       moduleOptions: [],
-      impactSuggestLoading: false,
-      impactSuggest: {
-        pages: [],
-        apis: [],
-        tables: [],
-        permissions: [],
-        documents: []
-      },
-      title: "",
-      open: false,
       demandTypeOptions: [
         { value: "FEATURE", label: "功能需求" },
         { value: "OPTIMIZATION", label: "优化需求" },
@@ -406,30 +223,6 @@ export default {
         projectId: undefined,
         variantId: undefined,
         status: undefined
-      },
-      form: {},
-      rules: {
-        title: [
-          { required: true, message: "需求标题不能为空", trigger: "blur" }
-        ],
-        demandType: [
-          { required: true, message: "需求类型不能为空", trigger: "change" }
-        ],
-        projectId: [
-          { required: true, message: "所属项目不能为空", trigger: "change" }
-        ],
-        variantId: [
-          { required: true, message: "项目分支不能为空", trigger: "change" }
-        ],
-        businessBackground: [
-          { required: true, message: "业务背景不能为空", trigger: "blur" }
-        ],
-        expectedResult: [
-          { required: true, message: "预期结果不能为空", trigger: "blur" }
-        ],
-        acceptanceText: [
-          { required: true, message: "验收标准不能为空", trigger: "blur" }
-        ]
       }
     }
   },
@@ -439,35 +232,6 @@ export default {
         return this.variantOptions
       }
       return this.variantOptions.filter(item => String(item.projectId) === String(this.queryParams.projectId))
-    },
-    filteredVariantOptions() {
-      if (!this.form.projectId) {
-        return []
-      }
-      return this.formVariantOptions.filter(this.isVariantInitialized)
-    },
-    filteredModuleOptions() {
-      if (!this.form.projectId || !this.form.variantId) {
-        return []
-      }
-      return this.moduleOptions.filter(item => {
-        return String(item.projectId) === String(this.form.projectId) && String(item.variantId) === String(this.form.variantId)
-      })
-    },
-    impactGroups() {
-      return [
-        { key: "pages", label: "页面", items: this.impactSuggest.pages || [] },
-        { key: "apis", label: "接口", items: this.impactSuggest.apis || [] },
-        { key: "tables", label: "数据表", items: this.impactSuggest.tables || [] },
-        { key: "permissions", label: "权限", items: this.impactSuggest.permissions || [] },
-        { key: "documents", label: "文档", items: this.impactSuggest.documents || [] }
-      ]
-    },
-    visibleImpactGroups() {
-      return this.impactGroups.filter(group => group.items.length)
-    },
-    hasImpactSuggest() {
-      return this.visibleImpactGroups.length > 0
     }
   },
   created() {
@@ -492,37 +256,15 @@ export default {
       listVariant({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
         this.variantOptions = response.rows || response.data || []
       })
-      listModule({ status: "0" }).then(response => {
-        this.moduleOptions = response.rows || response.data || []
+      Promise.all([
+        listModule({ status: "0" }).catch(() => ({ rows: [], data: [] })),
+        listIndexModule({ status: "0" }).catch(() => ({ rows: [], data: [] }))
+      ]).then(([manualResponse, indexResponse]) => {
+        this.moduleOptions = this.mergeModuleOptions(
+          manualResponse.rows || manualResponse.data || [],
+          indexResponse.rows || indexResponse.data || []
+        )
       })
-    },
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-    reset() {
-      this.form = {
-        demandId: undefined,
-        demandNo: undefined,
-        title: undefined,
-        demandType: "FEATURE",
-        projectId: undefined,
-        variantId: undefined,
-        moduleId: undefined,
-        status: "submitted",
-        creatorId: undefined,
-        businessBackground: undefined,
-        expectedResult: undefined,
-        impactPage: undefined,
-        impactApi: undefined,
-        impactData: undefined,
-        impactPermission: undefined,
-        impactExportOrAsync: undefined,
-        acceptanceText: undefined
-      }
-      this.formVariantOptions = []
-      this.resetImpactSuggest()
-      this.resetForm("form")
     },
     handleQuery() {
       this.queryParams.pageNum = 1
@@ -537,44 +279,14 @@ export default {
       this.single = selection.length != 1
     },
     handleAdd() {
-      this.reset()
-      this.open = true
-      this.title = "添加需求"
+      this.$tab.openPage("新增需求", "/requirement/demand/maintain")
     },
     handleUpdate(row) {
-      this.reset()
       const demandId = row.demandId || row.id || this.ids
-      getDemand(demandId).then(response => {
-        this.form = response.data
-        this.open = true
-        this.title = "修改需求"
-        this.loadFormProjectInit(this.form.projectId, this.form.variantId).then(() => {
-          this.loadImpactSuggest()
-        })
-      })
-    },
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (!this.isSelectedFormBranchInitialized()) {
-            this.$modal.msgWarning("需求只能提交到已初始化完成的项目分支")
-            return
-          }
-          if (this.form.demandId != undefined || this.form.id != undefined) {
-            updateDemand(this.form).then(() => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            })
-          } else {
-            addDemand(this.form).then(() => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            })
-          }
-        }
-      })
+      const targetDemandId = Array.isArray(demandId) ? demandId[0] : demandId
+      if (!targetDemandId) return
+      const title = (row.title || "需求") + "维护"
+      this.$tab.openPage(title, "/requirement/demand/maintain", { demandId: targetDemandId })
     },
     handleStatusCommand(status, row) {
       const demandId = row.demandId || row.id
@@ -610,109 +322,6 @@ export default {
       const demandId = row.demandId || row.id
       this.$router.push({ path: "/requirement/package", query: { demandId: demandId } })
     },
-    handleProjectChange() {
-      this.form.variantId = undefined
-      this.form.moduleId = undefined
-      this.formVariantOptions = []
-      this.resetImpactSuggest()
-      this.loadFormProjectInit(this.form.projectId)
-    },
-    handleVariantChange() {
-      if (this.form.moduleId && !this.filteredModuleOptions.some(item => String(item.moduleId || item.id) === String(this.form.moduleId))) {
-        this.form.moduleId = undefined
-      }
-      this.resetImpactSuggest()
-      this.loadImpactSuggest()
-    },
-    handleModuleChange() {
-      this.resetImpactSuggest()
-      this.loadImpactSuggest()
-    },
-    loadFormProjectInit(projectId, selectedVariantId) {
-      if (!projectId) {
-        this.formVariantOptions = []
-        return Promise.resolve()
-      }
-      this.formProjectInitLoading = true
-      return getProjectInit(projectId).then(response => {
-        const data = response.data || {}
-        this.formVariantOptions = data.variants || []
-        this.formProjectInitLoading = false
-        if (selectedVariantId && !this.filteredVariantOptions.some(item => String(item.variantId || item.id) === String(selectedVariantId))) {
-          // 已选分支如果未完成初始化，必须清空模块与影响面推荐，避免需求落到没有索引证据的客户线。
-          this.form.variantId = undefined
-          this.form.moduleId = undefined
-          this.resetImpactSuggest()
-          this.$modal.msgWarning("所选项目分支尚未初始化完成，不能提交需求")
-        }
-      }).catch(() => {
-        this.formVariantOptions = []
-        this.formProjectInitLoading = false
-      })
-    },
-    isVariantInitialized(variant) {
-      if (!variant || variant.status === "1") {
-        return false
-      }
-      const totalModules = Number(variant.totalModules || 0)
-      const indexedRepositoryCount = Number(variant.indexedRepositoryCount || 0)
-      const unindexedRepositoryCount = Number(variant.unindexedRepositoryCount || 0)
-      // 前端和后端保持同一口径：有模块知识、至少一个仓库索引成功、且没有待索引仓库才允许提交需求。
-      return totalModules > 0 && indexedRepositoryCount > 0 && unindexedRepositoryCount === 0
-    },
-    isSelectedFormBranchInitialized() {
-      return this.filteredVariantOptions.some(item => String(item.variantId || item.id) === String(this.form.variantId))
-    },
-    loadImpactSuggest() {
-      if (!this.form.projectId || !this.form.variantId || !this.form.moduleId) {
-        return
-      }
-      const module = this.moduleOptions.find(item => String(item.moduleId || item.id) === String(this.form.moduleId))
-      this.impactSuggestLoading = true
-      suggestImpact({
-        projectId: this.form.projectId,
-        variantId: this.form.variantId,
-        moduleId: this.form.moduleId,
-        moduleCode: module ? module.moduleCode : undefined
-      }).then(response => {
-        this.impactSuggest = response.data || this.emptyImpactSuggest()
-        this.impactSuggestLoading = false
-      }).catch(() => {
-        this.impactSuggestLoading = false
-      })
-    },
-    appendImpactSuggest() {
-      this.form.impactPage = this.appendLines(this.form.impactPage, this.formatImpactItems(this.impactSuggest.pages))
-      this.form.impactApi = this.appendLines(this.form.impactApi, this.formatImpactItems(this.impactSuggest.apis))
-      this.form.impactData = this.appendLines(this.form.impactData, this.formatImpactItems(this.impactSuggest.tables))
-      this.form.impactPermission = this.appendLines(this.form.impactPermission, this.formatImpactItems(this.impactSuggest.permissions))
-      this.form.impactExportOrAsync = this.appendLines(this.form.impactExportOrAsync, this.formatImpactItems(this.impactSuggest.documents))
-    },
-    appendLines(current, lines) {
-      if (!lines) {
-        return current
-      }
-      return current ? current + "\n" + lines : lines
-    },
-    formatImpactItems(items) {
-      return (items || []).map(item => {
-        return [item.itemName, item.itemKey || item.apiPath || item.permissionKey || item.tableName || item.relativePath, item.summary]
-          .filter(Boolean)
-          .join(" - ")
-      }).join("\n")
-    },
-    resetImpactSuggest() {
-      this.impactSuggest = this.emptyImpactSuggest()
-    },
-    emptyImpactSuggest() {
-      return {
-        pages: [],
-        apis: [],
-        tables: [],
-        permissions: [],
-        documents: []
-      }
-    },
     handleDemandQueryProjectChange() {
       const variant = this.queryVariantOptions.find(item => String(item.variantId || item.id) === String(this.queryParams.variantId))
       if (!variant) {
@@ -728,8 +337,28 @@ export default {
       return variant ? (variant.branchLabel || variant.variantName) : variantId
     },
     moduleLabel(moduleId) {
-      const module = this.moduleOptions.find(item => String(item.moduleId || item.id) === String(moduleId))
+      const module = this.moduleOptions.find(item => String(this.moduleOptionValue(item)) === String(moduleId))
       return module ? module.moduleName : moduleId
+    },
+    demandModuleLabel(row) {
+      if (row.moduleId) {
+        return this.moduleLabel(row.moduleId)
+      }
+      return row.remark || "新增功能"
+    },
+    moduleOptionValue(module) {
+      return module.indexModuleId || module.moduleId || module.id
+    },
+    mergeModuleOptions(manualModules, indexModules) {
+      const result = []
+      const seen = new Set()
+      ;(manualModules || []).concat(indexModules || []).forEach(item => {
+        const key = this.moduleOptionValue(item)
+        if (!key || seen.has(String(key))) return
+        seen.add(String(key))
+        result.push(item)
+      })
+      return result
     },
     optionLabel(options, value) {
       const option = options.find(item => item.value === String(value))
@@ -742,40 +371,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.impact-suggest {
-  margin-top: 8px;
-  padding: 10px 12px;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  background: #fafafa;
-}
-
-.impact-group {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 4px 0;
-}
-
-.impact-group-title {
-  width: 56px;
-  color: #606266;
-  font-size: 13px;
-}
-
-.impact-tag {
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.form-tip {
-  margin-top: 6px;
-  color: #909399;
-  font-size: 12px;
-  line-height: 18px;
-}
-</style>

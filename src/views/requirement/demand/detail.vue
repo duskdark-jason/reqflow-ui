@@ -15,7 +15,7 @@
         <el-descriptions-item label="需求类型">{{ optionLabel(demandTypeOptions, form.demandType) }}</el-descriptions-item>
         <el-descriptions-item label="所属项目">{{ projectLabel(form.projectId) }}</el-descriptions-item>
         <el-descriptions-item label="项目分支">{{ variantLabel(form.variantId) }}</el-descriptions-item>
-        <el-descriptions-item label="模块">{{ moduleLabel(form.moduleId) }}</el-descriptions-item>
+        <el-descriptions-item label="模块">{{ demandModuleLabel }}</el-descriptions-item>
         <el-descriptions-item label="创建人ID">{{ form.creatorId || "-" }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ parseTime(form.createTime) || "-" }}</el-descriptions-item>
       </el-descriptions>
@@ -25,15 +25,6 @@
 
       <el-divider content-position="left">预期结果</el-divider>
       <div class="markdown-block">{{ form.expectedResult || "暂无内容" }}</div>
-
-      <el-divider content-position="left">影响范围</el-divider>
-      <el-descriptions :column="2" border size="medium">
-        <el-descriptions-item label="影响页面">{{ form.impactPage || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="影响接口">{{ form.impactApi || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="影响数据">{{ form.impactData || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="影响权限">{{ form.impactPermission || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="导出/异步" :span="2">{{ form.impactExportOrAsync || "-" }}</el-descriptions-item>
-      </el-descriptions>
 
       <el-divider content-position="left">验收标准</el-divider>
       <div class="markdown-block">{{ form.acceptanceText || "暂无内容" }}</div>
@@ -56,6 +47,7 @@
 import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
+import { listIndexModule } from "@/api/requirement/index"
 import { getDemand } from "@/api/requirement/demand"
 
 export default {
@@ -96,6 +88,14 @@ export default {
       this.getDetail()
     }
   },
+  computed: {
+    demandModuleLabel() {
+      if (this.form.moduleId) {
+        return this.moduleLabel(this.form.moduleId)
+      }
+      return this.form.remark || "新增功能"
+    }
+  },
   methods: {
     getDetail() {
       this.loading = true
@@ -113,8 +113,14 @@ export default {
       listVariant({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
         this.variantOptions = response.rows || response.data || []
       })
-      listModule({ status: "0" }).then(response => {
-        this.moduleOptions = response.rows || response.data || []
+      Promise.all([
+        listModule({ status: "0" }).catch(() => ({ rows: [], data: [] })),
+        listIndexModule({ status: "0" }).catch(() => ({ rows: [], data: [] }))
+      ]).then(([manualResponse, indexResponse]) => {
+        this.moduleOptions = this.mergeModuleOptions(
+          manualResponse.rows || manualResponse.data || [],
+          indexResponse.rows || indexResponse.data || []
+        )
       })
     },
     goBack() {
@@ -132,8 +138,22 @@ export default {
       return variant ? (variant.branchLabel || variant.variantName) : variantId || "-"
     },
     moduleLabel(moduleId) {
-      const module = this.moduleOptions.find(item => String(item.moduleId || item.id) === String(moduleId))
+      const module = this.moduleOptions.find(item => String(this.moduleOptionValue(item)) === String(moduleId))
       return module ? module.moduleName : moduleId || "-"
+    },
+    moduleOptionValue(module) {
+      return module.indexModuleId || module.moduleId || module.id
+    },
+    mergeModuleOptions(manualModules, indexModules) {
+      const result = []
+      const seen = new Set()
+      ;(manualModules || []).concat(indexModules || []).forEach(item => {
+        const key = this.moduleOptionValue(item)
+        if (!key || seen.has(String(key))) return
+        seen.add(String(key))
+        result.push(item)
+      })
+      return result
     },
     optionLabel(options, value) {
       const option = options.find(item => item.value === String(value))
