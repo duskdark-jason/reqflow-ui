@@ -223,6 +223,20 @@ export const dynamicRoutes = [
         meta: { title: '需求详情', activeMenu: '/requirement/demand' }
       }
     ]
+  },
+  {
+    path: '/requirement/demand/maintain',
+    component: Layout,
+    hidden: true,
+    permissions: ['req:demand:add', 'req:demand:edit'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/requirement/demand/maintain'),
+        name: 'RequirementDemandMaintain',
+        meta: { title: '需求维护', activeMenu: '/requirement/demand' }
+      }
+    ]
   }
 ]
 

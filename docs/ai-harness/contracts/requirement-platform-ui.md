@@ -14,7 +14,7 @@
 | `variant.js` | `/requirement/variant` | 项目分支内部兼容查询 |
 | `module.js` | `/requirement/module` | 人工模块兼容接口，左侧菜单不再暴露 |
 | `index.js` | `/requirement/index` | 仓库索引批次、模块知识和影响面推荐 |
-| `demand.js` | `/requirement/demand` | 需求列表、详情、保存和状态流转 |
+| `demand.js` | `/requirement/demand` | 需求列表、维护页签、详情、保存和状态流转 |
 | `package.js` | `/requirement/package` | Agent 交接资料列表、最新版本、保存新版本和生成草稿资料 |
 | `statistics.js` | `/requirement/statistics` | 使用统计 |
 | `harness.js` | `/requirement/project/*/harness-*` | 项目接入 harness 模板包查询和初始化结果登记 |
@@ -58,9 +58,11 @@
 - 项目接入中心必须支持按项目分支筛选索引批次和模块知识库。模块知识库展示行必须有 `variantId`，分支为空的数据只能作为待迁移旧数据处理，不应默认混入选中分支。
 - 当后端 companion 因部分迁移库缺少可选索引表而返回空索引批次或空模块知识库时，项目接入中心必须继续展示项目、仓库、项目分支和初始化指令，把索引内容视为“暂无数据”。
 - MCP 索引指引优先使用 `actionToken + remoteUrl` 调用 `publish_repository_index`，兼容旧的 `mcpKey + remoteUrl` 和 `projectId + repoId + branchName` 调用方式。
-- 新建或编辑需求时，选择项目、项目分支和模块后调用 `/requirement/index/impact/suggest`，模块下拉必须按 `projectId + variantId` 过滤，请求携带 `projectId`、`variantId`、`moduleId`、`moduleCode`；后端按所选项目分支和最新索引批次返回 `pages`、`apis`、`tables`、`permissions`、`documents` 五类候选影响面。
-- 新建或编辑需求时，项目分支下拉必须读取 `/requirement/project/init/{projectId}` 的分支初始化上下文，只展示已初始化完成的项目分支。前端已初始化口径与后端兜底一致：分支 `totalModules > 0`、`indexedRepositoryCount > 0` 且 `unindexedRepositoryCount = 0`；查询筛选可以保留历史分支用于查老需求，但提交表单不能选择未初始化分支。
-- 前端只展示和追加影响面推荐，不覆盖用户已输入内容。
+- 新建或编辑需求时，列表页只打开 `/requirement/demand/maintain` 隐藏页签，不在列表页弹出维护 dialog。新增页签不展示需求编号，修改页签可只读展示后端已生成的编号。
+- 需求维护页签选择项目、项目分支和模块后调用 `/requirement/index/impact/suggest`，模块下拉必须按 `projectId + variantId` 过滤，优先读取 `/requirement/index/module/tree` 的知识库模块，并兼容人工模块；请求携带 `projectId`、`variantId`、`moduleId`、`moduleCode`；后端按所选项目分支和最新索引批次返回 `pages`、`apis`、`tables`、`permissions`、`documents` 五类候选影响面。
+- 新建或编辑需求时，项目分支下拉必须读取 `/requirement/project/init/{projectId}` 的分支初始化上下文，只展示已初始化完成的项目分支。前端已初始化口径与后端兜底一致：分支 `indexedRepositoryCount > 0` 且 `unindexedRepositoryCount = 0`；新功能提需允许当前分支暂时没有既有模块知识，查询筛选可以保留历史分支用于查老需求，但提交表单不能选择未初始化分支。
+- 需求维护页签允许不选择既有模块，改为填写新功能名称；新功能名称通过需求备注兼容提交，用于列表、详情和执行包上下文展示，不写入项目分支知识库。
+- 影响范围字段不在需求维护页签和需求详情页展示。保存前由前端按知识库推荐自动填充后端影响字段；没有推荐内容时提交空值，不阻断需求保存。
 - 前端不得向后端提交个人本机绝对路径；本地仓库目录只允许作为用户本次操作中的临时输入。
 
 ## 统一品牌与看板契约
