@@ -40,7 +40,7 @@
 
 ## 验证计划
 
-- L0 文档/规范：`sh scripts/check-docs.sh`，`sh scripts/check-harness.sh complete --spec docs/specs/active/2026-06-11-REQ-001-需求列表页签化与知识库提需`
+- L0 文档/规范：`sh scripts/check-docs.sh`，`sh scripts/check-harness.sh complete --spec docs/specs/active/REQ-001-需求列表页签化与知识库提需`
 - L1 编译/构建：`npm run build:prod`
 - L2 单元/契约：前端暂无独立单测脚本，使用生产构建覆盖基础契约。
 - L3 运行态冒烟：若当前环境可启动，打开需求列表和维护页签检查路由、空态、表单校验和 console。
