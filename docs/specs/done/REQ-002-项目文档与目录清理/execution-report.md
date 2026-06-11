@@ -47,7 +47,7 @@
 | L0 | AC-001 | `rg` 扫描 README 若依默认启动说明 | 通过，前端 README 不再保留若依默认启动说明。 |
 | L0 | AC-002 | `rg` 扫描前端文档模板 SQL 路径 | 通过，模板使用 `docs/db/sql/` 或 `docs/db/`。 |
 | L0 | AC-003 | `sh scripts/check-docs.sh` | 通过；首次失败原因是 ignored `node_modules` 内存在 `.DS_Store`，已清理后复验通过。 |
-| L0 | AC-003 | `sh scripts/check-harness.sh complete --spec docs/specs/done/2026-06-11-REQ-002-项目文档与目录清理` | 通过。 |
+| L0 | AC-003 | `sh scripts/check-harness.sh complete --spec docs/specs/done/REQ-002-项目文档与目录清理` | 通过。 |
 | L0 | AC-003 | `sh scripts/test-check-harness.sh` | 通过。 |
 
 ## 运行态证据

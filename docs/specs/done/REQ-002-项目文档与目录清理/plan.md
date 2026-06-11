@@ -19,5 +19,5 @@
 ## 分层验证计划
 
 - `sh scripts/check-docs.sh`
-- `sh scripts/check-harness.sh complete --spec docs/specs/done/2026-06-11-REQ-002-项目文档与目录清理`
+- `sh scripts/check-harness.sh complete --spec docs/specs/done/REQ-002-项目文档与目录清理`
 - `sh scripts/test-check-harness.sh`
