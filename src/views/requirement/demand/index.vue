@@ -639,6 +639,7 @@ export default {
         this.formVariantOptions = data.variants || []
         this.formProjectInitLoading = false
         if (selectedVariantId && !this.filteredVariantOptions.some(item => String(item.variantId || item.id) === String(selectedVariantId))) {
+          // 已选分支如果未完成初始化，必须清空模块与影响面推荐，避免需求落到没有索引证据的客户线。
           this.form.variantId = undefined
           this.form.moduleId = undefined
           this.resetImpactSuggest()
@@ -656,6 +657,7 @@ export default {
       const totalModules = Number(variant.totalModules || 0)
       const indexedRepositoryCount = Number(variant.indexedRepositoryCount || 0)
       const unindexedRepositoryCount = Number(variant.unindexedRepositoryCount || 0)
+      // 前端和后端保持同一口径：有模块知识、至少一个仓库索引成功、且没有待索引仓库才允许提交需求。
       return totalModules > 0 && indexedRepositoryCount > 0 && unindexedRepositoryCount === 0
     },
     isSelectedFormBranchInitialized() {

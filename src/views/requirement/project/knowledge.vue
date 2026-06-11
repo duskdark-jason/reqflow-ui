@@ -137,6 +137,7 @@ export default {
     filteredBatches() {
       const branchName = this.selectedVariant.baselineBranch
       if (!branchName) return []
+      // 索引批次按真实 Git 分支归属，不能只按项目聚合，否则客户分支会互相借用索引结果。
       return this.indexBatches.filter(item => item.branchName === branchName)
     }
   },
@@ -176,6 +177,7 @@ export default {
         return row.initInstruction.content
       }
       if (row.mcpKey) {
+        // 兼容历史分支的 mcpKey 展示；新流程应使用后端返回的 actionToken 初始化指令。
         return "请执行项目分支初始化，调用 publish_repository_index 发布当前仓库索引。\nactionToken: " + row.mcpKey
       }
       return ""
@@ -199,6 +201,7 @@ export default {
       textarea.value = content
       textarea.style.position = "fixed"
       textarea.style.left = "-9999px"
+      // 兜底支持不允许 navigator.clipboard 的浏览器环境，保证初始化指令仍可复制。
       document.body.appendChild(textarea)
       textarea.select()
       document.execCommand("copy")

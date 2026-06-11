@@ -245,6 +245,7 @@ export default {
       return this.projectId ? "编辑项目" : "新增项目"
     },
     initStepActive() {
+      // 步骤条以服务端 checklist 为准，避免前端只看表单字段就误判分支已经完成初始化。
       if (!this.form.project.projectName || !this.form.project.projectCode) return 0
       if (!this.form.repositories.length) return 1
       if (!this.form.variants.length) return 2
@@ -352,12 +353,14 @@ export default {
     },
     normalizeRepositories(repositories) {
       const source = repositories && repositories.length ? repositories : this.defaultRepositories()
+      // 本机路径只允许作为执行者临时信息存在，不能保存进平台下发给团队的初始化资料。
       return source.map(item => Object.assign({}, item, { localPathHint: undefined }))
     },
     normalizeVariants(variants) {
       const source = variants && variants.length ? variants : this.defaultVariants()
       return source.map(item => {
         const branchLabel = item.branchLabel || item.variantName || item.customerName || ""
+        // branchLabel 是页面维护的中文业务名称，提交时同步到旧字段，兼容已有接口和列表展示。
         return Object.assign({}, item, {
           branchLabel: branchLabel,
           variantName: branchLabel,
@@ -443,6 +446,7 @@ export default {
     hasLocalPath(value) {
       if (!value) return false
       const normalized = String(value).replace(/\\/g, "/").trim()
+      // 初始化信息会被 MCP 下发到其他工作空间，个人绝对路径会让后续接入无法复用。
       return normalized.indexOf("/Users/") === 0 || normalized.indexOf("/home/") === 0 || normalized.indexOf("file:/") === 0 || /^[A-Za-z]:\//.test(normalized)
     },
     submit(goIntake) {
@@ -476,6 +480,7 @@ export default {
         project: project,
         repositories: this.form.repositories.map(item => {
           const repository = Object.assign({}, item)
+          // 后端也会兜底清空 localPathHint，这里提前剔除，避免浏览器状态误带本机路径。
           repository.localPathHint = undefined
           return repository
         }),
@@ -509,6 +514,7 @@ export default {
       if (row.initInstruction && row.initInstruction.token) {
         return row.initInstruction.copyLabel + "：" + row.initInstruction.token
       }
+      // mcpKey 只服务旧数据兼容，新建分支应优先展示 actionToken 初始化指令。
       if (row.mcpKey) return "兼容 Key：" + row.mcpKey
       return ""
     },
@@ -518,6 +524,7 @@ export default {
         return row.initInstruction.content
       }
       if (row.mcpKey) {
+        // 旧库缺 actionToken 表时保留可复制指令，但文案仍走 actionToken 槽位提醒后续迁移。
         return "请执行项目分支初始化，调用 publish_repository_index 发布当前仓库索引。\nactionToken: " + row.mcpKey
       }
       return ""
@@ -541,6 +548,7 @@ export default {
       textarea.value = content
       textarea.style.position = "fixed"
       textarea.style.left = "-9999px"
+      // 兼容非安全上下文或旧浏览器，避免 navigator.clipboard 不可用时初始化指令无法复制。
       document.body.appendChild(textarea)
       textarea.select()
       document.execCommand("copy")

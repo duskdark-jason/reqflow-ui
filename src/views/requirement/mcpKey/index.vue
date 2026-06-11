@@ -397,6 +397,7 @@ export default {
     showCreateResult(data) {
       this.createResult = data || { plainKey: "", codexSetupPackage: null }
       if (this.createResult.plainKey) {
+        // 明文 Key 只在创建/重置后返回一次，前端仅在本次会话缓存，便于用户重新打开安装命令。
         this.lastInstallResult = JSON.parse(JSON.stringify(this.createResult))
       }
       this.resultOpen = true
@@ -410,6 +411,7 @@ export default {
       const setupPackage = result && result.codexSetupPackage
       const commands = setupPackage && Array.isArray(setupPackage.installCommands) ? setupPackage.installCommands : []
       return commands.map(command => {
+        // 安装包模板不直接写死 Key，渲染时再替换，避免复制高级配置时泄漏到长期模板字段。
         return Object.assign({}, command, {
           renderedCommand: this.renderInstallCommand(command.command, result.plainKey)
         })
@@ -439,6 +441,7 @@ export default {
       textarea.value = text
       textarea.style.position = "fixed"
       textarea.style.left = "-9999px"
+      // 兜底支持非安全上下文或旧浏览器，保证用户仍能复制 Key 和安装命令。
       document.body.appendChild(textarea)
       textarea.select()
       document.execCommand("copy")
