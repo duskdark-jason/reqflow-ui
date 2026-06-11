@@ -107,7 +107,7 @@
             icon="el-icon-connection"
             @click="handleIntake(scope.row)"
             v-hasPermi="['req:project:query']"
-          >接入</el-button>
+          >接入状态</el-button>
           <el-button
             size="mini"
             type="text"

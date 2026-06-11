@@ -41,11 +41,11 @@
 - `initInstruction` 至少包含 `actionType`、`targetMethod`、`token`、`tokenPrefix`、`prompt`、`content`、`copyLabel` 和 `expireTime`。复制内容必须直接使用 `content`，不得把人员 MCP Key、Web 登录 token 或本机路径拼入指令。
 - 分支分区必须展示该分支的独立初始化状态，包括 `totalModules`、`manualModules`、`indexedModules`、`indexedRepositoryCount`、`unindexedRepositoryCount`、`latestIndexedAt` 和 `latestCommit`；知识库详细内容通过 `/requirement/project/knowledge?projectId=...&variantId=...` 新页签展示，不在表格展开行内展示。
 - 项目列表会按项目调用 `/requirement/project/init/{projectId}` 派生初始化状态，状态口径来自 `initChecklist`：项目信息、仓库、分支配置、模块知识和索引。
-- 保存成功后刷新项目列表；用户选择“保存并进入接入中心”时跳转 `src/views/requirement/project/detail.vue`。
+- 保存成功后刷新项目列表；用户选择“保存并进入接入中心”时跳转 `src/views/requirement/project/detail.vue`。项目列表操作入口应使用“接入状态”或“接入中心”一类状态查看文案，不能只写“接入”。
 
 ## Harness 初始化下发契约
 
-- 项目接入中心展示平台内置 harness 模板版本、目标仓库、默认基线分支、任务分支前缀、workspace `AGENTS.md` 下发状态和子仓库初始化状态。
+- 项目接入中心是只读状态面板，主职责是展示项目接入完成度、待处理项、仓库索引状态、项目分支完成度、索引批次和模块知识库。项目配置、保存和初始化指令主复制入口属于项目维护页签。
 - 用户触发 harness 初始化时，前端读取后端模板包；实际写入目标 workspace 的动作由 Codex 通过需求平台 MCP 或接口获取模板后完成，前端不直接操作用户本机文件系统。
 - 多仓项目必须同时展示 workspace 根目录入口 `AGENTS.md` 和各子仓库 `AGENTS.md` 的下发状态；workspace 入口只做分流，业务规则仍写入子仓库。
 - 初始化完成口径必须包含模块知识库落地：目标子仓库不能只保留 `docs/ai-harness/modules/.gitkeep`，至少要生成一个按菜单目录、子菜单、功能接口、权限标识和涉及文件建立索引的 `docs/ai-harness/modules/*.md`。
@@ -54,9 +54,9 @@
 
 ## 项目索引契约
 
-- 项目接入中心读取 `/requirement/project/init/{projectId}`、`/requirement/index/batch/list`、`/requirement/index/module/tree` 只读展示团队共享仓库、项目分支、索引批次和模块知识库；新增和编辑回到项目管理维护页签。
+- 项目接入中心读取 `/requirement/project/init/{projectId}`、`/requirement/index/batch/list`、`/requirement/index/module/tree` 只读展示团队共享仓库、项目分支、索引批次和模块知识库；新增、编辑和初始化指令复制主路径回到项目管理维护页签。
 - 项目接入中心必须支持按项目分支筛选索引批次和模块知识库。模块知识库展示行必须有 `variantId`，分支为空的数据只能作为待迁移旧数据处理，不应默认混入选中分支。
-- 当后端 companion 因部分迁移库缺少可选索引表而返回空索引批次或空模块知识库时，项目接入中心必须继续展示项目、仓库、项目分支和初始化指令，把索引内容视为“暂无数据”。
+- 当后端 companion 因部分迁移库缺少可选索引表而返回空索引批次或空模块知识库时，项目接入中心必须继续展示项目、仓库、项目分支和待处理项，把索引内容视为“暂无数据”，不能误判为接入完成。
 - MCP 索引指引优先使用 `actionToken + remoteUrl` 调用 `publish_repository_index`，兼容旧的 `mcpKey + remoteUrl` 和 `projectId + repoId + branchName` 调用方式。
 - 新建或编辑需求时，选择项目、项目分支和模块后调用 `/requirement/index/impact/suggest`，模块下拉必须按 `projectId + variantId` 过滤，请求携带 `projectId`、`variantId`、`moduleId`、`moduleCode`；后端按所选项目分支和最新索引批次返回 `pages`、`apis`、`tables`、`permissions`、`documents` 五类候选影响面。
 - 新建或编辑需求时，项目分支下拉必须读取 `/requirement/project/init/{projectId}` 的分支初始化上下文，只展示已初始化完成的项目分支。前端已初始化口径与后端兜底一致：分支 `totalModules > 0`、`indexedRepositoryCount > 0` 且 `unindexedRepositoryCount = 0`；查询筛选可以保留历史分支用于查老需求，但提交表单不能选择未初始化分支。
