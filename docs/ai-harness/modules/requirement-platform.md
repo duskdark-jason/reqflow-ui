@@ -8,8 +8,7 @@
 
 | 菜单目录 | 子菜单/页面 | 功能说明 | 前端文件 | API 封装 | 后端接口与权限 | 后端核心文件 |
 |---|---|---|---|---|---|---|
-| 需求管理 | 项目管理 | 项目列表、项目维护入口、初始化状态和接入状态入口 | `src/views/requirement/project/index.vue`、`maintain.vue` | `src/api/requirement/project.js`、`projectInit.js` | `/requirement/project/**`，`req:project:*`；`/requirement/project/init/**`，`req:project:*` | `ReqProjectController`、`ReqProjectInitController`、`ReqProjectInitServiceImpl` |
-| 需求管理 | 项目接入中心 | 只读展示仓库索引状态、项目分支完成度、待处理项、索引批次和模块知识库 | `src/views/requirement/project/detail.vue` | `src/api/requirement/project.js`、`index.js` | `/requirement/project/init/{projectId}`，`req:project:query`；`/requirement/index/**`，`req:index:*` | `ReqProjectInitController`、`ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
+| 需求管理 | 项目管理 | 项目列表、项目维护入口和初始化状态 | `src/views/requirement/project/index.vue`、`maintain.vue` | `src/api/requirement/project.js`、`projectInit.js` | `/requirement/project/**`，`req:project:*`；`/requirement/project/init/**`，`req:project:*` | `ReqProjectController`、`ReqProjectInitController`、`ReqProjectInitServiceImpl` |
 | 需求管理 | 分支知识库详情页签 | 按项目分支查看模块知识、索引批次和初始化指令 | `src/views/requirement/project/knowledge.vue` | `src/api/requirement/index.js`、`project.js` | `/requirement/index/module/tree`，`req:index:list`；`/requirement/index/batch/list`，`req:index:list` | `ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
 | 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、分支初始化校验和影响面自动关联 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；`/requirement/index/impact/suggest`，`req:index:list` | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
 | 需求管理 | Agent 交接资料 | 查看和保存需求、计划、执行报告、Review 报告等 artifact | `src/views/requirement/package/index.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，`req:package:*` | `ReqPackageController`、`ReqPackageServiceImpl` |
@@ -22,7 +21,7 @@
 | 类型 | 优先查看文件 | 说明 |
 |---|---|---|
 | 路由入口 | `src/router/index.js` | 需求管理隐藏页签和页面路由。 |
-| 项目页面 | `src/views/requirement/project/*.vue` | 项目列表、维护页签、接入中心和分支知识库详情。 |
+| 项目页面 | `src/views/requirement/project/*.vue` | 项目列表、维护页签和分支知识库详情。 |
 | 需求页面 | `src/views/requirement/demand/*.vue` | 需求列表、新增、编辑和详情。 |
 | 交接资料 | `src/views/requirement/package/index.vue` | Agent artifact 保存和展示。 |
 | MCP 管理 | `src/views/requirement/mcpKey/index.vue` | 人员 MCP Key 管理。 |
@@ -38,15 +37,15 @@
 - 普通增删改表单可使用 Element UI `el-dialog` 和 `el-form`；项目维护和需求维护属于重型流程，必须使用独立页签承载。
 - 项目管理新增和修改入口必须打开项目维护页签，页签单页展示项目信息、代码仓库、分支配置和模块初始化状态，不再使用弹窗或分步向导。
 - 分支配置是项目管理里的深层级栏目：每个分支行必须能展示自己的初始化指令复制入口、真实分支、模块总数、手工模块数、索引模块数、索引仓库数和最近索引状态。
-- 项目列表的初始化状态必须来自后端 `initChecklist`，不得只按前端本地行状态臆测；进入项目接入中心的操作文案必须体现状态查看语义，不能只写“接入”造成点击即执行的误解。
-- 项目接入中心必须收敛为只读状态面板，展示项目接入完成度、待处理项、仓库索引状态、项目分支完成度、索引批次和模块知识库；配置、保存和初始化指令主复制入口属于项目维护页签。
-- 仓库、项目分支和模块知识不再作为独立左侧菜单入口；项目维护页签是仓库和项目分支的主维护入口，项目接入中心只读展示仓库、分支、索引批次和模块知识库，并提供返回维护页的辅助入口。
+- 项目列表的初始化状态必须来自后端 `initChecklist`，不得只按前端本地行状态臆测；项目列表操作列只保留维护和删除等真实操作，不再提供独立状态页入口。
+- 项目维护页签是项目配置、仓库、项目分支、初始化指令和初始化状态的主入口；保存后留在维护页刷新状态，不再跳转到重复的状态页面。
+- 仓库、项目分支和模块知识不再作为独立左侧菜单入口；项目维护页签是仓库和项目分支的主维护入口，分支知识库页签承接索引批次和模块知识库查看。
 - 仓库维护只保存团队共享 Git 远端、仓库类型和默认分支，允许纯后端服务只登记一条后端仓库，不保存个人本机绝对路径。
-- 项目分支维护中文标签、真实分支名和后端生成的初始化指令；指令复制内容必须来自 `initInstruction.content`，包含简短提示词和 `actionToken`，旧 `mcpKey` 只作为兼容降级展示。接入中心不得再把初始化指令作为分支表格主列。
-- 分支知识库详情必须通过新页签展示，项目接入中心的分支表不再使用展开行承载知识库详情。
+- 项目分支维护中文标签、真实分支名和后端生成的初始化指令；指令复制内容必须来自 `initInstruction.content`，包含简短提示词和 `actionToken`，旧 `mcpKey` 只作为兼容降级展示。
+- 分支知识库详情必须通过新页签展示，不在项目列表或维护表格中使用展开行承载知识库详情。
 - MCP 索引用 `actionToken + remoteUrl` 识别项目、分支和代码仓库；旧 `mcpKey + remoteUrl` 仅作为兼容路径。
 - MCP 管理创建或重置 Key 后，结果弹窗必须优先展示 `codexSetupPackage.installCommands` 的多平台代码块命令；前端只在当前页面会话内把一次性 `plainKey` 填入命令并允许重复打开复制，刷新后不得恢复明文 Key。完整 JSON 安装包只作为高级配置/调试信息。
-- 模块和知识库必须同时关联项目与项目分支。需求维护页签选择模块时按 `projectId + variantId` 过滤，优先读取知识库模块，并兼容人工模块；项目接入中心的索引批次和模块知识库也按选中分支展示。
+- 模块和知识库必须同时关联项目与项目分支。需求维护页签选择模块时按 `projectId + variantId` 过滤，优先读取知识库模块，并兼容人工模块；分支知识库页签的索引批次和模块知识库也按选中分支展示。
 - 新增和编辑需求的项目分支下拉只能展示已初始化完成的分支，数据来自项目初始化上下文的分支行级 `indexedRepositoryCount` 和 `unindexedRepositoryCount`。新功能提需允许当前分支暂时没有既有模块知识；需求列表查询筛选可以继续展示全部分支，避免历史需求不可检索。
 - 需求维护页签允许填写新功能名称并通过需求备注提交；列表和详情在没有模块标识时展示该新功能名称。
 - 影响范围不在需求维护页签和详情页展示；保存时按知识库推荐自动写入后端影响字段，没有推荐内容时提交空值。
@@ -72,5 +71,5 @@
 ## 验证建议
 
 - 最低验证：`npm run build:prod`。
-- 页面冒烟：启动前端后打开登录页、首页看板、项目管理、项目维护页签、项目接入中心、分支知识库详情页签、需求列表、Agent 交接资料、MCP 管理和统计页面，检查 console 无本次变更相关错误。
+- 页面冒烟：启动前端后打开登录页、首页看板、项目管理、项目维护页签、分支知识库详情页签、需求列表、Agent 交接资料、MCP 管理和统计页面，检查 console 无本次变更相关错误。
 - 跨端联调：后端启动后验证项目初始化新增、编辑回显、初始化指令复制、actionToken 索引导入、列表状态刷新、索引批次展示、影响面推荐、需求新增、Agent 交接资料保存、MCP Key 用户选择、创建/重置/停用和统计接口。

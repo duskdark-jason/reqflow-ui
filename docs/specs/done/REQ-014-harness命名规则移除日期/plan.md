@@ -14,7 +14,7 @@
 |---|---|---|
 | L0 | AC-001, AC-002, AC-003 | `sh scripts/check-docs.sh` |
 | L0 | AC-001 | `sh scripts/test-check-harness.sh` |
-| L0 | AC-001, AC-002, AC-003 | `sh scripts/check-harness.sh complete --spec docs/specs/active/REQ-014-harness命名规则移除日期` |
+| L0 | AC-001, AC-002, AC-003 | `sh scripts/check-harness.sh complete --spec docs/specs/done/REQ-014-harness命名规则移除日期` |
 | L2 | AC-002, AC-003 | `rg` 扫描旧日期命名残留 |
 | L3 | AC-001 | Review diff |
 | L4 | AC-001 | 不适用，本次无页面运行态流程 |

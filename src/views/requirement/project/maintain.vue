@@ -7,7 +7,7 @@
         <div>
           <div class="maintain-eyebrow">项目维护</div>
           <h2>{{ pageTitle }}</h2>
-          <p>统一维护项目、团队 Git 远端和分支初始化指令，保存后可直接进入接入中心或分支知识库。</p>
+          <p>统一维护项目、团队 Git 远端和分支初始化指令，分支知识库通过分支行进入。</p>
         </div>
         <el-steps :active="initStepActive" finish-status="success" simple class="maintain-steps">
           <el-step title="项目信息" icon="el-icon-office-building" />
@@ -199,8 +199,7 @@
       </section>
       <div class="maintain-actions">
         <el-button @click="closePage">关 闭</el-button>
-        <el-button :loading="saving" type="primary" @click="submit(false)">保 存</el-button>
-        <el-button :loading="saving" type="success" @click="submit(true)">保存并进入接入中心</el-button>
+        <el-button :loading="saving" type="primary" @click="submit">保 存</el-button>
       </div>
     </div>
   </div>
@@ -449,7 +448,7 @@ export default {
       // 初始化信息会被 MCP 下发到其他工作空间，个人绝对路径会让后续接入无法复用。
       return normalized.indexOf("/Users/") === 0 || normalized.indexOf("/home/") === 0 || normalized.indexOf("file:/") === 0 || /^[A-Za-z]:\//.test(normalized)
     },
-    submit(goIntake) {
+    submit() {
       this.validateAll().then(valid => {
         if (!valid) return
         this.saving = true
@@ -464,9 +463,7 @@ export default {
             this.projectId = savedProjectId
             this.$router.replace({ path: this.$route.path, query: { projectId: savedProjectId } })
           }
-          if (goIntake) {
-            this.openIntake(savedProjectId, savedProject.projectName)
-          } else if (savedProjectId) {
+          if (savedProjectId) {
             this.loadInit()
           }
         }).catch(() => {
@@ -496,10 +493,6 @@ export default {
         }),
         remark: this.form.remark
       }
-    },
-    openIntake(projectId, projectName) {
-      if (!projectId) return
-      this.$tab.openPage((projectName || "项目") + "接入中心", "/requirement/project/detail", { projectId: projectId })
     },
     openKnowledge(row) {
       if (!this.projectId || !row || !row.variantId) return

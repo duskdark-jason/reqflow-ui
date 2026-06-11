@@ -99,15 +99,8 @@
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160">
         <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-connection"
-            @click="handleIntake(scope.row)"
-            v-hasPermi="['req:project:query']"
-          >接入状态</el-button>
           <el-button
             size="mini"
             type="text"
@@ -204,14 +197,6 @@ export default {
       if (!targetProjectId) return
       const title = (row.projectName || "项目") + "维护"
       this.$tab.openPage(title, "/requirement/project/maintain", { projectId: targetProjectId })
-    },
-    handleIntake(row) {
-      const projectId = row.projectId || row.id
-      this.handleIntakeById(projectId)
-    },
-    handleIntakeById(projectId) {
-      if (!projectId) return
-      this.$tab.openPage("项目接入中心", "/requirement/project/detail", { projectId: projectId })
     },
     handleDelete(row) {
       const projectIds = row.projectId || row.id || this.ids
