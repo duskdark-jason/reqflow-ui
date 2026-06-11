@@ -50,3 +50,11 @@ export function getDemandPlanInstruction(demandId) {
     method: 'get'
   })
 }
+
+// 获取执行开发的 MCP 指令
+export function getDemandDevelopInstruction(demandId) {
+  return request({
+    url: '/requirement/demand/' + demandId + '/develop-instruction',
+    method: 'get'
+  })
+}

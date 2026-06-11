@@ -15,9 +15,10 @@
 1. 布局与品牌：移除 `Settings` 抽屉入口，固定 `sideTheme=theme-light`、`navType=1`，改造侧边栏 logo 组件和 logo 资产，覆盖 AC-001。
 2. 隐藏页签返回：增强 `$tab.closePage` 支持 `activeMenu` 父菜单回退，并修改需求详情/维护返回逻辑，覆盖 AC-002。
 3. 需求维护表单：删除创建人 ID 输入；新增不展示编号；修改编号用文本展示；保存 payload 删除 `creatorId`、新增时删除 `demandNo`，覆盖 AC-003、AC-004。
-4. 需求列表与详情：列表操作列移除 Agent 资料；详情页增加资料摘要和复制 MCP 编排指令入口；覆盖 AC-005。
-5. 状态体验：统一前端状态枚举、标签、按钮和流转确认文案，覆盖 AC-006。
-6. 文档同步：更新模块文档和契约文档，覆盖 AC-007。
+4. 需求列表与详情：列表操作列移除 Agent 资料；详情页内嵌 Agent 交接资料包、执行开发指令入口和资料版本记录；复制指令只使用后端返回内容；详情上下文的 Agent 交接资料只读展示当前需求文档，覆盖 AC-005、AC-011、AC-012、AC-013、AC-014。
+5. 状态体验：统一前端状态枚举、标签、按钮和流转确认文案，增加待验收返修与返修后提交验收动作，覆盖 AC-006、AC-010。
+6. 视觉返修：修正 logo 图文对齐，统一流程按钮状态风格，并将详情流程确认按钮放入头部状态区，覆盖 AC-008、AC-009。
+7. 文档同步：更新模块文档和契约文档，覆盖 AC-007。
 
 ## 文件改动范围
 
@@ -31,14 +32,14 @@
 | 修改 | `src/plugins/tab.js` | 隐藏页签返回父菜单。 |
 | 修改 | `src/views/requirement/demand/index.vue` | 操作列和状态按钮调整。 |
 | 修改 | `src/views/requirement/demand/maintain.vue` | 表单体验和保存 payload 调整。 |
-| 修改 | `src/views/requirement/demand/detail.vue` | 详情状态动作、Agent 资料摘要和 MCP 指令复制。 |
+| 修改 | `src/views/requirement/demand/detail.vue` | 详情状态动作、Agent 资料摘要、MCP 指令复制和资料历史版本。 |
 | 修改 | `src/api/requirement/demand.js` | 状态 API 封装保持或补充语义方法。 |
 | 修改 | `docs/ai-harness/modules/requirement-platform.md`、`docs/ai-harness/contracts/requirement-platform-ui.md` | 长期规则同步。 |
 
 ## 模块知识库计划
 
-- 更新 `docs/ai-harness/modules/requirement-platform.md`，记录固定白色左侧布局、新 logo、隐藏页签返回父菜单、需求列表操作列和状态流转。
-- 更新 `docs/ai-harness/contracts/requirement-platform-ui.md`，记录需求新增/修改字段、状态文案和操作约束。
+- 更新 `docs/ai-harness/modules/requirement-platform.md`，记录固定白色左侧布局、新 logo、隐藏页签返回父菜单、需求列表操作列、返修流程和资料版本展示。
+- 更新 `docs/ai-harness/contracts/requirement-platform-ui.md`，记录需求新增/修改字段、状态文案、按钮分区、MCP 指令和操作约束。
 
 ## 代码注释计划
 
@@ -64,6 +65,13 @@
 | AC-005 | 需求列表与详情 | 浏览器列表/详情冒烟 |
 | AC-006 | 状态体验 | 代码检查状态枚举、浏览器按钮冒烟 |
 | AC-007 | 文档同步 | `sh scripts/check-docs.sh` |
+| AC-008 | 视觉返修 | 浏览器截图、`npm run build:prod` |
+| AC-009 | 详情动作分区 | 浏览器详情冒烟、代码检查 |
+| AC-010 | 返修状态流转 | 代码检查状态枚举、后端 companion 单测 |
+| AC-011 | 历史版本和执行开发指令 | 浏览器详情冒烟、接口冒烟 |
+| AC-012 | 指令 token 展示边界 | 浏览器详情冒烟、接口内容检查、代码检查 |
+| AC-013 | Agent 交接资料详情聚焦模式 | 浏览器打开 `/requirement/package?demandId=...` 检查按钮和文档展示 |
+| AC-014 | 详情内嵌资料包并去重 | 浏览器详情页检查只存在统一资料包区域 |
 
 ## 执行约束
 

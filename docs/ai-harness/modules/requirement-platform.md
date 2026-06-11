@@ -10,7 +10,7 @@
 |---|---|---|---|---|---|---|
 | 需求管理 | 项目管理 | 项目列表、项目维护入口和初始化状态 | `src/views/requirement/project/index.vue`、`maintain.vue` | `src/api/requirement/project.js`、`projectInit.js` | `/requirement/project/**`，`req:project:*`；`/requirement/project/init/**`，`req:project:*` | `ReqProjectController`、`ReqProjectInitController`、`ReqProjectInitServiceImpl` |
 | 需求管理 | 分支知识库详情页签 | 按项目分支查看模块知识、索引批次和初始化指令 | `src/views/requirement/project/knowledge.vue` | `src/api/requirement/index.js`、`project.js` | `/requirement/index/module/tree`，`req:index:list`；`/requirement/index/batch/list`，`req:index:list` | `ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
-| 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、状态按钮、详情资料展示和 MCP 编排指令复制 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue`、`status.js` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；`/requirement/index/impact/suggest`，`req:index:list` | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
+| 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、状态按钮、详情资料展示、返修版本记录和 MCP 指令复制 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue`、`status.js` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；`/requirement/index/impact/suggest`，`req:index:list` | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
 | 需求管理 | Agent 交接资料 | 查看和保存需求、计划、执行报告、Review 报告等 artifact | `src/views/requirement/package/index.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，`req:package:*` | `ReqPackageController`、`ReqPackageServiceImpl` |
 | 需求管理 | MCP 管理 | 管理人员 MCP Key，创建或重置后复制一次性 Key 和多平台 Codex 安装命令 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`/requirement/codex/install.*`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqCodexInstallController`、`ReqMcpController`、`McpService` |
 | 需求管理 | 使用统计 | 展示需求、项目、用户和状态统计 | `src/views/requirement/statistics/index.vue` | `src/api/requirement/statistics.js` | `/requirement/statistics/**`，`req:stats:view` | `ReqStatisticsController`、`ReqStatisticsService` |
@@ -60,15 +60,19 @@
 - 隐藏页签从父菜单打开时必须携带 `parentPath` 或依赖路由 `meta.activeMenu`；关闭/返回时优先回父菜单，不得跳到最后打开的无关标签。
 - 新增需求维护页签不得展示需求编号和创建人 ID；保存 payload 不提交 `demandNo`、`creatorId` 和状态字段，编号、创建人和默认状态由后端生成。
 - 修改需求维护页签中需求编号只能用文本展示，不允许使用 input 样式；非 `draft` 需求进入维护页签时前端应只读，后端仍负责最终拦截。
-- 需求列表操作列不展示 Agent 交接资料入口；详情页可以展示 Agent 交接资料入口、最新需求设计、最新执行方案和复制 MCP 编排指令按钮。
-- 需求状态文案以 `src/views/requirement/demand/status.js` 为准：新主流程为未提交、待生成需求说明和执行计划、资料待确认、待执行开发、开发中、待验收、已完成；旧 `资料生成中`、`返修中`、`已归档` 仅作为兼容状态展示。
+- 需求列表操作列不展示 Agent 交接资料入口；需求详情页直接内嵌当前需求的 Agent 交接资料包，按文档类型展示最新内容和历史版本，不再额外重复展示一组独立的需求设计/执行方案预览；详情页仍可展示复制 MCP 编排指令按钮和复制执行开发指令按钮。
+- 以 `demandId` 上下文打开 Agent 交接资料页时，页面必须以当前需求为上下文，只展示需求标题和各类文档内容；不得展示需求 ID 查询、手动生成资料、加载最新或保存新版本等管理动作。
+- 需求详情页必须区分流程推进按钮和跳转/复制类协作工具：流程推进按钮放在详情标题区右侧，协作工具放在详情正文工具区，避免状态决策和页面跳转混在同一按钮组。
+- 需求状态文案以 `src/views/requirement/demand/status.js` 为准：新主流程为未提交、待生成需求说明和执行计划、资料待确认、待执行开发、开发中、待验收、返修中、已完成；旧 `资料生成中`、`已归档` 仅作为兼容状态展示。
+- 待验收状态必须同时提供“发起返修”和“结束任务”；返修中状态提交后回到待验收。详情页应通过 `/requirement/package/{demandId}` 展示需求设计、执行方案和执行报告等产物的历史版本，用于判断返修轮次。
+- 初始化指令、MCP 编排指令和执行开发指令中的 actionToken 均为后端生成的一次性短时 token，前端只展示和复制后端返回内容，不得写入本地存储；过期或已使用后用户需要重新生成指令。
 
 ## 风险点
 
 - 后端接口未运行时，页面只能通过构建验证，不能宣称完成联调。
 - MCP 管理页面依赖后端 `/requirement/mcp/key/**` 和系统用户列表接口；只有前端构建通过时，不能宣称 Key 创建、权限隔离或 Codex 调用已经完成运行态联调。
 - 项目列表会对当前页项目逐个读取初始化上下文；后续如项目数明显增加，可考虑后端增加批量初始化状态接口。
-- 初始化指令中的明文 `actionToken` 只用于复制给 MCP 调用，前端不得持久化到本地存储、查询条件或日志；缺少 `initInstruction` 时只能展示兼容降级提示。
+- 初始化指令、MCP 编排指令和执行开发指令中的明文 `actionToken` 只用于复制给 MCP 调用，前端不得持久化到本地存储、查询条件或日志；缺少 `initInstruction` 时只能展示兼容降级提示。
 - Agent 交接资料存在多个 artifact type，前端 tab 的 key 必须使用后端支持的类型值。
 - Harness 初始化失败时，必须区分平台模板生成失败、Codex 本地写入失败、仓库远端不匹配和校验脚本失败，不能统一显示为“初始化失败”。
 - 索引推荐依赖后端 `/requirement/index/**` 接口，且必须让后端按项目分支 `variantId` 解析真实分支并限定最新索引批次；接口缺失时需求表单只能保留人工填写影响范围。

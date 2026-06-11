@@ -122,32 +122,35 @@
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width demand-actions-column" width="340">
         <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-view"
-            @click="handleDetail(scope.row)"
-            v-hasPermi="['req:demand:query']"
-          >详情</el-button>
-          <el-button
-            v-if="canEditDemand(scope.row)"
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['req:demand:edit']"
-          >修改</el-button>
-          <el-button
-            v-if="primaryStatusAction(scope.row.status)"
-            size="mini"
-            plain
-            :type="primaryStatusAction(scope.row.status).type"
-            :icon="primaryStatusAction(scope.row.status).icon"
-            @click="handleStatusCommand(primaryStatusAction(scope.row.status), scope.row)"
-            v-hasPermi="['req:demand:edit']"
-          >{{ primaryStatusAction(scope.row.status).label }}</el-button>
+          <div class="row-actions">
+            <el-button
+              size="mini"
+              type="text"
+              icon="el-icon-view"
+              @click="handleDetail(scope.row)"
+              v-hasPermi="['req:demand:query']"
+            >详情</el-button>
+            <el-button
+              v-if="canEditDemand(scope.row)"
+              size="mini"
+              type="text"
+              icon="el-icon-edit"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['req:demand:edit']"
+            >修改</el-button>
+            <el-button
+              v-for="action in statusActions(scope.row.status)"
+              :key="action.value"
+              size="mini"
+              class="status-action-button"
+              :class="'is-' + action.tone"
+              :icon="action.icon"
+              @click="handleStatusCommand(action, scope.row)"
+              v-hasPermi="['req:demand:edit']"
+            >{{ action.label }}</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -175,7 +178,8 @@ import {
   demandStatusTagType,
   nextStatusOptions,
   optionLabel,
-  primaryStatusAction as getPrimaryStatusAction
+  primaryStatusAction as getPrimaryStatusAction,
+  statusActions as getStatusActions
 } from "./status"
 
 export default {
@@ -349,9 +353,58 @@ export default {
     primaryStatusAction(status) {
       return getPrimaryStatusAction(status)
     },
+    statusActions(status) {
+      return getStatusActions(status)
+    },
     canEditDemand(row) {
       return canEditDemandRow(row, this.id)
     }
   }
 }
 </script>
+
+<style scoped>
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.status-action-button {
+  height: 24px;
+  margin-left: 0 !important;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+.status-action-button:hover,
+.status-action-button:focus {
+  border-color: #93c5fd;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-action-button.is-repair {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.status-action-button.is-complete {
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.status-action-button.is-develop {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #075985;
+}
+</style>

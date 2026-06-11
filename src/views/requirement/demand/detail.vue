@@ -4,11 +4,25 @@
 
     <el-card class="detail-card" shadow="never" v-loading="loading">
       <div slot="header" class="detail-header">
-        <div>
+        <div class="detail-heading">
           <div class="detail-title">{{ form.title || "未选择需求" }}</div>
           <div class="detail-subtitle">{{ form.demandNo || "-" }}</div>
         </div>
-        <el-tag :type="demandStatusTagType(form.status)">{{ optionLabel(demandStatusOptions, form.status) }}</el-tag>
+        <div class="detail-status-panel">
+          <el-tag :type="demandStatusTagType(form.status)">{{ optionLabel(demandStatusOptions, form.status) }}</el-tag>
+          <div v-if="statusActions(form.status).length" class="process-actions">
+            <el-button
+              v-for="action in statusActions(form.status)"
+              :key="action.value"
+              size="mini"
+              class="flow-confirm-button"
+              :class="'is-' + action.tone"
+              :icon="action.icon"
+              @click="handleStatusCommand(action)"
+              v-hasPermi="['req:demand:edit']"
+            >{{ action.label }}</el-button>
+          </div>
+        </div>
       </div>
 
       <el-descriptions :column="3" border size="medium">
@@ -20,38 +34,39 @@
         <el-descriptions-item label="创建时间">{{ parseTime(form.createTime) || "-" }}</el-descriptions-item>
       </el-descriptions>
 
-      <div class="flow-actions">
-        <el-button
-          v-if="primaryStatusAction(form.status)"
-          size="mini"
-          plain
-          :type="primaryStatusAction(form.status).type"
-          :icon="primaryStatusAction(form.status).icon"
-          @click="handleStatusCommand(primaryStatusAction(form.status))"
-          v-hasPermi="['req:demand:edit']"
-        >{{ primaryStatusAction(form.status).label }}</el-button>
-        <el-button
-          v-if="canCopyInstruction"
-          size="mini"
-          type="primary"
-          plain
-          icon="el-icon-document-copy"
-          :loading="instructionLoading"
-          @click="copyPlanInstruction"
-          v-hasPermi="['req:demand:query']"
-        >复制 MCP 编排指令</el-button>
-        <el-button
-          size="mini"
-          type="primary"
-          plain
-          icon="el-icon-document"
-          @click="openPackage"
-          :disabled="!demandId"
-          v-hasPermi="['req:package:list']"
-        >Agent 交接资料</el-button>
+      <div class="tool-panel">
+        <div class="tool-panel-title">协作工具</div>
+        <div class="tool-actions">
+          <el-button
+            v-if="canCopyInstruction"
+            size="mini"
+            class="tool-action-button"
+            icon="el-icon-document-copy"
+            :loading="instructionLoadingType === 'plan'"
+            @click="copyPlanInstruction"
+            v-hasPermi="['req:demand:query']"
+          >复制 MCP 编排指令</el-button>
+          <el-button
+            v-if="canCopyDevelopInstruction"
+            size="mini"
+            class="tool-action-button"
+            icon="el-icon-position"
+            :loading="instructionLoadingType === 'develop'"
+            @click="copyDevelopInstruction"
+            v-hasPermi="['req:demand:query']"
+          >复制执行开发指令</el-button>
+        </div>
       </div>
 
-      <div v-if="planInstruction.content" class="instruction-preview">{{ planInstruction.content }}</div>
+      <div v-if="instructionPreview.content" class="instruction-preview">
+        <div class="instruction-title">{{ instructionPreview.title }}</div>
+        <div>{{ instructionPreview.content }}</div>
+      </div>
+
+      <div v-if="isRepairing" class="repair-banner">
+        <span>返修中</span>
+        <small>下方 Agent 交接资料包保留每次需求设计、执行方案和执行报告回写。</small>
+      </div>
 
       <el-divider content-position="left">业务背景</el-divider>
       <div class="markdown-block">{{ form.businessBackground || "暂无内容" }}</div>
@@ -62,22 +77,40 @@
       <el-divider content-position="left">验收标准</el-divider>
       <div class="markdown-block">{{ form.acceptanceText || "暂无内容" }}</div>
 
-      <el-divider content-position="left">需求设计与执行方案</el-divider>
-      <div v-loading="artifactLoading" class="artifact-list">
-        <section v-for="artifact in artifactTypes" :key="artifact.value" class="artifact-section">
-          <div class="artifact-header">
-            <span>{{ artifact.label }}</span>
-            <el-tag v-if="artifacts[artifact.value].version" size="mini" type="info">
-              v{{ artifacts[artifact.value].version }}
-            </el-tag>
-          </div>
-          <div class="markdown-block artifact-content">
-            {{ artifacts[artifact.value].content || "MCP 回写资料包后将在这里展示。" }}
-          </div>
-          <div v-if="artifacts[artifact.value].updateTime" class="artifact-time">
-            更新于 {{ parseTime(artifacts[artifact.value].updateTime) }}
-          </div>
-        </section>
+      <el-divider content-position="left">Agent 交接资料包</el-divider>
+      <div v-loading="artifactLoading" class="embedded-package">
+        <el-tabs v-model="activeArtifact" class="embedded-package-tabs">
+          <el-tab-pane
+            v-for="artifact in artifactTypes"
+            :key="artifact.value"
+            :label="artifact.label"
+            :name="artifact.value"
+          >
+            <div class="artifact-header">
+              <span>{{ artifact.label }}</span>
+              <el-tag v-if="artifacts[artifact.value].version" size="mini" type="info">
+                v{{ artifacts[artifact.value].version }}
+              </el-tag>
+            </div>
+            <div class="markdown-block artifact-content">
+              {{ artifacts[artifact.value].content || "MCP 回写资料包后将在这里展示。" }}
+            </div>
+            <div v-if="artifactVersions(artifact.value).length" class="version-history">
+              <span
+                v-for="version in artifactVersions(artifact.value)"
+                :key="artifact.value + '-' + version.versionNo"
+                class="version-chip"
+                :class="{ 'is-current': version.versionNo === artifacts[artifact.value].version }"
+              >
+                v{{ version.versionNo }}
+                <small>{{ version.versionNote || parseTime(version.createTime) || "历史版本" }}</small>
+              </span>
+            </div>
+            <div v-if="artifacts[artifact.value].updateTime" class="artifact-time">
+              更新于 {{ parseTime(artifacts[artifact.value].updateTime) }}
+            </div>
+          </el-tab-pane>
+        </el-tabs>
       </div>
 
       <div class="detail-actions">
@@ -92,13 +125,14 @@ import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
 import { listIndexModule } from "@/api/requirement/index"
-import { getDemand, getDemandPlanInstruction, updateDemandStatus } from "@/api/requirement/demand"
-import { getLatestPackageArtifact } from "@/api/requirement/package"
+import { getDemand, getDemandDevelopInstruction, getDemandPlanInstruction, updateDemandStatus } from "@/api/requirement/demand"
+import { getDemandPackage } from "@/api/requirement/package"
 import {
   demandStatusOptions,
   demandStatusTagType,
   optionLabel,
-  primaryStatusAction as getPrimaryStatusAction
+  primaryStatusAction as getPrimaryStatusAction,
+  statusActions as getStatusActions
 } from "./status"
 
 export default {
@@ -107,20 +141,38 @@ export default {
     return {
       loading: false,
       artifactLoading: false,
-      instructionLoading: false,
+      instructionLoadingType: "",
       demandId: undefined,
+      activeArtifact: "requirement",
       form: {},
       planInstruction: {},
+      developInstruction: {},
+      instructionPreview: {},
       projectOptions: [],
       variantOptions: [],
       moduleOptions: [],
+      packageVersions: [],
       artifactTypes: [
+        { value: "requirement_draft", label: "需求草稿" },
         { value: "requirement", label: "需求设计" },
-        { value: "plan", label: "执行方案" }
+        { value: "plan", label: "执行方案" },
+        { value: "context_manifest", label: "上下文清单" },
+        { value: "branch_execution_brief", label: "分支执行简报" },
+        { value: "execution_prompt", label: "执行提示词" },
+        { value: "review_prompt", label: "Review 提示词" },
+        { value: "execution_report", label: "执行报告" },
+        { value: "review_report", label: "Review 报告" }
       ],
       artifacts: {
+        requirement_draft: { content: "", version: undefined, updateTime: undefined },
         requirement: { content: "", version: undefined, updateTime: undefined },
-        plan: { content: "", version: undefined, updateTime: undefined }
+        plan: { content: "", version: undefined, updateTime: undefined },
+        context_manifest: { content: "", version: undefined, updateTime: undefined },
+        branch_execution_brief: { content: "", version: undefined, updateTime: undefined },
+        execution_prompt: { content: "", version: undefined, updateTime: undefined },
+        review_prompt: { content: "", version: undefined, updateTime: undefined },
+        execution_report: { content: "", version: undefined, updateTime: undefined },
+        review_report: { content: "", version: undefined, updateTime: undefined }
       },
       demandTypeOptions: [
         { value: "FEATURE", label: "功能需求" },
@@ -149,6 +201,12 @@ export default {
     },
     canCopyInstruction() {
       return ["submitted", "plan_pending", "plan_ready"].includes(String(this.form.status))
+    },
+    canCopyDevelopInstruction() {
+      return ["confirmed", "developing", "repairing", "review"].includes(String(this.form.status))
+    },
+    isRepairing() {
+      return String(this.form.status) === "repairing"
     }
   },
   methods: {
@@ -163,13 +221,15 @@ export default {
     },
     loadPackagePreview() {
       this.artifactLoading = true
-      Promise.all(this.artifactTypes.map(item => {
-        return getLatestPackageArtifact(this.demandId, item.value).then(response => {
-          this.setArtifact(item.value, response.data || {})
-        }).catch(() => {
-          this.setArtifact(item.value, {})
+      getDemandPackage(this.demandId).then(response => {
+        this.packageVersions = this.normalizePackageVersions(response.data)
+        this.artifactTypes.forEach(item => {
+          this.setArtifact(item.value, this.latestArtifactVersion(item.value) || {})
         })
-      })).then(() => {
+        this.artifactLoading = false
+      }).catch(() => {
+        this.packageVersions = []
+        this.artifactTypes.forEach(item => this.setArtifact(item.value, {}))
         this.artifactLoading = false
       })
     },
@@ -177,6 +237,27 @@ export default {
       this.artifacts[artifactType].content = data.content || data.markdown || ""
       this.artifacts[artifactType].version = data.versionNo || data.version || data.artifactVersion
       this.artifacts[artifactType].updateTime = data.updateTime || data.createTime
+    },
+    normalizePackageVersions(data) {
+      if (Array.isArray(data)) {
+        return data
+      }
+      if (data && Array.isArray(data.items)) {
+        return data.items
+      }
+      if (data && Array.isArray(data.artifacts)) {
+        return data.artifacts
+      }
+      return []
+    },
+    artifactVersions(artifactType) {
+      return this.packageVersions
+        .filter(item => item.artifactType === artifactType)
+        .sort((a, b) => Number(b.versionNo || 0) - Number(a.versionNo || 0))
+        .slice(0, 5)
+    },
+    latestArtifactVersion(artifactType) {
+      return this.artifactVersions(artifactType)[0]
     },
     getOptions() {
       listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
@@ -198,9 +279,6 @@ export default {
     goBack() {
       this.$tab.closePage()
     },
-    openPackage() {
-      this.$tab.openPage("Agent交接资料", "/requirement/package", { demandId: this.demandId, parentPath: this.$route.fullPath })
-    },
     handleStatusCommand(action) {
       if (!this.demandId || !action) return
       this.$modal.confirm(action.confirm || "是否确认更新需求状态？").then(() => {
@@ -211,18 +289,26 @@ export default {
       }).catch(() => {})
     },
     copyPlanInstruction() {
+      this.copyInstruction("planInstruction", "plan", "MCP 编排指令", getDemandPlanInstruction)
+    },
+    copyDevelopInstruction() {
+      this.copyInstruction("developInstruction", "develop", "执行开发指令", getDemandDevelopInstruction)
+    },
+    copyInstruction(cacheKey, loadingType, title, loader) {
       if (!this.demandId) return
-      if (this.planInstruction.content) {
-        this.copyText(this.planInstruction.content)
+      if (this[cacheKey].content) {
+        this.instructionPreview = { title: title, content: this[cacheKey].content }
+        this.copyText(this[cacheKey].content)
         return
       }
-      this.instructionLoading = true
-      getDemandPlanInstruction(this.demandId).then(response => {
-        this.planInstruction = response.data || {}
-        this.copyText(this.planInstruction.content || "")
-        this.instructionLoading = false
+      this.instructionLoadingType = loadingType
+      loader(this.demandId).then(response => {
+        this[cacheKey] = response.data || {}
+        this.instructionPreview = { title: title, content: this[cacheKey].content || "" }
+        this.copyText(this[cacheKey].content || "")
+        this.instructionLoadingType = ""
       }).catch(() => {
-        this.instructionLoading = false
+        this.instructionLoadingType = ""
       })
     },
     copyText(content) {
@@ -285,6 +371,9 @@ export default {
     },
     primaryStatusAction(status) {
       return getPrimaryStatusAction(status)
+    },
+    statusActions(status) {
+      return getStatusActions(status)
     }
   }
 }
@@ -299,6 +388,11 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+}
+
+.detail-heading {
+  min-width: 0;
 }
 
 .detail-title {
@@ -312,6 +406,14 @@ export default {
   margin-top: 4px;
   color: #909399;
   font-size: 13px;
+}
+
+.detail-status-panel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .markdown-block {
@@ -330,11 +432,86 @@ export default {
   text-align: right;
 }
 
-.flow-actions {
+.process-actions,
+.tool-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.process-actions {
+  justify-content: flex-end;
+}
+
+.flow-confirm-button {
+  height: 30px;
+  margin-left: 0 !important;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+  background: #1d4ed8;
+  color: #fff;
+  font-weight: 600;
+}
+
+.flow-confirm-button:hover,
+.flow-confirm-button:focus {
+  border-color: #1e40af;
+  background: #1e40af;
+  color: #fff;
+}
+
+.flow-confirm-button.is-repair {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.flow-confirm-button.is-repair:hover,
+.flow-confirm-button.is-repair:focus {
+  border-color: #fda4af;
+  background: #ffe4e6;
+  color: #9f1239;
+}
+
+.flow-confirm-button.is-complete {
+  border-color: #059669;
+  background: #059669;
+}
+
+.flow-confirm-button.is-complete:hover,
+.flow-confirm-button.is-complete:focus {
+  border-color: #047857;
+  background: #047857;
+}
+
+.tool-panel {
   margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f9fafb;
+}
+
+.tool-panel-title {
+  margin-bottom: 10px;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tool-action-button {
+  margin-left: 0 !important;
+  border-color: #d1d5db;
+  color: #374151;
+  background: #fff;
+}
+
+.tool-action-button:hover,
+.tool-action-button:focus {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  background: #eff6ff;
 }
 
 .instruction-preview {
@@ -347,13 +524,37 @@ export default {
   background: #f7fbff;
 }
 
-.artifact-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+.instruction-title {
+  margin-bottom: 6px;
+  color: #1d4ed8;
+  font-weight: 600;
 }
 
-.artifact-section {
+.repair-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.repair-banner span {
+  font-weight: 700;
+}
+
+.repair-banner small {
+  color: #9f1239;
+}
+
+.embedded-package {
+  min-height: 240px;
+}
+
+.embedded-package-tabs {
   min-width: 0;
 }
 
@@ -367,7 +568,7 @@ export default {
 }
 
 .artifact-content {
-  min-height: 140px;
+  min-height: 220px;
 }
 
 .artifact-time {
@@ -376,9 +577,51 @@ export default {
   font-size: 12px;
 }
 
+.version-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.version-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  color: #6b7280;
+  background: #fff;
+  font-size: 12px;
+}
+
+.version-chip.is-current {
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.version-chip small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 900px) {
-  .artifact-list {
-    grid-template-columns: 1fr;
+  .detail-header,
+  .detail-status-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .process-actions {
+    justify-content: flex-start;
+  }
+
+  .embedded-package-tabs ::v-deep .el-tabs__nav-wrap {
+    max-width: 100%;
   }
 }
 </style>

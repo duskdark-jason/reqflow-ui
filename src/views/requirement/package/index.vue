@@ -1,6 +1,15 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="80px">
+  <div class="app-container package-page" :class="{ 'is-focus-mode': focusedMode }">
+    <section v-if="focusedMode" class="package-focus-header">
+      <div class="focus-label">当前需求</div>
+      <h2>{{ currentDemandTitle }}</h2>
+      <div class="focus-meta">
+        <span v-if="demandInfo.demandNo">{{ demandInfo.demandNo }}</span>
+        <span v-if="packageVersionTotal">文档版本数：{{ packageVersionTotal }}</span>
+      </div>
+    </section>
+
+    <el-form v-else :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="80px">
       <el-form-item label="需求ID" prop="demandId">
         <el-input
           v-model="queryParams.demandId"
@@ -40,7 +49,7 @@
 
     <el-card shadow="never" class="package-card" v-loading="loading">
       <div slot="header" class="package-header">
-        <span>Agent 交接资料</span>
+        <span>{{ focusedMode ? "需求文档" : "Agent 交接资料" }}</span>
         <span class="package-meta" v-if="packageVersionTotal">版本数：{{ packageVersionTotal }}</span>
       </div>
 
@@ -51,7 +60,7 @@
           :label="artifact.label"
           :name="artifact.value"
         >
-          <el-row :gutter="10" class="mb8">
+          <el-row v-if="!focusedMode" :gutter="10" class="mb8">
             <el-col :span="1.5">
               <el-button
                 type="primary"
@@ -100,7 +109,12 @@
             <span v-if="artifacts[artifact.value].updateTime">更新时间：{{ parseTime(artifacts[artifact.value].updateTime) }}</span>
           </div>
 
+          <div v-if="focusedMode" class="artifact-viewer">
+            <pre v-if="artifacts[artifact.value].content">{{ artifacts[artifact.value].content }}</pre>
+            <el-empty v-else :description="artifact.label + '暂无内容'" :image-size="80" />
+          </div>
           <el-input
+            v-else
             v-model="artifacts[artifact.value].content"
             type="textarea"
             :rows="22"
@@ -114,6 +128,7 @@
 </template>
 
 <script>
+import { getDemand } from "@/api/requirement/demand"
 import { getDemandPackage, getLatestPackageArtifact, savePackageArtifact, generatePackage } from "@/api/requirement/package"
 
 export default {
@@ -134,6 +149,7 @@ export default {
       loading: false,
       activeArtifact: "requirement_draft",
       artifactTypes: artifactTypes,
+      demandInfo: {},
       packageInfo: {},
       queryParams: {
         demandId: undefined
@@ -149,12 +165,20 @@ export default {
     }
   },
   created() {
-    this.queryParams.demandId = this.$route.query.demandId
-    if (this.queryParams.demandId) {
-      this.handleLoadPackage()
+    this.initializeFromRoute()
+  },
+  watch: {
+    "$route.query.demandId"() {
+      this.initializeFromRoute()
     }
   },
   computed: {
+    focusedMode() {
+      return !!this.$route.query.demandId
+    },
+    currentDemandTitle() {
+      return this.demandInfo.title || (this.queryParams.demandId ? "需求 " + this.queryParams.demandId : "当前需求")
+    },
     packageVersionTotal() {
       if (Array.isArray(this.packageInfo)) {
         return this.packageInfo.length
@@ -166,6 +190,21 @@ export default {
     }
   },
   methods: {
+    initializeFromRoute() {
+      this.queryParams.demandId = this.$route.query.demandId
+      this.demandInfo = {}
+      this.packageInfo = {}
+      this.resetArtifacts()
+      if (this.queryParams.demandId) {
+        this.loadDemandInfo()
+        this.handleLoadPackage()
+      }
+    },
+    loadDemandInfo() {
+      getDemand(this.queryParams.demandId).then(response => {
+        this.demandInfo = response.data || {}
+      })
+    },
     handleLoadPackage() {
       if (!this.queryParams.demandId) {
         this.$modal.msgWarning("请先输入需求ID")
@@ -285,6 +324,35 @@ export default {
   margin-top: 8px;
 }
 
+.package-page.is-focus-mode {
+  max-width: 1120px;
+}
+
+.package-focus-header {
+  padding: 4px 0 14px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.package-focus-header h2 {
+  margin: 4px 0 6px;
+  color: #1f2937;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 30px;
+}
+
+.focus-label,
+.focus-meta {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.focus-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
 .package-header {
   display: flex;
   align-items: center;
@@ -301,5 +369,23 @@ export default {
   display: flex;
   gap: 16px;
   margin-bottom: 8px;
+}
+
+.artifact-viewer {
+  min-height: 360px;
+  border: 1px solid #e5e7eb;
+  background: #fbfcfe;
+}
+
+.artifact-viewer pre {
+  min-height: 360px;
+  margin: 0;
+  padding: 16px;
+  color: #1f2937;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>

@@ -14,7 +14,7 @@
 | `variant.js` | `/requirement/variant` | 项目分支内部兼容查询 |
 | `module.js` | `/requirement/module` | 人工模块兼容接口，左侧菜单不再暴露 |
 | `index.js` | `/requirement/index` | 仓库索引批次、模块知识和影响面推荐 |
-| `demand.js` | `/requirement/demand` | 需求列表、维护页签、详情、保存、状态流转和 MCP 编排指令 |
+| `demand.js` | `/requirement/demand` | 需求列表、维护页签、详情、保存、状态流转、MCP 编排指令和执行开发指令 |
 | `package.js` | `/requirement/package` | Agent 交接资料列表、最新版本、保存新版本和生成草稿资料 |
 | `statistics.js` | `/requirement/statistics` | 使用统计 |
 | `harness.js` | `/requirement/project/*/harness-*` | 项目接入 harness 模板包查询和初始化结果登记 |
@@ -38,7 +38,7 @@
 - 仓库分区默认提供一条空后端仓库行；仓库数据只提交仓库名称、仓库类型、团队共享 Git 远端、默认分支、状态和索引状态字段；允许纯后端服务只维护一条仓库，不得提交个人本机绝对路径。
 - 输入 Git 地址后，前端可自动推导仓库名称、项目名称和项目编码，用户可继续手工调整。
 - 分支分区维护 `branchLabel`、`baselineBranch` 和后端回显的 `initInstruction`：`branchLabel` 是需求人员可见中文标签，`baselineBranch` 是真实 Git 分支名，`initInstruction.content` 用于复制给 MCP 执行项目分支初始化；前端可继续兼容 `variantName`、`variantCode`、`customerName`、`mcpKey` 等历史字段。
-- `initInstruction` 至少包含 `actionType`、`targetMethod`、`token`、`tokenPrefix`、`prompt`、`content`、`copyLabel` 和 `expireTime`。复制内容必须直接使用 `content`，不得把人员 MCP Key、Web 登录 token 或本机路径拼入指令。
+- `initInstruction` 至少包含 `actionType`、`targetMethod`、`token`、`tokenPrefix`、`prompt`、`content`、`copyLabel` 和 `expireTime`。复制内容必须直接使用 `content`，不得把人员 MCP Key、Web 登录 token 或本机路径拼入指令；明文 actionToken 由后端生成，24 小时内有效且仅可使用一次，过期或已使用后用户需要重新生成初始化指令。
 - 分支分区必须展示该分支的独立初始化状态，包括 `totalModules`、`manualModules`、`indexedModules`、`indexedRepositoryCount`、`unindexedRepositoryCount`、`latestIndexedAt` 和 `latestCommit`；知识库详细内容通过 `/requirement/project/knowledge?projectId=...&variantId=...` 新页签展示，不在表格展开行内展示。
 - 项目列表会按项目调用 `/requirement/project/init/{projectId}` 派生初始化状态，状态口径来自 `initChecklist`：项目信息、仓库、分支配置、模块知识和索引。
 - 保存成功后刷新项目列表或当前维护页状态；项目列表操作列不再提供独立状态页入口。
@@ -69,11 +69,15 @@
 ## 需求状态与详情契约
 
 - 需求列表和详情复用 `src/views/requirement/demand/status.js` 中的状态定义和按钮定义，避免文案分叉。
-- 新主状态文案为：`draft=未提交`、`submitted=待生成需求说明、执行计划`、`plan_ready=资料待确认`、`confirmed=待执行开发`、`developing=开发中`、`review=待验收`、`completed=已完成`。
-- 兼容状态文案为：`plan_pending=资料生成中`、`repairing=返修中`、`archived=已归档`。
+- 新主状态文案为：`draft=未提交`、`submitted=待生成需求说明、执行计划`、`plan_ready=资料待确认`、`confirmed=待执行开发`、`developing=开发中`、`review=待验收`、`repairing=返修中`、`completed=已完成`。
+- 兼容状态文案为：`plan_pending=资料生成中`、`archived=已归档`。
 - 列表操作列只保留详情、可编辑草稿的修改按钮和当前状态的下一步按钮，不展示 Agent 资料入口。
-- 详情页在 `submitted`、`plan_pending` 或 `plan_ready` 状态可调用 `/requirement/demand/{demandId}/plan-instruction` 获取复制内容；复制内容由后端生成，前端不得拼接 actionToken。
-- 详情页读取 `/requirement/package/{demandId}/requirement/latest` 和 `/requirement/package/{demandId}/plan/latest` 展示最新需求设计和执行方案；没有资料时展示空状态，不阻断页面打开。
+- `review` 状态必须提供“发起返修”和“结束任务”两个流程按钮；`repairing` 状态提供“提交返修验收”并流转回 `review`。
+- 详情页流程推进按钮必须和跳转/复制类协作工具分区展示。流程推进按钮位于详情标题区右侧；复制 MCP 指令、复制执行开发指令和 Agent 交接资料属于协作工具，不应混在同一按钮组。
+- 详情页在 `submitted`、`plan_pending` 或 `plan_ready` 状态可调用 `/requirement/demand/{demandId}/plan-instruction` 获取复制内容；复制内容由后端生成，必须包含 `reqflow-mcp`、`mcpTool`、`arguments.actionToken`、24 小时内有效和仅可使用一次的指引，前端不得拼接 actionToken。
+- 详情页在 `confirmed`、`developing`、`repairing` 或 `review` 状态可调用 `/requirement/demand/{demandId}/develop-instruction` 获取执行开发指令；复制内容由后端生成，必须包含过期或已使用后重新生成的提示，前端不得拼接 actionToken。
+- 详情页读取 `/requirement/package/{demandId}` 内嵌展示当前需求的 Agent 交接资料包，按 artifact 类型展示需求草稿、需求设计、执行方案、上下文清单、分支执行简报、执行提示词、Review 提示词、执行报告和 Review 报告等文档的最新内容，并展示每类产物最近历史版本；不得再在详情底部额外重复展示一组独立的需求设计/执行方案预览。没有资料时展示空状态，不阻断页面打开。保存 artifact 必须追加版本，返修轮次依赖历史版本链判断。
+- 打开 `/requirement/package?demandId=...` 时进入当前需求聚焦模式：页面顶部只展示当前需求标题和版本摘要，下方按 artifact 类型展示文档内容；不得展示需求 ID 查询框、加载资料、生成资料、加载最新或保存新版本按钮。直接从菜单进入 `/requirement/package` 时可保留管理模式。
 
 ## 标签页与布局契约
 
