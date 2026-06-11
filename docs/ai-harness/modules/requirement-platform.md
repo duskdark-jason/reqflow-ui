@@ -8,8 +8,8 @@
 
 | 菜单目录 | 子菜单/页面 | 功能说明 | 前端文件 | API 封装 | 后端接口与权限 | 后端核心文件 |
 |---|---|---|---|---|---|---|
-| 需求管理 | 项目管理 | 项目列表、项目维护入口、初始化状态和接入中心入口 | `src/views/requirement/project/index.vue`、`maintain.vue` | `src/api/requirement/project.js`、`projectInit.js` | `/requirement/project/**`，`req:project:*`；`/requirement/project/init/**`，`req:project:*` | `ReqProjectController`、`ReqProjectInitController`、`ReqProjectInitServiceImpl` |
-| 需求管理 | 项目接入中心 | 展示仓库、项目分支、索引批次、模块知识库和初始化指令 | `src/views/requirement/project/detail.vue` | `src/api/requirement/project.js`、`index.js` | `/requirement/project/init/{projectId}`，`req:project:query`；`/requirement/index/**`，`req:index:*` | `ReqProjectInitController`、`ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
+| 需求管理 | 项目管理 | 项目列表、项目维护入口、初始化状态和接入状态入口 | `src/views/requirement/project/index.vue`、`maintain.vue` | `src/api/requirement/project.js`、`projectInit.js` | `/requirement/project/**`，`req:project:*`；`/requirement/project/init/**`，`req:project:*` | `ReqProjectController`、`ReqProjectInitController`、`ReqProjectInitServiceImpl` |
+| 需求管理 | 项目接入中心 | 只读展示仓库索引状态、项目分支完成度、待处理项、索引批次和模块知识库 | `src/views/requirement/project/detail.vue` | `src/api/requirement/project.js`、`index.js` | `/requirement/project/init/{projectId}`，`req:project:query`；`/requirement/index/**`，`req:index:*` | `ReqProjectInitController`、`ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
 | 需求管理 | 分支知识库详情页签 | 按项目分支查看模块知识、索引批次和初始化指令 | `src/views/requirement/project/knowledge.vue` | `src/api/requirement/index.js`、`project.js` | `/requirement/index/module/tree`，`req:index:list`；`/requirement/index/batch/list`，`req:index:list` | `ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
 | 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、分支初始化校验和影响面自动关联 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；`/requirement/index/impact/suggest`，`req:index:list` | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
 | 需求管理 | Agent 交接资料 | 查看和保存需求、计划、执行报告、Review 报告等 artifact | `src/views/requirement/package/index.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，`req:package:*` | `ReqPackageController`、`ReqPackageServiceImpl` |
@@ -38,11 +38,11 @@
 - 普通增删改表单可使用 Element UI `el-dialog` 和 `el-form`；项目维护和需求维护属于重型流程，必须使用独立页签承载。
 - 项目管理新增和修改入口必须打开项目维护页签，页签单页展示项目信息、代码仓库、分支配置和模块初始化状态，不再使用弹窗或分步向导。
 - 分支配置是项目管理里的深层级栏目：每个分支行必须能展示自己的初始化指令复制入口、真实分支、模块总数、手工模块数、索引模块数、索引仓库数和最近索引状态。
-- 项目列表的初始化状态必须来自后端 `initChecklist`，不得只按前端本地行状态臆测。
-- 项目接入中心必须把 harness 初始化作为项目接入能力的一部分展示，包括平台内置模板版本、workspace 入口 `AGENTS.md` 下发状态、子仓库 harness 状态和 Codex 回写的校验结果。
-- 仓库、项目分支和模块知识不再作为独立左侧菜单入口；项目维护页签是仓库和项目分支的主维护入口，项目接入中心只读展示仓库、分支、索引批次和模块知识库。
+- 项目列表的初始化状态必须来自后端 `initChecklist`，不得只按前端本地行状态臆测；进入项目接入中心的操作文案必须体现状态查看语义，不能只写“接入”造成点击即执行的误解。
+- 项目接入中心必须收敛为只读状态面板，展示项目接入完成度、待处理项、仓库索引状态、项目分支完成度、索引批次和模块知识库；配置、保存和初始化指令主复制入口属于项目维护页签。
+- 仓库、项目分支和模块知识不再作为独立左侧菜单入口；项目维护页签是仓库和项目分支的主维护入口，项目接入中心只读展示仓库、分支、索引批次和模块知识库，并提供返回维护页的辅助入口。
 - 仓库维护只保存团队共享 Git 远端、仓库类型和默认分支，允许纯后端服务只登记一条后端仓库，不保存个人本机绝对路径。
-- 项目分支维护中文标签、真实分支名和后端生成的初始化指令；指令复制内容必须来自 `initInstruction.content`，包含简短提示词和 `actionToken`，旧 `mcpKey` 只作为兼容降级展示。
+- 项目分支维护中文标签、真实分支名和后端生成的初始化指令；指令复制内容必须来自 `initInstruction.content`，包含简短提示词和 `actionToken`，旧 `mcpKey` 只作为兼容降级展示。接入中心不得再把初始化指令作为分支表格主列。
 - 分支知识库详情必须通过新页签展示，项目接入中心的分支表不再使用展开行承载知识库详情。
 - MCP 索引用 `actionToken + remoteUrl` 识别项目、分支和代码仓库；旧 `mcpKey + remoteUrl` 仅作为兼容路径。
 - MCP 管理创建或重置 Key 后，结果弹窗必须优先展示 `codexSetupPackage.installCommands` 的多平台代码块命令；前端只在当前页面会话内把一次性 `plainKey` 填入命令并允许重复打开复制，刷新后不得恢复明文 Key。完整 JSON 安装包只作为高级配置/调试信息。
