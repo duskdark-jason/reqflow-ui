@@ -183,20 +183,6 @@ export const dynamicRoutes = [
     ]
   },
   {
-    path: '/requirement/project/detail',
-    component: Layout,
-    hidden: true,
-    permissions: ['req:project:query'],
-    children: [
-      {
-        path: '',
-        component: () => import('@/views/requirement/project/detail'),
-        name: 'RequirementProjectDetail',
-        meta: { title: '项目接入中心', activeMenu: '/requirement/project' }
-      }
-    ]
-  },
-  {
     path: '/requirement/project/knowledge',
     component: Layout,
     hidden: true,

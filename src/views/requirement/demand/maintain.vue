@@ -63,7 +63,7 @@
                   />
                 </el-select>
                 <div v-if="form.projectId && !formProjectInitLoading && filteredVariantOptions.length === 0" class="form-tip">
-                  当前项目暂无已初始化完成的分支，请先在项目接入中心完成分支初始化。
+                  当前项目暂无已初始化完成的分支，请先在项目维护中完成分支初始化。
                 </div>
               </el-form-item>
             </el-col>

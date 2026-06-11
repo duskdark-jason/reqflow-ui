@@ -44,7 +44,7 @@
 
 ## Companion 关联
 
-- companion spec：`../reqflow-be/docs/specs/active/REQ-014-harness命名规则移除日期`
+- companion spec：`../reqflow-be/docs/specs/done/REQ-014-harness命名规则移除日期`
 - 关联分支：`fix/harness-naming-no-date`
 
 ## 客户与分支
