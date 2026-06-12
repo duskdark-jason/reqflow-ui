@@ -153,8 +153,9 @@ export default {
       // 校检文件类型
       if (this.fileType) {
         const fileName = file.name.split('.')
-        const fileExt = fileName[fileName.length - 1]
-        const isTypeOk = this.fileType.indexOf(fileExt) >= 0
+        const fileExt = String(fileName[fileName.length - 1] || "").toLowerCase()
+        const normalizedTypes = this.fileType.map(type => String(type).toLowerCase())
+        const isTypeOk = normalizedTypes.indexOf(fileExt) >= 0
         if (!isTypeOk) {
           this.$modal.msgError(`文件格式不正确，请上传${this.fileType.join("/")}格式文件!`)
           return false
@@ -167,7 +168,7 @@ export default {
       }
       // 校检文件大小
       if (this.fileSize) {
-        const isLt = file.size / 1024 / 1024 < this.fileSize
+        const isLt = file.size / 1024 / 1024 <= this.fileSize
         if (!isLt) {
           this.$modal.msgError(`上传文件大小不能超过 ${this.fileSize} MB!`)
           return false

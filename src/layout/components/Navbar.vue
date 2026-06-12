@@ -1,13 +1,8 @@
 <template>
-  <div class="navbar" :class="'nav' + navType">
+  <div class="navbar nav1">
     <hamburger id="hamburger-container" :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
 
-    <breadcrumb v-if="navType == 1" id="breadcrumb-container" class="breadcrumb-container" />
-    <top-nav v-if="navType == 2" id="topmenu-container" class="topmenu-container" />
-    <template v-if="navType == 3">
-      <logo v-show="showLogo" :collapse="false"></logo>
-      <top-bar id="topbar-container" class="topbar-container" />
-    </template>
+    <breadcrumb id="breadcrumb-container" class="breadcrumb-container" />
     <div class="right-menu">
       <template v-if="device!=='mobile'">
         <search id="header-search" class="right-menu-item" />
@@ -33,9 +28,6 @@
           <router-link to="/user/profile">
             <el-dropdown-item>个人中心</el-dropdown-item>
           </router-link>
-          <el-dropdown-item @click.native="setLayout" v-if="setting">
-            <span>布局设置</span>
-          </el-dropdown-item>
           <el-dropdown-item @click.native="lockScreen">
             <span>锁定屏幕</span>
           </el-dropdown-item>
@@ -51,9 +43,6 @@
 <script>
 import { mapGetters } from 'vuex'
 import Breadcrumb from '@/components/Breadcrumb'
-import TopNav from './TopNav'
-import TopBar from './TopBar'
-import Logo from './Sidebar/Logo'
 import Hamburger from '@/components/Hamburger'
 import Screenfull from '@/components/Screenfull'
 import SizeSelect from '@/components/SizeSelect'
@@ -63,9 +52,6 @@ import HeaderNotice from './HeaderNotice'
 export default {
   components: {
     Breadcrumb,
-    Logo,
-    TopNav,
-    TopBar,
     Hamburger,
     Screenfull,
     SizeSelect,
@@ -78,29 +64,11 @@ export default {
       'avatar',
       'device',
       'nickName'
-    ]),
-    setting: {
-      get() {
-        return this.$store.state.settings.showSettings
-      }
-    },
-    navType: {
-      get() {
-        return this.$store.state.settings.navType
-      }
-    },
-    showLogo: {
-      get() {
-        return this.$store.state.settings.sidebarLogo
-      }
-    }
+    ])
   },
   methods: {
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
-    },
-    setLayout(event) {
-      this.$emit('setLayout')
     },
     lockScreen() {
       const currentPath = this.$route.fullPath

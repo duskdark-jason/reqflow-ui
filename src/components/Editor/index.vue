@@ -53,6 +53,11 @@ export default {
       type: Number,
       default: 5,
     },
+    /* 上传接口地址 */
+    action: {
+      type: String,
+      default: "/common/upload",
+    },
     /* 类型（base64格式、url格式） */
     type: {
       type: String,
@@ -61,7 +66,7 @@ export default {
   },
   data() {
     return {
-      uploadUrl: process.env.VUE_APP_BASE_API + "/common/upload", // 上传的图片服务器地址
+      uploadUrl: process.env.VUE_APP_BASE_API + this.action, // 上传的图片服务器地址
       headers: {
         Authorization: "Bearer " + getToken()
       },
@@ -168,7 +173,7 @@ export default {
       }
       // 校检文件大小
       if (this.fileSize) {
-        const isLt = file.size / 1024 / 1024 < this.fileSize
+        const isLt = file.size / 1024 / 1024 <= this.fileSize
         if (!isLt) {
           this.$message.error(`上传文件大小不能超过 ${this.fileSize} MB!`)
           return false
@@ -209,10 +214,15 @@ export default {
       }
     },
     insertImage(file) {
+      if (!this.handleBeforeUpload(file)) {
+        return
+      }
       const formData = new FormData()
       formData.append("file", file)
       axios.post(this.uploadUrl, formData, { headers: { "Content-Type": "multipart/form-data", Authorization: this.headers.Authorization } }).then(res => {
         this.handleUploadSuccess(res.data)
+      }).catch(() => {
+        this.handleUploadError()
       })
     }
   }

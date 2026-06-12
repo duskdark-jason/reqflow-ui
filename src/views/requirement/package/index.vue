@@ -1,6 +1,15 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="80px">
+  <div class="app-container package-page" :class="{ 'is-focus-mode': focusedMode }">
+    <section v-if="focusedMode" class="package-focus-header">
+      <div class="focus-label">当前需求</div>
+      <h2>{{ currentDemandTitle }}</h2>
+      <div class="focus-meta">
+        <span v-if="demandInfo.demandNo">{{ demandInfo.demandNo }}</span>
+        <span v-if="packageVersionTotal">文档版本数：{{ packageVersionTotal }}</span>
+      </div>
+    </section>
+
+    <el-form v-else :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="80px">
       <el-form-item label="需求ID" prop="demandId">
         <el-input
           v-model="queryParams.demandId"
@@ -40,7 +49,7 @@
 
     <el-card shadow="never" class="package-card" v-loading="loading">
       <div slot="header" class="package-header">
-        <span>Agent 交接资料</span>
+        <span>{{ focusedMode ? "需求文档" : "Agent 交接资料" }}</span>
         <span class="package-meta" v-if="packageVersionTotal">版本数：{{ packageVersionTotal }}</span>
       </div>
 
@@ -51,7 +60,7 @@
           :label="artifact.label"
           :name="artifact.value"
         >
-          <el-row :gutter="10" class="mb8">
+          <el-row v-if="!focusedMode" :gutter="10" class="mb8">
             <el-col :span="1.5">
               <el-button
                 type="primary"
@@ -95,12 +104,39 @@
           </el-row>
 
           <div class="artifact-meta">
-            <span>制品类型：{{ artifact.value }}</span>
+            <span v-if="!focusedMode">制品类型：{{ artifact.value }}</span>
             <span v-if="artifacts[artifact.value].version">版本：{{ artifacts[artifact.value].version }}</span>
             <span v-if="artifacts[artifact.value].updateTime">更新时间：{{ parseTime(artifacts[artifact.value].updateTime) }}</span>
           </div>
 
+          <template v-if="focusedMode">
+            <div class="artifact-viewer">
+              <div
+                v-if="artifacts[artifact.value].content"
+                class="markdown-reader package-markdown"
+                v-html="renderArtifactMarkdown(artifact.value)"
+              />
+              <el-empty v-else :description="artifact.label + '暂无内容'" :image-size="80" />
+            </div>
+            <div v-if="artifactSupplementVersions(artifact.value).length" class="iteration-section">
+              <div class="iteration-heading">补充与调整记录</div>
+              <el-collapse class="iteration-collapse">
+                <el-collapse-item
+                  v-for="(version, index) in artifactSupplementVersions(artifact.value)"
+                  :key="artifact.value + '-supplement-' + version.versionNo"
+                  :name="artifact.value + '-supplement-' + version.versionNo"
+                >
+                  <template slot="title">
+                    <span>{{ iterationTitle(version, index) }}</span>
+                    <small>{{ parseTime(version.createTime) || "历史记录" }}</small>
+                  </template>
+                  <div class="markdown-reader iteration-content" v-html="renderSupplementMarkdown(version)" />
+                </el-collapse-item>
+              </el-collapse>
+            </div>
+          </template>
           <el-input
+            v-else
             v-model="artifacts[artifact.value].content"
             type="textarea"
             :rows="22"
@@ -114,47 +150,41 @@
 </template>
 
 <script>
+import { getDemand } from "@/api/requirement/demand"
 import { getDemandPackage, getLatestPackageArtifact, savePackageArtifact, generatePackage } from "@/api/requirement/package"
+import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes, supplementVersionsForArtifact as getSupplementVersionsForArtifact } from "@/views/requirement/demand/artifacts"
+import { renderMarkdown } from "@/views/requirement/demand/markdown"
 
 export default {
   name: "RequirementPackage",
   data() {
-    const artifactTypes = [
-      { value: "requirement_draft", label: "需求草稿" },
-      { value: "requirement", label: "需求说明" },
-      { value: "plan", label: "执行计划" },
-      { value: "context_manifest", label: "上下文清单" },
-      { value: "branch_execution_brief", label: "分支执行简报" },
-      { value: "execution_prompt", label: "执行提示词" },
-      { value: "review_prompt", label: "Review 提示词" },
-      { value: "execution_report", label: "执行报告" },
-      { value: "review_report", label: "Review 报告" }
-    ]
     return {
       loading: false,
       activeArtifact: "requirement_draft",
-      artifactTypes: artifactTypes,
+      artifactTypes: handoffArtifactTypes,
+      demandInfo: {},
       packageInfo: {},
       queryParams: {
         demandId: undefined
       },
-      artifacts: artifactTypes.reduce((result, item) => {
-        result[item.value] = {
-          content: "",
-          version: undefined,
-          updateTime: undefined
-        }
-        return result
-      }, {})
+      artifacts: createEmptyArtifacts()
     }
   },
   created() {
-    this.queryParams.demandId = this.$route.query.demandId
-    if (this.queryParams.demandId) {
-      this.handleLoadPackage()
+    this.initializeFromRoute()
+  },
+  watch: {
+    "$route.query.demandId"() {
+      this.initializeFromRoute()
     }
   },
   computed: {
+    focusedMode() {
+      return !!this.$route.query.demandId
+    },
+    currentDemandTitle() {
+      return this.demandInfo.title || (this.queryParams.demandId ? "需求 " + this.queryParams.demandId : "当前需求")
+    },
     packageVersionTotal() {
       if (Array.isArray(this.packageInfo)) {
         return this.packageInfo.length
@@ -166,6 +196,22 @@ export default {
     }
   },
   methods: {
+    initializeFromRoute() {
+      this.queryParams.demandId = this.$route.query.demandId
+      this.demandInfo = {}
+      this.packageInfo = {}
+      this.resetArtifacts()
+      if (this.queryParams.demandId) {
+        this.loadDemandInfo()
+        this.handleLoadPackage()
+      }
+    },
+    loadDemandInfo() {
+      getDemand(this.queryParams.demandId).then(response => {
+        this.demandInfo = response.data || {}
+        this.setDefaultActiveArtifact()
+      })
+    },
     handleLoadPackage() {
       if (!this.queryParams.demandId) {
         this.$modal.msgWarning("请先输入需求ID")
@@ -176,6 +222,7 @@ export default {
         this.packageInfo = response.data || {}
         this.resetArtifacts()
         this.fillArtifacts(this.packageInfo)
+        this.setDefaultActiveArtifact()
         this.loading = false
       }).catch(() => {
         this.loading = false
@@ -275,6 +322,27 @@ export default {
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(link.href)
+    },
+    setDefaultActiveArtifact() {
+      const target = defaultArtifactByStatus(this.demandInfo.status)
+      if (this.artifacts[target]) {
+        this.activeArtifact = target
+      }
+    },
+    renderArtifactMarkdown(artifactType) {
+      return renderMarkdown(this.artifacts[artifactType].content)
+    },
+    artifactSupplementVersions(artifactType) {
+      const source = this.packageInfo && (this.packageInfo.artifacts || this.packageInfo.items || this.packageInfo)
+      return getSupplementVersionsForArtifact(Array.isArray(source) ? source : [], artifactType)
+    },
+    renderSupplementMarkdown(version) {
+      return renderMarkdown(version && version.content)
+    },
+    iterationTitle(version, index) {
+      const note = version && version.versionNote ? version.versionNote : "补充记录"
+      const versionNo = version && version.versionNo ? "v" + version.versionNo : "第" + (index + 1) + "轮"
+      return versionNo + " · " + note
     }
   }
 }
@@ -283,6 +351,35 @@ export default {
 <style scoped>
 .package-card {
   margin-top: 8px;
+}
+
+.package-page.is-focus-mode {
+  max-width: 1120px;
+}
+
+.package-focus-header {
+  padding: 4px 0 14px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.package-focus-header h2 {
+  margin: 4px 0 6px;
+  color: #1f2937;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 30px;
+}
+
+.focus-label,
+.focus-meta {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.focus-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .package-header {
@@ -301,5 +398,131 @@ export default {
   display: flex;
   gap: 16px;
   margin-bottom: 8px;
+}
+
+.artifact-viewer {
+  min-height: 360px;
+  border: 1px solid #e5e7eb;
+  background: #fbfcfe;
+}
+
+.package-markdown {
+  min-height: 360px;
+  padding: 18px 20px;
+  color: #1f2937;
+  line-height: 1.75;
+  word-break: break-word;
+}
+
+.markdown-reader ::v-deep h1,
+.markdown-reader ::v-deep h2,
+.markdown-reader ::v-deep h3,
+.markdown-reader ::v-deep h4,
+.markdown-reader ::v-deep h5,
+.markdown-reader ::v-deep h6 {
+  margin: 18px 0 10px;
+  color: #111827;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.markdown-reader ::v-deep h1 {
+  margin-top: 0;
+  font-size: 22px;
+}
+
+.markdown-reader ::v-deep h2 {
+  font-size: 18px;
+}
+
+.markdown-reader ::v-deep h3 {
+  font-size: 16px;
+}
+
+.markdown-reader ::v-deep p {
+  margin: 0 0 12px;
+}
+
+.markdown-reader ::v-deep ul,
+.markdown-reader ::v-deep ol {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+.markdown-reader ::v-deep li {
+  margin: 4px 0;
+}
+
+.markdown-reader ::v-deep blockquote {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-left: 3px solid #60a5fa;
+  color: #374151;
+  background: #eff6ff;
+}
+
+.markdown-reader ::v-deep code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #92400e;
+  background: #fef3c7;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 12px;
+}
+
+.markdown-reader ::v-deep pre {
+  margin: 12px 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 6px;
+  background: #111827;
+}
+
+.markdown-reader ::v-deep pre code {
+  padding: 0;
+  color: #f9fafb;
+  background: transparent;
+  white-space: pre;
+}
+
+.markdown-reader ::v-deep a {
+  color: #2563eb;
+}
+
+.iteration-section {
+  margin-top: 14px;
+}
+
+.iteration-heading {
+  margin-bottom: 8px;
+  color: #374151;
+  font-weight: 700;
+}
+
+.iteration-collapse {
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.iteration-collapse ::v-deep .el-collapse-item__header {
+  min-height: 44px;
+  height: auto;
+  line-height: 20px;
+  gap: 8px;
+  padding: 8px 0;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.iteration-collapse ::v-deep .el-collapse-item__header small {
+  margin-left: 8px;
+  color: #909399;
+  font-weight: 400;
+}
+
+.iteration-content {
+  min-height: 0;
+  margin-bottom: 12px;
+  background: #fff;
 }
 </style>

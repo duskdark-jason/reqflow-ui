@@ -87,6 +87,17 @@
           v-hasPermi="['req:demand:edit']"
         >修改</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="danger"
+          plain
+          icon="el-icon-delete"
+          size="mini"
+          :disabled="multiple"
+          @click="handleDelete"
+          v-hasPermi="['req:demand:remove']"
+        >删除</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -101,6 +112,9 @@
       <el-table-column label="类型" align="center" prop="demandType" width="110">
         <template slot-scope="scope">{{ optionLabel(demandTypeOptions, scope.row.demandType) }}</template>
       </el-table-column>
+      <el-table-column label="来源" align="center" prop="demandSource" width="110">
+        <template slot-scope="scope">{{ scope.row.demandSource || "-" }}</template>
+      </el-table-column>
       <el-table-column label="所属项目" align="center" min-width="150" :show-overflow-tooltip="true">
         <template slot-scope="scope">{{ projectLabel(scope.row.projectId) }}</template>
       </el-table-column>
@@ -110,57 +124,58 @@
       <el-table-column label="模块" align="center" min-width="130" :show-overflow-tooltip="true">
         <template slot-scope="scope">{{ demandModuleLabel(scope.row) }}</template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status" width="120">
+      <el-table-column label="开发人员" align="center" min-width="140" :show-overflow-tooltip="true">
+        <template slot-scope="scope">{{ developerLabel(scope.row) }}</template>
+      </el-table-column>
+      <el-table-column label="状态" align="center" prop="status" width="190">
         <template slot-scope="scope">
           <el-tag :type="demandStatusTagType(scope.row.status)" size="mini">
             {{ optionLabel(demandStatusOptions, scope.row.status) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建人" align="center" prop="creatorId" width="100" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="260">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width demand-actions-column" width="340">
         <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-view"
-            @click="handleDetail(scope.row)"
-            v-hasPermi="['req:demand:query']"
-          >详情</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['req:demand:edit']"
-          >修改</el-button>
-          <el-dropdown
-            size="mini"
-            @command="command => handleStatusCommand(command, scope.row)"
-            v-hasPermi="['req:demand:edit']"
-          >
-            <el-button size="mini" type="text" icon="el-icon-refresh">状态</el-button>
-            <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item
-                v-for="item in nextStatusOptions(scope.row.status)"
-                :key="item.value"
-                :command="item.value"
-              >{{ item.label }}</el-dropdown-item>
-              <el-dropdown-item v-if="nextStatusOptions(scope.row.status).length === 0" disabled>暂无可流转状态</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-document"
-            @click="handlePackage(scope.row)"
-            v-hasPermi="['req:package:list']"
-          >Agent资料</el-button>
+          <div class="row-actions">
+            <el-button
+              size="mini"
+              type="text"
+              icon="el-icon-view"
+              @click="handleDetail(scope.row)"
+              v-hasPermi="['req:demand:query']"
+            >详情</el-button>
+            <el-button
+              v-if="canEditDemand(scope.row)"
+              size="mini"
+              type="text"
+              icon="el-icon-edit"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['req:demand:edit']"
+            >修改</el-button>
+            <el-button
+              v-for="action in statusActions(scope.row)"
+              :key="action.value"
+              size="mini"
+              class="status-action-button"
+              :class="'is-' + action.tone"
+              :icon="action.icon"
+              @click="handleStatusCommand(action, scope.row)"
+              v-hasPermi="['req:demand:edit']"
+            >{{ action.label }}</el-button>
+            <el-button
+              size="mini"
+              type="text"
+              class="row-delete-button"
+              icon="el-icon-delete"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['req:demand:remove']"
+            >删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -172,6 +187,30 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+
+    <el-dialog
+      :title="feedbackDialog.action ? feedbackDialog.action.dialogTitle : '选择流程结论'"
+      :visible.sync="feedbackDialog.visible"
+      width="520px"
+      append-to-body
+    >
+      <el-radio-group v-model="feedbackDialog.selected" class="feedback-options">
+        <el-radio
+          v-for="option in feedbackOptions"
+          :key="option.value"
+          :label="option.value"
+          border
+          class="feedback-option"
+        >
+          <span>{{ option.label }}</span>
+          <small>{{ option.description }}</small>
+        </el-radio>
+      </el-radio-group>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="feedbackDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="feedbackDialog.loading" @click="submitFeedbackConclusion">确认提交</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -179,8 +218,18 @@
 import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
-import { listDemand, updateDemandStatus } from "@/api/requirement/demand"
+import { delDemand, listDemand, updateDemandStatus } from "@/api/requirement/demand"
 import { listIndexModule } from "@/api/requirement/index"
+import { mapGetters } from "vuex"
+import {
+  canEditDemand as canEditDemandRow,
+  demandStatusOptions,
+  demandStatusTagType,
+  nextStatusOptions,
+  optionLabel,
+  primaryStatusAction as getPrimaryStatusAction,
+  statusActions as getStatusActions
+} from "./status"
 
 export default {
   name: "RequirementDemand",
@@ -188,7 +237,9 @@ export default {
     return {
       loading: true,
       ids: [],
+      selectedRows: [],
       single: true,
+      multiple: true,
       showSearch: true,
       total: 0,
       demandList: [],
@@ -202,18 +253,7 @@ export default {
         { value: "RESEARCH", label: "调研任务" },
         { value: "OTHER", label: "其他" }
       ],
-      demandStatusOptions: [
-        { value: "draft", label: "草稿", type: "info" },
-        { value: "submitted", label: "已提交", type: "" },
-        { value: "plan_pending", label: "待出计划", type: "warning" },
-        { value: "plan_ready", label: "计划就绪", type: "warning" },
-        { value: "confirmed", label: "已确认", type: "success" },
-        { value: "developing", label: "开发中", type: "primary" },
-        { value: "review", label: "Review 中", type: "warning" },
-        { value: "repairing", label: "返修中", type: "danger" },
-        { value: "completed", label: "已完成", type: "success" },
-        { value: "archived", label: "已归档", type: "info" }
-      ],
+      demandStatusOptions: demandStatusOptions,
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -223,15 +263,32 @@ export default {
         projectId: undefined,
         variantId: undefined,
         status: undefined
+      },
+      feedbackDialog: {
+        visible: false,
+        action: null,
+        row: null,
+        selected: "",
+        loading: false
       }
     }
   },
   computed: {
+    ...mapGetters([
+      "id",
+      "permissions",
+      "roles"
+    ]),
     queryVariantOptions() {
       if (!this.queryParams.projectId) {
         return this.variantOptions
       }
       return this.variantOptions.filter(item => String(item.projectId) === String(this.queryParams.projectId))
+    },
+    feedbackOptions() {
+      return this.feedbackDialog.action && this.feedbackDialog.action.feedbackOptions
+        ? this.feedbackDialog.action.feedbackOptions
+        : []
     }
   },
   created() {
@@ -276,51 +333,85 @@ export default {
     },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.demandId || item.id)
+      this.selectedRows = selection
       this.single = selection.length != 1
+      this.multiple = !selection.length
     },
     handleAdd() {
-      this.$tab.openPage("新增需求", "/requirement/demand/maintain")
+      this.$tab.openPage("新增需求", "/requirement/demand/maintain", { parentPath: "/requirement/demand" })
     },
     handleUpdate(row) {
-      const demandId = row.demandId || row.id || this.ids
+      const target = row && (row.demandId || row.id) ? row : this.selectedRows[0]
+      const demandId = target ? (target.demandId || target.id) : this.ids
       const targetDemandId = Array.isArray(demandId) ? demandId[0] : demandId
       if (!targetDemandId) return
-      const title = (row.title || "需求") + "维护"
-      this.$tab.openPage(title, "/requirement/demand/maintain", { demandId: targetDemandId })
+      if (!target || !this.canEditDemand(target)) {
+        this.$modal.msgWarning("只有未提交需求的创建人可以修改")
+        return
+      }
+      const title = (target.title || "需求") + "维护"
+      this.$tab.openPage(title, "/requirement/demand/maintain", { demandId: targetDemandId, parentPath: "/requirement/demand" })
     },
-    handleStatusCommand(status, row) {
+    handleStatusCommand(action, row) {
       const demandId = row.demandId || row.id
-      const label = this.optionLabel(this.demandStatusOptions, status)
-      this.$modal.confirm('是否确认将需求"' + row.title + '"状态调整为"' + label + '"？').then(function() {
+      if (action && action.feedbackOptions && action.feedbackOptions.length) {
+        this.openFeedbackDialog(action, row)
+        return
+      }
+      const status = typeof action === "string" ? action : action.value
+      const label = typeof action === "string" ? this.optionLabel(this.demandStatusOptions, status) : action.label
+      const confirmText = (action && action.confirm) || ('是否确认将需求"' + row.title + '"状态调整为"' + label + '"？')
+      this.$modal.confirm(confirmText).then(function() {
         return updateDemandStatus(demandId, status)
       }).then(() => {
         this.getList()
         this.$modal.msgSuccess("状态更新成功")
       }).catch(() => {})
     },
-    nextStatusOptions(status) {
-      const transitions = {
-        draft: ["submitted"],
-        submitted: ["plan_pending"],
-        plan_pending: ["plan_ready"],
-        plan_ready: ["confirmed"],
-        confirmed: ["developing"],
-        developing: ["review"],
-        review: ["repairing", "completed"],
-        repairing: ["review"],
-        completed: ["archived"]
+    openFeedbackDialog(action, row) {
+      this.feedbackDialog.action = action
+      this.feedbackDialog.row = row
+      this.feedbackDialog.selected = action.feedbackOptions[0].value
+      this.feedbackDialog.loading = false
+      this.feedbackDialog.visible = true
+    },
+    submitFeedbackConclusion() {
+      const row = this.feedbackDialog.row
+      const option = this.feedbackOptions.find(item => item.value === this.feedbackDialog.selected)
+      if (!row || !option) {
+        this.$modal.msgWarning("请选择流程结论")
+        return
       }
-      return (transitions[String(status)] || []).map(value => {
-        return this.demandStatusOptions.find(item => item.value === value)
-      }).filter(Boolean)
+      const demandId = row.demandId || row.id
+      this.$modal.confirm(option.confirm || '是否确认提交需求"' + row.title + '"的流程结论？').then(() => {
+        this.feedbackDialog.loading = true
+        return updateDemandStatus(demandId, option.value)
+      }).then(() => {
+        this.feedbackDialog.visible = false
+        this.feedbackDialog.loading = false
+        this.getList()
+        this.$modal.msgSuccess("流程结论已提交")
+      }).catch(() => {
+        this.feedbackDialog.loading = false
+      })
+    },
+    nextStatusOptions(status) {
+      return nextStatusOptions(status, this.roles, this.permissions)
+    },
+    handleDelete(row) {
+      const demandIds = row && (row.demandId || row.id) ? [row.demandId || row.id] : this.ids
+      if (!demandIds.length) return
+      const label = row && row.title ? row.title : demandIds.join(",")
+      this.$modal.confirm('是否确认删除需求"' + label + '"？').then(function() {
+        return delDemand(demandIds.join(","))
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess("删除成功")
+      }).catch(() => {})
     },
     handleDetail(row) {
       const demandId = row.demandId || row.id
-      this.$router.push({ path: "/requirement/demand/detail", query: { demandId: demandId } })
-    },
-    handlePackage(row) {
-      const demandId = row.demandId || row.id
-      this.$router.push({ path: "/requirement/package", query: { demandId: demandId } })
+      this.$tab.openPage("需求详情", "/requirement/demand/detail", { demandId: demandId, parentPath: "/requirement/demand" })
     },
     handleDemandQueryProjectChange() {
       const variant = this.queryVariantOptions.find(item => String(item.variantId || item.id) === String(this.queryParams.variantId))
@@ -346,6 +437,15 @@ export default {
       }
       return row.remark || "新增功能"
     },
+    developerLabel(row) {
+      if (!row) {
+        return "-"
+      }
+      if (row.developerNickName && row.developerUserName) {
+        return row.developerNickName + "（" + row.developerUserName + "）"
+      }
+      return row.developerNickName || row.developerUserName || "-"
+    },
     moduleOptionValue(module) {
       return module.indexModuleId || module.moduleId || module.id
     },
@@ -361,13 +461,99 @@ export default {
       return result
     },
     optionLabel(options, value) {
-      const option = options.find(item => item.value === String(value))
-      return option ? option.label : value
+      return optionLabel(options, value)
     },
     demandStatusTagType(value) {
-      const option = this.demandStatusOptions.find(item => item.value === String(value))
-      return option ? option.type : ""
+      return demandStatusTagType(value)
+    },
+    primaryStatusAction(status) {
+      return getPrimaryStatusAction(status, this.roles, this.permissions, null, this.id)
+    },
+    statusActions(row) {
+      return getStatusActions(row.status, this.roles, this.permissions, row, this.id)
+    },
+    canEditDemand(row) {
+      return canEditDemandRow(row, this.id, this.roles, this.permissions)
     }
   }
 }
 </script>
+
+<style scoped>
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.status-action-button {
+  height: 24px;
+  margin-left: 0 !important;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+.status-action-button:hover,
+.status-action-button:focus {
+  border-color: #93c5fd;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-action-button.is-repair {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.status-action-button.is-complete {
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.status-action-button.is-develop {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #075985;
+}
+
+.row-delete-button {
+  color: #f56c6c;
+}
+
+.feedback-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.feedback-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 6px;
+}
+
+.feedback-option ::v-deep .el-radio__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  white-space: normal;
+}
+
+.feedback-option small {
+  color: #6b7280;
+  line-height: 18px;
+}
+</style>

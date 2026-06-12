@@ -1,6 +1,15 @@
 import store from '@/store'
 import router from '@/router'
 
+function parentLocationFrom(route) {
+  const query = route.query || {}
+  const parentPath = query.parentPath || query.backPath || (route.meta && route.meta.activeMenu)
+  if (!parentPath || parentPath === route.path || parentPath === route.fullPath) {
+    return null
+  }
+  return parentPath
+}
+
 export default {
   // 刷新当前tab页签
   refreshPage(obj) {
@@ -36,7 +45,12 @@ export default {
   // 关闭指定tab页签
   closePage(obj) {
     if (obj === undefined) {
+      const parentLocation = parentLocationFrom(router.currentRoute)
       return store.dispatch('tagsView/delView', router.currentRoute).then(({ visitedViews }) => {
+        // 隐藏页签从父菜单打开时优先回父页面，避免跳到最后打开的无关标签。
+        if (parentLocation) {
+          return router.push(parentLocation)
+        }
         const latestView = visitedViews.slice(-1)[0]
         if (latestView) {
           return router.push(latestView.fullPath)
