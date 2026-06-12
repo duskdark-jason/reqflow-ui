@@ -34,8 +34,8 @@
 | AC-008 | logo 对齐和流程按钮统一 | `Logo.vue`、`index.vue`、`detail.vue` | 浏览器截图 `artifacts/target-req016-repair-list.png`、`artifacts/target-req016-repair-detail.png` | 通过 |
 | AC-009 | 详情流程确认与工具按钮分区 | `detail.vue` 的头部状态区和正文工具区 | 详情页截图确认流程按钮与复制/跳转按钮分区展示 | 通过 |
 | AC-010 | 返修流转 | `status.js` 支持 `review -> repairing -> review` | 代码复核和后端 companion 状态单测 | 通过 |
-| AC-011 | 历史版本和执行任务指令 | `detail.vue`、`demand.js` | 详情页读取执行包版本列表，展示需求可行性评估等 artifact，开发人员/管理员角色才展示执行任务指令入口 | 通过 |
-| AC-012 | actionToken 复制边界 | `project/maintain.vue`、`project/knowledge.vue`、`detail.vue`、UI 契约文档 | 接口冒烟确认指令内容包含 24 小时有效和仅可使用一次；代码复核前端不拼接 actionToken | 通过 |
+| AC-011 | 历史版本和执行任务指令 | `detail.vue`、`demand.js` | 详情页读取执行包版本列表，展示需求可行性评估等 artifact，仅在待执行开发和开发中展示执行任务指令入口 | 通过 |
+| AC-012 | actionToken 复制边界 | `project/maintain.vue`、`project/knowledge.vue`、`detail.vue`、UI 契约文档 | 接口冒烟确认指令内容包含阶段有效和流转后失效；代码复核前端不拼接 actionToken | 通过 |
 | AC-013 | Agent 交接资料聚焦模式 | `package/index.vue` | `/requirement/package?demandId=...` 隐藏查询、生成、加载最新和保存按钮 | 通过 |
 | AC-014 | 详情内嵌资料包去重 | `detail.vue` | 详情页只展示统一“Agent 交接资料包”区域，不再展示独立“需求设计与执行方案”块 | 通过 |
 | AC-015 | 指令和状态文案拆分 | `detail.vue`、`status.js` | 文案区分“生成需求评估与设计”和“生成执行任务指令”，流程确认按钮与生成按钮样式区分，页面不展示协作工具栏 | 通过 |
@@ -71,7 +71,7 @@
 | 修复 ID | 严重级别 | 关联验收 ID | 问题 | 修复要求 | 验证要求 |
 |---|---|---|---|---|---|
 | RF-002 | 中 | AC-008、AC-009、AC-010、AC-011 | 用户反馈 logo 对齐、流程按钮风格、详情动作分区、MCP 指令和返修版本流程不足 | 调整 UI 分区和按钮风格，增加返修状态、历史版本展示和执行开发指令入口 | 构建、浏览器截图、接口冒烟和后端 companion 单测 |
-| RF-003 | 中 | AC-012 | 用户补充 actionToken 仅可使用一次且 24 小时内有效 | 前端只复制后端返回指令，文档提示过期或已使用后需重新生成 | 构建、接口冒烟、代码复核 |
+| RF-003 | 中 | AC-012 | 用户补充 actionToken 应按流程阶段有效，转到下一流程即失效 | 前端只复制后端返回指令，文档提示按流程阶段有效和流转后失效 | 构建、接口冒烟、代码复核 |
 | RF-004 | 中 | AC-013、AC-014 | 用户反馈详情底部需求设计/执行方案与 Agent 交接资料包重复 | 详情内嵌完整资料包并去除重复预览，资料包页 `demandId` 上下文只读聚焦 | 构建、浏览器截图、代码复核 |
 
 ## 复审记录

@@ -219,7 +219,7 @@ export default {
       return this.canUseDeveloperInstruction() && ["submitted", "plan_pending", "plan_ready"].includes(String(this.form.status))
     },
     canCopyDevelopInstruction() {
-      return this.canUseDeveloperInstruction() && ["confirmed", "developing", "repairing", "review"].includes(String(this.form.status))
+      return this.canUseDeveloperInstruction() && ["confirmed", "developing"].includes(String(this.form.status))
     },
     instructionAction() {
       if (this.canCopyInstruction) {
