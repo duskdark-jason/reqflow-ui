@@ -60,6 +60,15 @@ export function updateDemandStatus(demandId, status) {
   })
 }
 
+// 提交需求补充说明
+export function submitDemandSupplement(demandId, data) {
+  return request({
+    url: '/requirement/demand/' + demandId + '/supplement',
+    method: 'post',
+    data: data
+  })
+}
+
 // 获取生成需求可行性评估和需求设计的 MCP 指令
 export function getDemandPlanInstruction(demandId) {
   return request({

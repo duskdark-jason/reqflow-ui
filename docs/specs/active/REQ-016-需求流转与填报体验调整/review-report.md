@@ -44,6 +44,7 @@
 | AC-018 | 需求来源、背景文本和附件 | `maintain.vue`、`detail.vue`、`FileUpload` | 新增页浏览器冒烟显示来源文本输入、业务背景普通文本框和 2MB 附件上传提示；详情页显示来源和附件区；构建通过 | 通过 |
 | AC-019 | 首页快捷入口权限过滤 | `src/views/index.vue` | 快捷入口按 `permissions` 过滤，构建通过 | 通过 |
 | AC-020 | 删除按钮和流程权限隔离 | `index.vue`、`status.js` | 删除按钮使用 `req:demand:remove`，流程按钮要求 `req:demand:edit` 和角色匹配 | 通过 |
+| AC-021 | 结论选择、补充说明和资料包阶段标签 | `status.js`、`index.vue`、`detail.vue`、`artifacts.js`、`package/index.vue`、`demand.js` | 构建通过；代码复核结论弹窗、补充说明接口、业务文档标签和阶段默认标签；后端 companion 单测覆盖状态与补充接口 | 通过 |
 
 ## 验收复核
 

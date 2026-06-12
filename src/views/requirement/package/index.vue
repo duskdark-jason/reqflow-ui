@@ -130,39 +130,21 @@
 <script>
 import { getDemand } from "@/api/requirement/demand"
 import { getDemandPackage, getLatestPackageArtifact, savePackageArtifact, generatePackage } from "@/api/requirement/package"
+import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes } from "@/views/requirement/demand/artifacts"
 
 export default {
   name: "RequirementPackage",
   data() {
-    const artifactTypes = [
-      { value: "requirement_draft", label: "需求草稿" },
-      { value: "requirement_assessment", label: "需求可行性评估" },
-      { value: "requirement", label: "需求设计" },
-      { value: "plan", label: "执行计划" },
-      { value: "context_manifest", label: "上下文清单" },
-      { value: "branch_execution_brief", label: "分支执行简报" },
-      { value: "execution_prompt", label: "执行提示词" },
-      { value: "review_prompt", label: "Review 提示词" },
-      { value: "execution_report", label: "执行报告" },
-      { value: "review_report", label: "Review 报告" }
-    ]
     return {
       loading: false,
       activeArtifact: "requirement_draft",
-      artifactTypes: artifactTypes,
+      artifactTypes: handoffArtifactTypes,
       demandInfo: {},
       packageInfo: {},
       queryParams: {
         demandId: undefined
       },
-      artifacts: artifactTypes.reduce((result, item) => {
-        result[item.value] = {
-          content: "",
-          version: undefined,
-          updateTime: undefined
-        }
-        return result
-      }, {})
+      artifacts: createEmptyArtifacts()
     }
   },
   created() {
@@ -204,6 +186,7 @@ export default {
     loadDemandInfo() {
       getDemand(this.queryParams.demandId).then(response => {
         this.demandInfo = response.data || {}
+        this.setDefaultActiveArtifact()
       })
     },
     handleLoadPackage() {
@@ -216,6 +199,7 @@ export default {
         this.packageInfo = response.data || {}
         this.resetArtifacts()
         this.fillArtifacts(this.packageInfo)
+        this.setDefaultActiveArtifact()
         this.loading = false
       }).catch(() => {
         this.loading = false
@@ -315,6 +299,12 @@ export default {
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(link.href)
+    },
+    setDefaultActiveArtifact() {
+      const target = defaultArtifactByStatus(this.demandInfo.status)
+      if (this.artifacts[target]) {
+        this.activeArtifact = target
+      }
     }
   }
 }

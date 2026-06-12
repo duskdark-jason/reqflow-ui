@@ -15,18 +15,21 @@
 | `src/layout/components/Sidebar/Logo.vue`、`src/assets/logo/reqflow-logo.svg` | 新增 ReqFlow 品牌 logo 和左侧菜单品牌展示。 |
 | `src/plugins/tab.js` | 隐藏页签关闭时优先回退到 `parentPath`、`backPath` 或 `meta.activeMenu` 父菜单。 |
 | `src/views/requirement/demand/status.js` | 新增需求状态文案、标签、主流程按钮、角色和按钮权限过滤、返修按钮和编辑权限判断；`submitted` 流转到需求分析完成，`plan_pending` 流转到需求设计完成。 |
+| `src/views/requirement/demand/status.js` | 本轮追加 `supplement_required`、`rejected` 状态和分析/设计结论选择动作，开发人员通过弹窗选择继续、补充说明或无法实现。 |
 | `src/views/requirement/demand/index.vue` | 列表操作列移除 Agent 资料入口，补充来源展示、管理员删除按钮、按角色和权限过滤的统一流程状态按钮和父页签打开参数。 |
+| `src/views/requirement/demand/index.vue`、`detail.vue` | 本轮将分析/设计阶段流程按钮调整为结论选择弹窗；详情页在待补充说明状态为需求人展示补充说明输入区。 |
 | `src/views/index.vue` | 首页快捷入口按当前用户 `permissions` 过滤，无 MCP 管理权限时不展示 MCP 管理；需求入口按 `req:demand:add` 区分“提交需求”和“查看需求”，开发人员首页不展示提交需求语义。 |
 | `src/views/requirement/demand/maintain.vue` | 新增不展示创建人 ID/需求编号，增加需求来源文本输入、业务背景普通文本框和附件上传，粘贴图片或文件时追加到附件，保存时剔除系统字段。 |
 | `src/views/requirement/demand/detail.vue` | 详情页头部展示流程确认按钮，工具区按状态展示生成需求分析、需求设计、执行任务和返修任务指令，展示来源、纯文本背景和附件，内嵌当前需求 Agent 交接资料包和历史版本。 |
 | `src/components/FileUpload/index.vue` | 支持需求专用上传接口、大小写扩展名识别和 2MB 文件大小边界。 |
 | `src/views/requirement/package/index.vue` | `demandId` 上下文下进入只读聚焦模式，只展示当前需求标题和各项文档内容。 |
-| `src/api/requirement/demand.js` | 增加需求 MCP 评估与设计指令和执行开发指令接口封装。 |
+| `src/views/requirement/demand/artifacts.js`、`src/views/requirement/package/index.vue` | 本轮统一 Agent 交接资料业务标签，移除上下文清单、分支简报、执行提示词和 Review 提示词等页面标签，并按需求阶段默认打开对应文档。 |
+| `src/api/requirement/demand.js` | 增加需求 MCP 评估与设计指令、执行开发指令和需求补充说明接口封装。 |
 | `docs/ai-harness/modules/requirement-platform.md`、`docs/ai-harness/contracts/requirement-platform-ui.md` | 同步模块和 UI 契约。 |
 
 ## 模块知识库沉淀
 
-- 影响模块：需求管理/需求列表、需求管理/需求详情、需求管理/需求维护页签、隐藏页签返回、系统布局与品牌、需求返修版本记录
+- 影响模块：需求管理/需求列表、需求管理/需求详情、需求管理/需求维护页签、隐藏页签返回、系统布局与品牌、需求返修版本记录、需求补充说明、Agent交接资料标签
 - 模块知识库动作：更新
 - 模块知识库文档：docs/ai-harness/modules/requirement-platform.md
 - 无需更新原因：不适用
@@ -51,6 +54,7 @@
 |---|---|---|---|
 | L0 | AC-007 | `sh scripts/check-docs.sh` | 通过 |
 | L1 | AC-001~AC-020 | `npm run build:prod` | 通过；仅有既有包体积提示。 |
+| L1 | AC-006、AC-011、AC-013、AC-020 | `npm run build:prod` | 本轮通过；结论弹窗、补充说明入口、资料包默认标签和业务标签构建成功，仅有既有包体积提示。 |
 | L2 | AC-003、AC-006、AC-008~AC-020 | 代码静态复核 | 通过；保存 payload 剔除 `creatorId`、`demandNo`、`status`，状态枚举集中到 `status.js`，流程按钮和开发指令按钮按角色与权限过滤，来源/附件字段保存路径和 2MB 上传边界已复核，首页需求入口按 `req:demand:add` 展示提交或查看语义。 |
 | L3 | AC-014、AC-016、AC-018 | 内置浏览器访问新增页和详情页 | 通过；新增页显示需求来源文本输入、业务背景普通文本框、2MB 附件上传提示且无 console error；详情页显示来源和附件区，`packageBeforeActions=true`。 |
 | L3 | AC-019 | 内置浏览器使用 `yfr/123456` 登录首页 | 通过；研发人员首页顶部按钮和快捷卡片均显示“查看需求”，快捷说明为“查看并处理分配给我的需求”，控制台无 error。 |
@@ -91,6 +95,7 @@
 | AC-018 | 已完成 | 新增/修改页需求来源为文本输入且必填，业务背景使用普通文本框，粘贴图片或文件会自动上传到附件；附件使用 `FileUpload` 且单文件 2MB；详情页展示来源、纯文本背景和附件区。 |
 | AC-019 | 已完成 | 首页快捷入口按权限过滤，需求人员无 `req:mcp:key:list` 时不展示 MCP 管理；研发人员无 `req:demand:add` 时需求入口展示“查看需求”，不展示“提交需求”。 |
 | AC-020 | 已完成 | 删除按钮仅 `req:demand:remove` 可见，流程按钮同时按角色和 `req:demand:edit` 权限过滤。 |
+| AC-021 | 已完成 | 本轮补充：分析/设计阶段流程按钮改为结论选择弹窗；待补充说明状态展示需求人补充输入；Agent 交接资料默认标签按阶段切换，页面只展示需求草稿、补充说明、可行性评估、需求设计、执行计划、执行报告和 Review 报告。 |
 
 ## 计划偏差
 

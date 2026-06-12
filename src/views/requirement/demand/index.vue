@@ -187,6 +187,30 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+
+    <el-dialog
+      :title="feedbackDialog.action ? feedbackDialog.action.dialogTitle : '选择流程结论'"
+      :visible.sync="feedbackDialog.visible"
+      width="520px"
+      append-to-body
+    >
+      <el-radio-group v-model="feedbackDialog.selected" class="feedback-options">
+        <el-radio
+          v-for="option in feedbackOptions"
+          :key="option.value"
+          :label="option.value"
+          border
+          class="feedback-option"
+        >
+          <span>{{ option.label }}</span>
+          <small>{{ option.description }}</small>
+        </el-radio>
+      </el-radio-group>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="feedbackDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="feedbackDialog.loading" @click="submitFeedbackConclusion">确认提交</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -239,6 +263,13 @@ export default {
         projectId: undefined,
         variantId: undefined,
         status: undefined
+      },
+      feedbackDialog: {
+        visible: false,
+        action: null,
+        row: null,
+        selected: "",
+        loading: false
       }
     }
   },
@@ -253,6 +284,11 @@ export default {
         return this.variantOptions
       }
       return this.variantOptions.filter(item => String(item.projectId) === String(this.queryParams.projectId))
+    },
+    feedbackOptions() {
+      return this.feedbackDialog.action && this.feedbackDialog.action.feedbackOptions
+        ? this.feedbackDialog.action.feedbackOptions
+        : []
     }
   },
   created() {
@@ -318,6 +354,10 @@ export default {
     },
     handleStatusCommand(action, row) {
       const demandId = row.demandId || row.id
+      if (action && action.feedbackOptions && action.feedbackOptions.length) {
+        this.openFeedbackDialog(action, row)
+        return
+      }
       const status = typeof action === "string" ? action : action.value
       const label = typeof action === "string" ? this.optionLabel(this.demandStatusOptions, status) : action.label
       const confirmText = (action && action.confirm) || ('是否确认将需求"' + row.title + '"状态调整为"' + label + '"？')
@@ -327,6 +367,33 @@ export default {
         this.getList()
         this.$modal.msgSuccess("状态更新成功")
       }).catch(() => {})
+    },
+    openFeedbackDialog(action, row) {
+      this.feedbackDialog.action = action
+      this.feedbackDialog.row = row
+      this.feedbackDialog.selected = action.feedbackOptions[0].value
+      this.feedbackDialog.loading = false
+      this.feedbackDialog.visible = true
+    },
+    submitFeedbackConclusion() {
+      const row = this.feedbackDialog.row
+      const option = this.feedbackOptions.find(item => item.value === this.feedbackDialog.selected)
+      if (!row || !option) {
+        this.$modal.msgWarning("请选择流程结论")
+        return
+      }
+      const demandId = row.demandId || row.id
+      this.$modal.confirm(option.confirm || '是否确认提交需求"' + row.title + '"的流程结论？').then(() => {
+        this.feedbackDialog.loading = true
+        return updateDemandStatus(demandId, option.value)
+      }).then(() => {
+        this.feedbackDialog.visible = false
+        this.feedbackDialog.loading = false
+        this.getList()
+        this.$modal.msgSuccess("流程结论已提交")
+      }).catch(() => {
+        this.feedbackDialog.loading = false
+      })
     },
     nextStatusOptions(status) {
       return nextStatusOptions(status, this.roles, this.permissions)
@@ -459,5 +526,34 @@ export default {
 
 .row-delete-button {
   color: #f56c6c;
+}
+
+.feedback-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.feedback-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 6px;
+}
+
+.feedback-option ::v-deep .el-radio__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  white-space: normal;
+}
+
+.feedback-option small {
+  color: #6b7280;
+  line-height: 18px;
 }
 </style>

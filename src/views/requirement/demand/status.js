@@ -1,6 +1,7 @@
 export const demandStatusOptions = [
   { value: "draft", label: "未提交", type: "info" },
   { value: "submitted", label: "待需求分析", type: "warning" },
+  { value: "supplement_required", label: "待补充说明", type: "danger" },
   { value: "plan_pending", label: "待生成需求设计", type: "warning" },
   { value: "plan_ready", label: "需求设计待确认", type: "warning" },
   { value: "confirmed", label: "待执行开发", type: "success" },
@@ -8,6 +9,7 @@ export const demandStatusOptions = [
   { value: "review", label: "待验收", type: "warning" },
   { value: "repairing", label: "返修中", type: "danger" },
   { value: "completed", label: "已完成", type: "success" },
+  { value: "rejected", label: "需求无法实现", type: "info" },
   { value: "archived", label: "已归档", type: "info" }
 ]
 
@@ -22,10 +24,34 @@ export const demandStatusActions = {
     { value: "submitted", label: "提交需求", tone: "submit", icon: "el-icon-upload2", roles: requirementUserRoles, confirm: "提交后将进入需求分析阶段。" }
   ],
   submitted: [
-    { value: "plan_pending", label: "提交需求分析", tone: "confirm", icon: "el-icon-document-checked", roles: developerRoles, confirm: "确认开发人员已通过 MCP 回写需求可行性评估？" }
+    {
+      value: "analysis_feedback",
+      label: "反馈分析结论",
+      tone: "confirm",
+      icon: "el-icon-document-checked",
+      roles: developerRoles,
+      dialogTitle: "选择需求分析结论",
+      feedbackOptions: [
+        { value: "plan_pending", label: "可继续设计", description: "需求可实现，进入详细需求设计生成阶段。", confirm: "确认需求分析结论为可继续设计？" },
+        { value: "supplement_required", label: "需要补充说明", description: "退回需求人补充背景、范围或验收口径。", confirm: "确认退回需求人补充说明？" },
+        { value: "rejected", label: "需求无法实现", description: "记录当前结论并结束本轮需求设计流程。", confirm: "确认该需求当前无法实现？" }
+      ]
+    }
   ],
   plan_pending: [
-    { value: "plan_ready", label: "提交需求设计", tone: "confirm", icon: "el-icon-document-checked", roles: developerRoles, confirm: "确认开发人员已通过 MCP 回写完整需求设计？" }
+    {
+      value: "design_feedback",
+      label: "提交需求设计结论",
+      tone: "confirm",
+      icon: "el-icon-document-checked",
+      roles: developerRoles,
+      dialogTitle: "选择需求设计结论",
+      feedbackOptions: [
+        { value: "plan_ready", label: "设计完成", description: "详细需求设计已回写，提交需求人确认。", confirm: "确认提交需求设计给需求人确认？" },
+        { value: "supplement_required", label: "需要补充说明", description: "退回需求人补充缺失信息后再生成设计。", confirm: "确认退回需求人补充说明？" },
+        { value: "rejected", label: "需求无法实现", description: "记录当前结论并结束本轮需求设计流程。", confirm: "确认该需求当前无法实现？" }
+      ]
+    }
   ],
   plan_ready: [
     { value: "confirmed", label: "确认需求设计", tone: "confirm", icon: "el-icon-circle-check", roles: requirementUserRoles, confirm: "确认需求人员已认可需求设计，并提交开发人员进入执行阶段？" }

@@ -50,6 +50,31 @@
         <small>下方 Agent 交接资料包保留每次需求可行性评估、需求设计、执行计划、执行报告和 Review 报告回写。</small>
       </div>
 
+      <section v-if="canSubmitSupplement" class="supplement-panel">
+        <div class="supplement-heading">
+          <span>补充说明</span>
+          <small>提交后将回到需求设计生成阶段</small>
+        </div>
+        <el-input
+          v-model="supplementContent"
+          type="textarea"
+          :rows="5"
+          maxlength="4000"
+          show-word-limit
+          resize="vertical"
+          placeholder="请输入需要补充的业务背景、边界范围、验收口径或附件说明"
+        />
+        <div class="supplement-actions">
+          <el-button
+            type="primary"
+            icon="el-icon-upload2"
+            :loading="supplementSubmitting"
+            @click="handleSubmitSupplement"
+            v-hasPermi="['req:demand:edit']"
+          >提交补充说明</el-button>
+        </div>
+      </section>
+
       <el-divider content-position="left">业务背景</el-divider>
       <div v-if="form.businessBackground" class="markdown-block">{{ form.businessBackground }}</div>
       <div v-else class="markdown-block">暂无内容</div>
@@ -125,6 +150,30 @@
         <el-button icon="el-icon-back" @click="goBack">返回</el-button>
       </div>
     </el-card>
+
+    <el-dialog
+      :title="feedbackDialog.action ? feedbackDialog.action.dialogTitle : '选择流程结论'"
+      :visible.sync="feedbackDialog.visible"
+      width="520px"
+      append-to-body
+    >
+      <el-radio-group v-model="feedbackDialog.selected" class="feedback-options">
+        <el-radio
+          v-for="option in feedbackOptions"
+          :key="option.value"
+          :label="option.value"
+          border
+          class="feedback-option"
+        >
+          <span>{{ option.label }}</span>
+          <small>{{ option.description }}</small>
+        </el-radio>
+      </el-radio-group>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="feedbackDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="feedbackDialog.loading" @click="submitFeedbackConclusion">确认提交</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -133,9 +182,10 @@ import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
 import { listIndexModule } from "@/api/requirement/index"
-import { getDemand, getDemandDevelopInstruction, getDemandPlanInstruction, updateDemandStatus } from "@/api/requirement/demand"
+import { getDemand, getDemandDevelopInstruction, getDemandPlanInstruction, submitDemandSupplement, updateDemandStatus } from "@/api/requirement/demand"
 import { getDemandPackage } from "@/api/requirement/package"
 import { mapGetters } from "vuex"
+import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes } from "./artifacts"
 import {
   canUseDeveloperInstruction as canUseDeveloperInstructionForRoles,
   demandStatusOptions,
@@ -152,38 +202,24 @@ export default {
       loading: false,
       artifactLoading: false,
       instructionLoadingType: "",
+      supplementSubmitting: false,
       demandId: undefined,
-      activeArtifact: "requirement",
+      activeArtifact: "requirement_draft",
       form: {},
+      supplementContent: "",
       planInstruction: {},
       developInstruction: {},
       projectOptions: [],
       variantOptions: [],
       moduleOptions: [],
       packageVersions: [],
-      artifactTypes: [
-        { value: "requirement_assessment", label: "需求可行性评估" },
-        { value: "requirement", label: "需求设计" },
-        { value: "plan", label: "执行计划" },
-        { value: "execution_report", label: "执行报告" },
-        { value: "review_report", label: "Review 报告" },
-        { value: "requirement_draft", label: "需求草稿" },
-        { value: "context_manifest", label: "上下文清单" },
-        { value: "branch_execution_brief", label: "分支执行简报" },
-        { value: "execution_prompt", label: "执行提示词" },
-        { value: "review_prompt", label: "Review 提示词" }
-      ],
-      artifacts: {
-        requirement_draft: { content: "", version: undefined, updateTime: undefined },
-        requirement_assessment: { content: "", version: undefined, updateTime: undefined },
-        requirement: { content: "", version: undefined, updateTime: undefined },
-        plan: { content: "", version: undefined, updateTime: undefined },
-        context_manifest: { content: "", version: undefined, updateTime: undefined },
-        branch_execution_brief: { content: "", version: undefined, updateTime: undefined },
-        execution_prompt: { content: "", version: undefined, updateTime: undefined },
-        review_prompt: { content: "", version: undefined, updateTime: undefined },
-        execution_report: { content: "", version: undefined, updateTime: undefined },
-        review_report: { content: "", version: undefined, updateTime: undefined }
+      artifactTypes: handoffArtifactTypes,
+      artifacts: createEmptyArtifacts(),
+      feedbackDialog: {
+        visible: false,
+        action: null,
+        selected: "",
+        loading: false
       },
       demandTypeOptions: [
         { value: "FEATURE", label: "功能需求" },
@@ -245,6 +281,14 @@ export default {
     isRepairing() {
       return String(this.form.status) === "repairing"
     },
+    canSubmitSupplement() {
+      return String(this.form.status) === "supplement_required" && (this.isAdmin() || this.sameUser(this.form.creatorId, this.id))
+    },
+    feedbackOptions() {
+      return this.feedbackDialog.action && this.feedbackDialog.action.feedbackOptions
+        ? this.feedbackDialog.action.feedbackOptions
+        : []
+    },
     attachmentList() {
       return this.normalizeAttachmentList(this.form.attachments)
     }
@@ -254,6 +298,7 @@ export default {
       this.loading = true
       getDemand(this.demandId).then(response => {
         this.form = response.data || {}
+        this.setDefaultActiveArtifact()
         this.loading = false
       }).catch(() => {
         this.loading = false
@@ -266,10 +311,12 @@ export default {
         this.artifactTypes.forEach(item => {
           this.setArtifact(item.value, this.latestArtifactVersion(item.value) || {})
         })
+        this.setDefaultActiveArtifact()
         this.artifactLoading = false
       }).catch(() => {
         this.packageVersions = []
         this.artifactTypes.forEach(item => this.setArtifact(item.value, {}))
+        this.setDefaultActiveArtifact()
         this.artifactLoading = false
       })
     },
@@ -321,12 +368,63 @@ export default {
     },
     handleStatusCommand(action) {
       if (!this.demandId || !action) return
+      if (action.feedbackOptions && action.feedbackOptions.length) {
+        this.openFeedbackDialog(action)
+        return
+      }
       this.$modal.confirm(action.confirm || "是否确认更新需求状态？").then(() => {
         return updateDemandStatus(this.demandId, action.value)
       }).then(() => {
         this.$modal.msgSuccess("状态更新成功")
         this.getDetail()
       }).catch(() => {})
+    },
+    openFeedbackDialog(action) {
+      this.feedbackDialog.action = action
+      this.feedbackDialog.selected = action.feedbackOptions[0].value
+      this.feedbackDialog.loading = false
+      this.feedbackDialog.visible = true
+    },
+    submitFeedbackConclusion() {
+      const option = this.feedbackOptions.find(item => item.value === this.feedbackDialog.selected)
+      if (!option) {
+        this.$modal.msgWarning("请选择流程结论")
+        return
+      }
+      this.$modal.confirm(option.confirm || "是否确认提交该流程结论？").then(() => {
+        this.feedbackDialog.loading = true
+        return updateDemandStatus(this.demandId, option.value)
+      }).then(() => {
+        this.feedbackDialog.visible = false
+        this.feedbackDialog.loading = false
+        this.$modal.msgSuccess("流程结论已提交")
+        this.getDetail()
+        this.loadPackagePreview()
+      }).catch(() => {
+        this.feedbackDialog.loading = false
+      })
+    },
+    handleSubmitSupplement() {
+      if (!String(this.supplementContent || "").trim()) {
+        this.$modal.msgWarning("请输入补充说明")
+        return
+      }
+      this.supplementSubmitting = true
+      submitDemandSupplement(this.demandId, { content: this.supplementContent.trim() }).then(() => {
+        this.$modal.msgSuccess("补充说明已提交")
+        this.supplementContent = ""
+        this.getDetail()
+        this.loadPackagePreview()
+        this.supplementSubmitting = false
+      }).catch(() => {
+        this.supplementSubmitting = false
+      })
+    },
+    setDefaultActiveArtifact() {
+      const target = defaultArtifactByStatus(this.form.status)
+      if (this.artifacts[target]) {
+        this.activeArtifact = target
+      }
     },
     handleInstructionAction(action) {
       if (!action) return
@@ -413,6 +511,13 @@ export default {
     },
     canUseDeveloperInstruction() {
       return canUseDeveloperInstructionForRoles(this.roles, this.form, this.id, this.permissions)
+    },
+    isAdmin() {
+      return (Array.isArray(this.roles) && this.roles.includes("admin")) ||
+        (Array.isArray(this.permissions) && this.permissions.includes("*:*:*"))
+    },
+    sameUser(left, right) {
+      return left !== undefined && left !== null && right !== undefined && right !== null && String(left) === String(right)
     },
     developerLabel(row) {
       if (!row) {
@@ -615,6 +720,37 @@ export default {
   color: #9f1239;
 }
 
+.supplement-panel {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  background: #fff7ed;
+}
+
+.supplement-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.supplement-heading span {
+  color: #9a3412;
+  font-weight: 700;
+}
+
+.supplement-heading small {
+  color: #c2410c;
+}
+
+.supplement-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
 .embedded-package {
   clear: both;
   margin-top: 22px;
@@ -722,6 +858,35 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.feedback-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.feedback-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 6px;
+}
+
+.feedback-option ::v-deep .el-radio__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  white-space: normal;
+}
+
+.feedback-option small {
+  color: #6b7280;
+  line-height: 18px;
 }
 
 @media (max-width: 900px) {
