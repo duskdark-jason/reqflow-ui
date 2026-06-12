@@ -22,6 +22,18 @@
                 </el-select>
               </el-form-item>
             </el-col>
+            <el-col :span="12">
+              <el-form-item label="需求来源" prop="demandSource">
+                <el-select v-model="form.demandSource" placeholder="请选择需求来源" style="width: 100%">
+                  <el-option
+                    v-for="item in demandSourceOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
             <el-col :span="12" v-if="form.demandNo">
               <el-form-item label="需求编号">
                 <div class="readonly-value">{{ form.demandNo }}</div>
@@ -122,7 +134,14 @@
           <el-row :gutter="16">
             <el-col :span="24">
               <el-form-item label="业务背景" prop="businessBackground">
-                <el-input v-model="form.businessBackground" type="textarea" :rows="4" placeholder="请输入业务背景、问题描述和目标说明" />
+                <editor
+                  v-model="form.businessBackground"
+                  :min-height="180"
+                  :file-size="2"
+                  action="/requirement/demand/upload"
+                  :read-only="isReadonlyDemand"
+                />
+                <div class="form-tip">支持粘贴图片，单张图片不超过 2MB。</div>
               </el-form-item>
             </el-col>
             <el-col :span="24">
@@ -133,6 +152,18 @@
             <el-col :span="24">
               <el-form-item label="验收标准" prop="acceptanceText">
                 <el-input v-model="form.acceptanceText" type="textarea" :rows="6" placeholder="请输入可验证的验收标准" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="24">
+              <el-form-item label="需求附件">
+                <file-upload
+                  v-model="form.attachments"
+                  action="/requirement/demand/upload"
+                  :file-size="2"
+                  :limit="5"
+                  :file-type="attachmentFileTypes"
+                  :disabled="isReadonlyDemand"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -153,6 +184,7 @@ import { listModule } from "@/api/requirement/module"
 import { getProjectInit } from "@/api/requirement/projectInit"
 import { getDemand, addDemand, updateDemand } from "@/api/requirement/demand"
 import { listIndexModule, suggestImpact } from "@/api/requirement/index"
+import { demandSourceOptions } from "./status"
 
 export default {
   name: "RequirementDemandMaintain",
@@ -175,12 +207,17 @@ export default {
         { value: "RESEARCH", label: "调研任务" },
         { value: "OTHER", label: "其他" }
       ],
+      demandSourceOptions: demandSourceOptions,
+      attachmentFileTypes: ["doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "pdf", "png", "jpg", "jpeg", "zip", "rar"],
       rules: {
         title: [
           { required: true, message: "需求标题不能为空", trigger: "blur" }
         ],
         demandType: [
           { required: true, message: "需求类型不能为空", trigger: "change" }
+        ],
+        demandSource: [
+          { required: true, message: "需求来源不能为空", trigger: "change" }
         ],
         projectId: [
           { required: true, message: "所属项目不能为空", trigger: "change" }
@@ -263,6 +300,7 @@ export default {
         demandNo: undefined,
         title: undefined,
         demandType: "FEATURE",
+        demandSource: undefined,
         projectId: undefined,
         variantId: undefined,
         moduleId: undefined,
@@ -276,6 +314,7 @@ export default {
         impactPermission: undefined,
         impactExportOrAsync: undefined,
         acceptanceText: undefined,
+        attachments: undefined,
         remark: undefined
       }
     },

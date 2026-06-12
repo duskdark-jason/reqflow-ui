@@ -167,7 +167,7 @@ export default {
       }
       // 校检文件大小
       if (this.fileSize) {
-        const isLt = file.size / 1024 / 1024 < this.fileSize
+        const isLt = file.size / 1024 / 1024 <= this.fileSize
         if (!isLt) {
           this.$modal.msgError(`上传文件大小不能超过 ${this.fileSize} MB!`)
           return false

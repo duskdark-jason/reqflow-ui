@@ -14,8 +14,8 @@
 | `variant.js` | `/requirement/variant` | 项目分支内部兼容查询 |
 | `module.js` | `/requirement/module` | 人工模块兼容接口，左侧菜单不再暴露 |
 | `index.js` | `/requirement/index` | 仓库索引批次、模块知识和影响面推荐 |
-| `demand.js` | `/requirement/demand` | 需求列表、维护页签、详情、保存、状态流转、MCP 编排指令和执行开发指令 |
-| `package.js` | `/requirement/package` | Agent 交接资料列表、最新版本、保存新版本和生成草稿资料 |
+| `demand.js` | `/requirement/demand` | 需求列表、维护页签、详情、保存、状态流转、生成需求设计指令和执行任务指令 |
+| `package.js` | `/requirement/package` | Agent 交接资料列表、最新版本、保存新版本和生成草稿资料；需求详情内嵌读取可用需求查询权限 |
 | `statistics.js` | `/requirement/statistics` | 使用统计 |
 | `harness.js` | `/requirement/project/*/harness-*` | 项目接入 harness 模板包查询和初始化结果登记 |
 | `mcpKey.js` | `/requirement/mcp/key` | MCP 人员 Key 列表、创建、修改、重置、删除和用户选择 |
@@ -26,8 +26,8 @@
 |---|---|
 | 项目管理 | `req:project:list`、`req:project:add`、`req:project:edit`、`req:project:remove`、`req:project:query` |
 | 项目索引 | `req:index:list`、`req:index:import` |
-| 需求列表 | `req:demand:list`、`req:demand:add`、`req:demand:edit` |
-| Agent 交接资料 | `req:package:list`、`req:package:save` |
+| 需求列表 | `req:demand:list`、`req:demand:query`、`req:demand:add`、`req:demand:edit` |
+| Agent 交接资料 | 独立菜单使用 `req:package:list`、`req:package:save`；需求详情内嵌读取使用 `req:demand:query` |
 | MCP管理 | `req:mcp:key:list`、`req:mcp:key:query`、`req:mcp:key:add`、`req:mcp:key:edit`、`req:mcp:key:remove` |
 | 使用统计 | `req:stats:view` |
 
@@ -68,16 +68,26 @@
 
 ## 需求状态与详情契约
 
+- 需求新增和修改页必须展示并校验 `demandSource`，可选值由前端 `demandSourceOptions` 维护，提交给后端保存。
+- 业务背景使用富文本编辑器，允许粘贴图片；图片上传接口为 `/requirement/demand/upload`，前端 `fileSize` 固定为 2MB。
+- 需求附件使用 `FileUpload`，上传接口同为 `/requirement/demand/upload`，单文件最大 2MB，最多 5 个；保存值为后端返回文件路径的英文逗号分隔串。
 - 需求列表和详情复用 `src/views/requirement/demand/status.js` 中的状态定义和按钮定义，避免文案分叉。
-- 新主状态文案为：`draft=未提交`、`submitted=待生成需求说明、执行计划`、`plan_ready=资料待确认`、`confirmed=待执行开发`、`developing=开发中`、`review=待验收`、`repairing=返修中`、`completed=已完成`。
-- 兼容状态文案为：`plan_pending=资料生成中`、`archived=已归档`。
+- 新主状态文案为：`draft=未提交`、`submitted=待生成需求设计`、`plan_ready=需求设计待确认`、`confirmed=待执行开发`、`developing=开发中`、`review=待验收`、`repairing=返修中`、`completed=已完成`。
+- 兼容状态文案为：`plan_pending=需求设计生成中`、`archived=已归档`。
+- 前端流程按钮必须按角色过滤：`requirement_user` 只能看到提需、需求设计确认、返修和验收动作；`requirement_developer` 只能看到提交需求设计、开始开发、提交验收和提交返修验收动作；`admin` 可见全部动作。角色过滤只控制前端展示，服务端状态接口仍由 `req:demand:edit` 和状态机约束。
 - 列表操作列只保留详情、可编辑草稿的修改按钮和当前状态的下一步按钮，不展示 Agent 资料入口。
-- `review` 状态必须提供“发起返修”和“结束任务”两个流程按钮；`repairing` 状态提供“提交返修验收”并流转回 `review`。
-- 详情页流程推进按钮必须和跳转/复制类协作工具分区展示。流程推进按钮位于详情标题区右侧；复制 MCP 指令、复制执行开发指令和 Agent 交接资料属于协作工具，不应混在同一按钮组。
-- 详情页在 `submitted`、`plan_pending` 或 `plan_ready` 状态可调用 `/requirement/demand/{demandId}/plan-instruction` 获取复制内容；复制内容由后端生成，必须包含 `reqflow-mcp`、`mcpTool`、`arguments.actionToken`、24 小时内有效和仅可使用一次的指引，前端不得拼接 actionToken。
-- 详情页在 `confirmed`、`developing`、`repairing` 或 `review` 状态可调用 `/requirement/demand/{demandId}/develop-instruction` 获取执行开发指令；复制内容由后端生成，必须包含过期或已使用后重新生成的提示，前端不得拼接 actionToken。
-- 详情页读取 `/requirement/package/{demandId}` 内嵌展示当前需求的 Agent 交接资料包，按 artifact 类型展示需求草稿、需求设计、执行方案、上下文清单、分支执行简报、执行提示词、Review 提示词、执行报告和 Review 报告等文档的最新内容，并展示每类产物最近历史版本；不得再在详情底部额外重复展示一组独立的需求设计/执行方案预览。没有资料时展示空状态，不阻断页面打开。保存 artifact 必须追加版本，返修轮次依赖历史版本链判断。
+- `review` 状态必须提供“提交返修”和“确认验收”两个流程按钮；`repairing` 状态提供“提交返修验收”并流转回 `review`。
+- 详情页流程推进按钮必须和跳转/复制类协作工具分区展示。流程推进按钮位于详情标题区右侧；复制生成需求设计指令、复制执行任务指令和 Agent 交接资料属于协作工具，不应混在同一按钮组。
+- 详情页在 `submitted`、`plan_pending` 或 `plan_ready` 状态可调用 `/requirement/demand/{demandId}/plan-instruction` 获取“生成需求设计指令”；复制内容由后端生成，必须包含 `reqflow-mcp`、`mcpTool: reqflow.save_requirement_package`、`arguments.actionToken`、24 小时内有效和仅可使用一次的指引，前端不得拼接 actionToken。
+- 详情页在 `confirmed`、`developing`、`repairing` 或 `review` 状态可调用 `/requirement/demand/{demandId}/develop-instruction` 获取“执行任务指令”；复制内容由后端生成，必须包含 `reqflow.save_development_plan`、`reqflow.upload_execution_report`、两个一次性 actionToken、过期或已使用后重新生成的提示，前端不得拼接 actionToken。
+- 详情页读取 `/requirement/package/{demandId}` 内嵌展示当前需求的 Agent 交接资料包，后端允许 `req:demand:query` 读取。资料包区块以当前需求标题为标题，按 artifact 类型展示需求草稿、需求设计、执行计划、上下文清单、分支执行简报、执行提示词、Review 提示词、执行报告和 Review 报告等文档的最新内容，并展示每类产物最近历史版本；不得再在详情底部额外重复展示一组独立的需求设计/执行计划预览。没有资料时展示空状态，不阻断页面打开。保存 artifact 必须追加版本，返修轮次依赖历史版本链判断。
 - 打开 `/requirement/package?demandId=...` 时进入当前需求聚焦模式：页面顶部只展示当前需求标题和版本摘要，下方按 artifact 类型展示文档内容；不得展示需求 ID 查询框、加载资料、生成资料、加载最新或保存新版本按钮。直接从菜单进入 `/requirement/package` 时可保留管理模式。
+
+## 角色菜单契约
+
+- 管理员角色可见全部功能。
+- 需求人员角色只可见首页、需求列表和使用统计；没有 MCP 管理和独立 Agent 交接资料菜单，但可在需求详情中查看当前需求资料。
+- 开发人员角色可见首页、需求列表、MCP 管理和使用统计；MCP 回写资料依赖后端隐藏 `req:package:save` 权限。
 
 ## 标签页与布局契约
 

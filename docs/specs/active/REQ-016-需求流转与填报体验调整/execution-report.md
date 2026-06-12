@@ -14,10 +14,11 @@
 | `src/layout/index.vue`、`src/layout/components/Navbar.vue`、`src/layout/components/index.js` | 移除用户可见布局设置入口。 |
 | `src/layout/components/Sidebar/Logo.vue`、`src/assets/logo/reqflow-logo.svg` | 新增 ReqFlow 品牌 logo 和左侧菜单品牌展示。 |
 | `src/plugins/tab.js` | 隐藏页签关闭时优先回退到 `parentPath`、`backPath` 或 `meta.activeMenu` 父菜单。 |
-| `src/views/requirement/demand/status.js` | 新增需求状态文案、标签、主流程按钮、返修按钮和编辑权限判断。 |
-| `src/views/requirement/demand/index.vue` | 列表操作列移除 Agent 资料入口，补充统一流程状态按钮和父页签打开参数。 |
-| `src/views/requirement/demand/maintain.vue` | 新增不展示创建人 ID/需求编号，编辑编号文本展示，保存时剔除系统字段。 |
-| `src/views/requirement/demand/detail.vue` | 详情页头部展示流程确认按钮，工具区展示 MCP 指令和执行开发指令，底部内嵌当前需求 Agent 交接资料包和历史版本；复制内容直接使用后端返回指令。 |
+| `src/views/requirement/demand/status.js` | 新增需求状态文案、标签、主流程按钮、角色过滤、返修按钮和编辑权限判断。 |
+| `src/views/requirement/demand/index.vue` | 列表操作列移除 Agent 资料入口，补充来源展示、按角色过滤的统一流程状态按钮和父页签打开参数。 |
+| `src/views/requirement/demand/maintain.vue` | 新增不展示创建人 ID/需求编号，增加需求来源必填、富文本业务背景、2MB 图片粘贴和附件上传，保存时剔除系统字段。 |
+| `src/views/requirement/demand/detail.vue` | 详情页头部展示流程确认按钮，工具区展示生成需求设计和执行任务指令，展示来源、富文本背景和附件，内嵌当前需求 Agent 交接资料包和历史版本。 |
+| `src/components/Editor/index.vue`、`src/components/FileUpload/index.vue` | 支持需求专用上传接口，并将文件大小边界改为不超过配置值。 |
 | `src/views/requirement/package/index.vue` | `demandId` 上下文下进入只读聚焦模式，只展示当前需求标题和各项文档内容。 |
 | `src/api/requirement/demand.js` | 增加需求 MCP 编排指令和执行开发指令接口封装。 |
 | `docs/ai-harness/modules/requirement-platform.md`、`docs/ai-harness/contracts/requirement-platform-ui.md` | 同步模块和 UI 契约。 |
@@ -48,19 +49,19 @@
 | 层级 | 验收 ID | 命令或方式 | 结果 |
 |---|---|---|---|
 | L0 | AC-007 | `sh scripts/check-docs.sh` | 通过 |
-| L1 | AC-001~AC-014 | `npm run build:prod` | 通过；仅有包体积提示。 |
-| L2 | AC-003、AC-006、AC-008~AC-014 | `git diff --check`、代码静态复核 | 通过；保存 payload 剔除 `creatorId`、`demandNo`、`status`，状态枚举集中到 `status.js`，详情动作分区、内嵌资料包、版本展示和指令复制边界已复核。 |
-| L3 | AC-001~AC-014 | 浏览器冒烟 | 通过；登录、需求列表、新增页、详情页、详情返回父菜单、指令接口和资料包聚焦模式均无 console error、page error 或 request failure。 |
-| L4（可选） | AC-001~AC-014 | 真实新增/状态流转写操作 | 未执行；本次避免改动本地已有业务数据，写入规则由后端 companion 单测覆盖。 |
+| L1 | AC-001~AC-018 | `npm run build:prod` | 通过；仅有既有包体积提示。 |
+| L2 | AC-003、AC-006、AC-008~AC-018 | 代码静态复核 | 通过；保存 payload 剔除 `creatorId`、`demandNo`、`status`，状态枚举集中到 `status.js`，流程按钮和开发指令按钮按角色过滤，来源/附件字段保存路径和 2MB 上传边界已复核。 |
+| L3 | AC-014、AC-016、AC-018 | 内置浏览器访问新增页和详情页 | 通过；新增页显示需求来源、富文本编辑器、2MB 附件上传提示且无 console error；详情页显示来源和附件区，`packageBeforeActions=true`。 |
+| L4（可选） | AC-001~AC-018 | 真实新增/状态流转写操作 | 未执行；本次避免改动本地已有业务数据，写入规则由后端 companion 单测覆盖。 |
 
 ## 运行态证据
 
 - 执行目录：当前子仓库根目录
-- 启动命令：`npm run dev -- --port 8081`
-- profile/env/mode：本地开发模式，后端代理到本机 RuoYi 服务。
-- 检查命令：`npm run build:prod`、`git diff --check`、浏览器访问 `http://localhost:8081/`
+- 启动命令：`npm run dev -- --host 127.0.0.1`
+- profile/env/mode：本地开发模式，前端服务运行在 `http://127.0.0.1:1025/`，后端代理到本机 RuoYi 服务。
+- 检查命令：`npm run build:prod`、内置浏览器访问 `http://127.0.0.1:1025/requirement/demand/maintain` 和 `http://127.0.0.1:1025/requirement/demand/detail?demandId=1`
 - 原始错误摘要：无页面脚本错误；构建仅报告静态资源体积提示。
-- screenshot/trace 路径：`docs/specs/active/REQ-016-需求流转与填报体验调整/artifacts/target-req016-login.png`、`docs/specs/active/REQ-016-需求流转与填报体验调整/artifacts/target-req016-home.png`、`docs/specs/active/REQ-016-需求流转与填报体验调整/artifacts/target-req016-demand.png`、`docs/specs/active/REQ-016-需求流转与填报体验调整/artifacts/target-req016-maintain.png`、`docs/specs/active/REQ-016-需求流转与填报体验调整/artifacts/target-req016-detail.png`、`docs/specs/active/REQ-016-需求流转与填报体验调整/artifacts/target-req016-repair-list.png`、`docs/specs/active/REQ-016-需求流转与填报体验调整/artifacts/target-req016-repair-detail.png`、`docs/specs/active/REQ-016-需求流转与填报体验调整/artifacts/target-req016-package-focus.png`
+- screenshot/trace 路径：内置浏览器截图已在本次会话输出，未落盘到仓库。
 - 是否代表用户环境：否，仅代表当前执行 agent 环境
 - 后续补验环境：本地或测试环境
 
@@ -73,20 +74,24 @@
 | AC-003 | 已完成 | 新增页不展示创建人 ID 和需求编号，保存 payload 删除系统字段。 |
 | AC-004 | 已完成 | 编辑态需求编号使用文本容器展示，表单只读保护。 |
 | AC-005 | 已完成 | 列表操作列移除 Agent 资料，详情页展示 Agent 交接资料和资料摘要。 |
-| AC-006 | 已完成 | 状态枚举和主按钮统一在 `status.js`，列表/详情冒烟通过。 |
+| AC-006 | 已完成 | 状态枚举和主按钮统一在 `status.js`，并按 `requirement_user`、`requirement_developer`、`admin` 角色过滤；列表/详情构建和代码复核通过。 |
 | AC-007 | 已完成 | 模块文档和 UI 契约文档已同步，`check-docs` 通过。 |
 | AC-008 | 已完成 | `Logo.vue` 使用固定图文容器对齐，列表/详情流程按钮使用统一 `status-action-button`/`flow-confirm-button` 风格。 |
 | AC-009 | 已完成 | 详情头部状态区展示流程确认按钮，正文工具区展示复制和跳转工具按钮。 |
-| AC-010 | 已完成 | `status.js` 支持 `review -> repairing -> review` 返修路径，按钮文案为发起返修和提交返修验收。 |
-| AC-011 | 已完成 | 详情读取 `/requirement/package/{demandId}` 版本列表并展示历史版本，支持复制执行开发指令。 |
+| AC-010 | 已完成 | `status.js` 支持 `review -> repairing -> review` 返修路径，按钮文案为提交返修和提交返修验收。 |
+| AC-011 | 已完成 | 详情读取 `/requirement/package/{demandId}` 版本列表并展示历史版本，开发人员和管理员可复制执行任务指令。 |
 | AC-012 | 已完成 | 项目初始化和需求详情指令均直接展示/复制后端返回 `content`，前端不拼接或持久化明文 actionToken；接口冒烟确认内容包含 24 小时有效和一次性提示。 |
 | AC-013 | 已完成 | `/requirement/package?demandId=...` 进入当前需求聚焦模式，隐藏查询、生成、加载最新和保存新版本按钮。 |
 | AC-014 | 已完成 | 详情底部以单一“Agent 交接资料包”区域展示各项文档和版本，不再保留独立的“需求设计与执行方案”预览块。 |
+| AC-015 | 已完成 | 详情文案区分“生成需求设计”和“执行任务”，流程确认按钮在头部状态区，复制类按钮在协作工具区。 |
+| AC-016 | 已完成 | 浏览器布局检查显示资料包底部在返回按钮顶部之前，资料包文档内容只在资料包容器内展示。 |
+| AC-017 | 已完成 | 文档记录角色菜单和流程按钮可见性，代码中列表与详情均使用 `status.js` 的角色过滤动作。 |
+| AC-018 | 已完成 | 新增/修改页需求来源必填，业务背景使用 `Editor` 支持粘贴图片，附件使用 `FileUpload` 且单文件 2MB；详情页展示来源、富文本背景和附件区。 |
 
 ## 计划偏差
 
 - 额外移除了顶部导航/布局设置相关入口，避免用户从缓存或菜单再次切换出目标左侧布局。
-- 详情页增加需求设计与执行方案摘要区，并通过 companion 后端接口复制 MCP 编排指令。
+- 详情页将需求设计、执行计划和报告统一收敛到内嵌 Agent 交接资料包，并通过 companion 后端接口复制 MCP 指令。
 - 根据用户返修反馈，额外调整 logo 对齐、流程按钮风格、详情动作分区、MCP 指令文本和返修版本记录展示。
 
 ## Review 返修记录
@@ -100,4 +105,5 @@
 ## 风险与后续
 
 - 历史需求数据仍可能保留旧日期编号；新建编号由后端 companion 覆盖为 `REQ-001` 风格。
+- 前端已按角色过滤流程按钮，服务端状态推进接口仍沿用 `req:demand:edit` 和状态机约束。
 - 本次未新增前端自动化 E2E，真实新增和状态推进写操作建议在测试环境补一轮端到端验收。

@@ -43,7 +43,7 @@ export function updateDemandStatus(demandId, status) {
   })
 }
 
-// 获取生成需求说明和执行计划的 MCP 编排指令
+// 获取生成需求设计的 MCP 指令
 export function getDemandPlanInstruction(demandId) {
   return request({
     url: '/requirement/demand/' + demandId + '/plan-instruction',
@@ -51,7 +51,7 @@ export function getDemandPlanInstruction(demandId) {
   })
 }
 
-// 获取执行开发的 MCP 指令
+// 获取执行任务的 MCP 指令
 export function getDemandDevelopInstruction(demandId) {
   return request({
     url: '/requirement/demand/' + demandId + '/develop-instruction',

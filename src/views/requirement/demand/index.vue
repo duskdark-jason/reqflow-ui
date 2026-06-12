@@ -101,6 +101,9 @@
       <el-table-column label="类型" align="center" prop="demandType" width="110">
         <template slot-scope="scope">{{ optionLabel(demandTypeOptions, scope.row.demandType) }}</template>
       </el-table-column>
+      <el-table-column label="来源" align="center" prop="demandSource" width="110">
+        <template slot-scope="scope">{{ optionLabel(demandSourceOptions, scope.row.demandSource) }}</template>
+      </el-table-column>
       <el-table-column label="所属项目" align="center" min-width="150" :show-overflow-tooltip="true">
         <template slot-scope="scope">{{ projectLabel(scope.row.projectId) }}</template>
       </el-table-column>
@@ -174,6 +177,7 @@ import { listIndexModule } from "@/api/requirement/index"
 import { mapGetters } from "vuex"
 import {
   canEditDemand as canEditDemandRow,
+  demandSourceOptions,
   demandStatusOptions,
   demandStatusTagType,
   nextStatusOptions,
@@ -203,6 +207,7 @@ export default {
         { value: "RESEARCH", label: "调研任务" },
         { value: "OTHER", label: "其他" }
       ],
+      demandSourceOptions: demandSourceOptions,
       demandStatusOptions: demandStatusOptions,
       queryParams: {
         pageNum: 1,
@@ -218,7 +223,8 @@ export default {
   },
   computed: {
     ...mapGetters([
-      "id"
+      "id",
+      "roles"
     ]),
     queryVariantOptions() {
       if (!this.queryParams.projectId) {
@@ -300,7 +306,7 @@ export default {
       }).catch(() => {})
     },
     nextStatusOptions(status) {
-      return nextStatusOptions(status)
+      return nextStatusOptions(status, this.roles)
     },
     handleDetail(row) {
       const demandId = row.demandId || row.id
@@ -351,10 +357,10 @@ export default {
       return demandStatusTagType(value)
     },
     primaryStatusAction(status) {
-      return getPrimaryStatusAction(status)
+      return getPrimaryStatusAction(status, this.roles)
     },
     statusActions(status) {
-      return getStatusActions(status)
+      return getStatusActions(status, this.roles)
     },
     canEditDemand(row) {
       return canEditDemandRow(row, this.id)

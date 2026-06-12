@@ -4,7 +4,7 @@
 
 - 结论：通过
 - Review Agent：Codex 本地复核
-- Review 时间：2026-06-11
+- Review 时间：2026-06-12
 
 ## 审查输入
 
@@ -28,16 +28,20 @@
 | AC-002 | 隐藏页签返回父菜单 | `src/plugins/tab.js`、详情/维护打开参数 | 详情页点击返回后 URL 为 `/requirement/demand` | 通过 |
 | AC-003 | 新增不展示和提交创建人 ID/编号 | `maintain.vue` 保存 payload 删除系统字段 | 新增页截图 `artifacts/target-req016-maintain.png` 无创建人 ID 和需求编号 | 通过 |
 | AC-004 | 修改编号文本展示 | `maintain.vue` 的 `readonly-value` 文本展示和只读状态 | `npm run build:prod`；代码复核编号不再作为可编辑 input | 通过 |
-| AC-005 | 列表移除 Agent 资料，详情展示资料 | `index.vue`、`detail.vue` | 列表截图 `artifacts/target-req016-demand.png` 无 Agent 资料入口；详情截图 `artifacts/target-req016-detail.png` 展示 Agent 交接资料、需求设计、执行方案 | 通过 |
-| AC-006 | 新状态按钮和文案 | `status.js`、`index.vue`、`detail.vue` | 列表/详情冒烟展示新状态和动作按钮；构建通过 | 通过 |
+| AC-005 | 列表移除 Agent 资料，详情展示资料 | `index.vue`、`detail.vue` | 列表代码无 Agent 资料入口；详情内置浏览器展示 Agent 交接资料、需求设计和执行计划 tabs | 通过 |
+| AC-006 | 新状态按钮、文案和角色过滤 | `status.js`、`index.vue`、`detail.vue` | `status.js` 定义角色动作；列表和详情均传入 Vuex `roles` 过滤；构建通过 | 通过 |
 | AC-007 | harness 文档同步 | `docs/ai-harness/modules/requirement-platform.md`、`docs/ai-harness/contracts/requirement-platform-ui.md` | `sh scripts/check-docs.sh` 通过 | 通过 |
 | AC-008 | logo 对齐和流程按钮统一 | `Logo.vue`、`index.vue`、`detail.vue` | 浏览器截图 `artifacts/target-req016-repair-list.png`、`artifacts/target-req016-repair-detail.png` | 通过 |
 | AC-009 | 详情流程确认与工具按钮分区 | `detail.vue` 的头部状态区和正文工具区 | 详情页截图确认流程按钮与复制/跳转按钮分区展示 | 通过 |
 | AC-010 | 返修流转 | `status.js` 支持 `review -> repairing -> review` | 代码复核和后端 companion 状态单测 | 通过 |
-| AC-011 | 历史版本和执行开发指令 | `detail.vue`、`demand.js` | 详情页读取执行包版本列表，执行开发指令接口冒烟返回成功 | 通过 |
+| AC-011 | 历史版本和执行任务指令 | `detail.vue`、`demand.js` | 详情页读取执行包版本列表，开发人员/管理员角色才展示执行任务指令入口 | 通过 |
 | AC-012 | actionToken 复制边界 | `project/maintain.vue`、`project/knowledge.vue`、`detail.vue`、UI 契约文档 | 接口冒烟确认指令内容包含 24 小时有效和仅可使用一次；代码复核前端不拼接 actionToken | 通过 |
 | AC-013 | Agent 交接资料聚焦模式 | `package/index.vue` | `/requirement/package?demandId=...` 隐藏查询、生成、加载最新和保存按钮 | 通过 |
 | AC-014 | 详情内嵌资料包去重 | `detail.vue` | 详情页只展示统一“Agent 交接资料包”区域，不再展示独立“需求设计与执行方案”块 | 通过 |
+| AC-015 | 指令和状态文案拆分 | `detail.vue`、`status.js` | 文案区分“生成需求设计”和“执行任务”，流程按钮与协作工具分区展示 | 通过 |
+| AC-016 | 资料包不重叠 | `detail.vue` | 浏览器布局检查 `packageBeforeActions=true`，返回按钮位于资料包之后 | 通过 |
+| AC-017 | 角色菜单和按钮体验 | `status.js`、harness 文档 | 文档记录角色菜单和按钮边界；前端按角色过滤流程按钮 | 通过 |
+| AC-018 | 需求来源、背景图片和附件 | `maintain.vue`、`detail.vue`、`Editor`、`FileUpload` | 新增页浏览器冒烟显示来源、富文本编辑器和 2MB 附件上传提示；详情页显示来源和附件区；构建通过 | 通过 |
 
 ## 验收复核
 
@@ -50,11 +54,15 @@
 - AC-007：通过，模块和契约文档已同步。
 - AC-008：通过，logo 图文使用固定容器对齐，流程动作按钮统一为状态色按钮。
 - AC-009：通过，详情页流程确认按钮位于头部状态区，复制和跳转类工具按钮位于正文工具区。
-- AC-010：通过，待验收可发起返修，返修完成后重新提交验收。
-- AC-011：通过，详情页展示执行包历史版本并提供执行开发指令复制入口。
+- AC-010：通过，待验收可提交返修，返修完成后重新提交验收。
+- AC-011：通过，详情页展示执行包历史版本并按角色提供执行任务指令复制入口。
 - AC-012：通过，前端只复制后端返回的指令内容，不保存明文 actionToken，重新生成由重新请求指令接口完成。
 - AC-013：通过，`demandId` 上下文资料包页只读展示当前需求文档。
 - AC-014：通过，详情页底部资料内容统一收敛到内嵌 Agent 交接资料包。
+- AC-015：通过，生成需求设计和执行任务文案已拆分。
+- AC-016：通过，资料包与底部返回按钮不重叠。
+- AC-017：通过，角色菜单和按钮可见性已记录并实现前端过滤。
+- AC-018：通过，新增和修改页具备来源必填、背景粘贴图片和附件上传入口，详情页可展示来源、富文本背景和附件。
 
 ## 返修交接清单
 

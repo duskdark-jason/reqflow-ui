@@ -27,6 +27,7 @@
 
       <el-descriptions :column="3" border size="medium">
         <el-descriptions-item label="需求类型">{{ optionLabel(demandTypeOptions, form.demandType) }}</el-descriptions-item>
+        <el-descriptions-item label="需求来源">{{ optionLabel(demandSourceOptions, form.demandSource) }}</el-descriptions-item>
         <el-descriptions-item label="所属项目">{{ projectLabel(form.projectId) }}</el-descriptions-item>
         <el-descriptions-item label="项目分支">{{ variantLabel(form.variantId) }}</el-descriptions-item>
         <el-descriptions-item label="模块">{{ demandModuleLabel }}</el-descriptions-item>
@@ -45,7 +46,7 @@
             :loading="instructionLoadingType === 'plan'"
             @click="copyPlanInstruction"
             v-hasPermi="['req:demand:query']"
-          >复制 MCP 编排指令</el-button>
+          >复制生成需求设计指令</el-button>
           <el-button
             v-if="canCopyDevelopInstruction"
             size="mini"
@@ -54,7 +55,7 @@
             :loading="instructionLoadingType === 'develop'"
             @click="copyDevelopInstruction"
             v-hasPermi="['req:demand:query']"
-          >复制执行开发指令</el-button>
+          >复制执行任务指令</el-button>
         </div>
       </div>
 
@@ -65,11 +66,12 @@
 
       <div v-if="isRepairing" class="repair-banner">
         <span>返修中</span>
-        <small>下方 Agent 交接资料包保留每次需求设计、执行方案和执行报告回写。</small>
+        <small>下方 Agent 交接资料包保留每次需求设计、执行计划和执行报告回写。</small>
       </div>
 
       <el-divider content-position="left">业务背景</el-divider>
-      <div class="markdown-block">{{ form.businessBackground || "暂无内容" }}</div>
+      <div v-if="form.businessBackground" class="markdown-block rich-markdown" v-html="form.businessBackground"></div>
+      <div v-else class="markdown-block">暂无内容</div>
 
       <el-divider content-position="left">预期结果</el-divider>
       <div class="markdown-block">{{ form.expectedResult || "暂无内容" }}</div>
@@ -77,8 +79,33 @@
       <el-divider content-position="left">验收标准</el-divider>
       <div class="markdown-block">{{ form.acceptanceText || "暂无内容" }}</div>
 
-      <el-divider content-position="left">Agent 交接资料包</el-divider>
-      <div v-loading="artifactLoading" class="embedded-package">
+      <el-divider content-position="left">需求附件</el-divider>
+      <div v-if="attachmentList.length" class="attachment-list">
+        <el-link
+          v-for="file in attachmentList"
+          :key="file.url"
+          :href="attachmentUrl(file.url)"
+          :underline="false"
+          target="_blank"
+          class="attachment-item"
+        >
+          <i class="el-icon-paperclip"></i>
+          <span>{{ attachmentName(file.name || file.url) }}</span>
+        </el-link>
+      </div>
+      <div v-else class="markdown-block">暂无附件</div>
+
+      <section v-loading="artifactLoading" class="embedded-package">
+        <div class="handoff-header">
+          <div class="handoff-heading">
+            <div class="handoff-label">Agent 交接资料包</div>
+            <div class="handoff-title">{{ form.title || "当前需求" }}</div>
+            <div class="handoff-meta">
+              <span>{{ form.demandNo || "-" }}</span>
+              <span v-if="packageVersions.length">文档版本数：{{ packageVersions.length }}</span>
+            </div>
+          </div>
+        </div>
         <el-tabs v-model="activeArtifact" class="embedded-package-tabs">
           <el-tab-pane
             v-for="artifact in artifactTypes"
@@ -111,7 +138,7 @@
             </div>
           </el-tab-pane>
         </el-tabs>
-      </div>
+      </section>
 
       <div class="detail-actions">
         <el-button icon="el-icon-back" @click="goBack">返回</el-button>
@@ -127,7 +154,10 @@ import { listModule } from "@/api/requirement/module"
 import { listIndexModule } from "@/api/requirement/index"
 import { getDemand, getDemandDevelopInstruction, getDemandPlanInstruction, updateDemandStatus } from "@/api/requirement/demand"
 import { getDemandPackage } from "@/api/requirement/package"
+import { mapGetters } from "vuex"
 import {
+  canUseDeveloperInstruction as canUseDeveloperInstructionForRoles,
+  demandSourceOptions,
   demandStatusOptions,
   demandStatusTagType,
   optionLabel,
@@ -153,15 +183,15 @@ export default {
       moduleOptions: [],
       packageVersions: [],
       artifactTypes: [
-        { value: "requirement_draft", label: "需求草稿" },
         { value: "requirement", label: "需求设计" },
-        { value: "plan", label: "执行方案" },
+        { value: "plan", label: "执行计划" },
+        { value: "execution_report", label: "执行报告" },
+        { value: "review_report", label: "Review 报告" },
+        { value: "requirement_draft", label: "需求草稿" },
         { value: "context_manifest", label: "上下文清单" },
         { value: "branch_execution_brief", label: "分支执行简报" },
         { value: "execution_prompt", label: "执行提示词" },
-        { value: "review_prompt", label: "Review 提示词" },
-        { value: "execution_report", label: "执行报告" },
-        { value: "review_report", label: "Review 报告" }
+        { value: "review_prompt", label: "Review 提示词" }
       ],
       artifacts: {
         requirement_draft: { content: "", version: undefined, updateTime: undefined },
@@ -181,6 +211,7 @@ export default {
         { value: "RESEARCH", label: "调研任务" },
         { value: "OTHER", label: "其他" }
       ],
+      demandSourceOptions: demandSourceOptions,
       demandStatusOptions: demandStatusOptions
     }
   },
@@ -193,6 +224,9 @@ export default {
     }
   },
   computed: {
+    ...mapGetters([
+      "roles"
+    ]),
     demandModuleLabel() {
       if (this.form.moduleId) {
         return this.moduleLabel(this.form.moduleId)
@@ -200,13 +234,16 @@ export default {
       return this.form.remark || "新增功能"
     },
     canCopyInstruction() {
-      return ["submitted", "plan_pending", "plan_ready"].includes(String(this.form.status))
+      return this.canUseDeveloperInstruction() && ["submitted", "plan_pending", "plan_ready"].includes(String(this.form.status))
     },
     canCopyDevelopInstruction() {
-      return ["confirmed", "developing", "repairing", "review"].includes(String(this.form.status))
+      return this.canUseDeveloperInstruction() && ["confirmed", "developing", "repairing", "review"].includes(String(this.form.status))
     },
     isRepairing() {
       return String(this.form.status) === "repairing"
+    },
+    attachmentList() {
+      return this.normalizeAttachmentList(this.form.attachments)
     }
   },
   methods: {
@@ -289,10 +326,10 @@ export default {
       }).catch(() => {})
     },
     copyPlanInstruction() {
-      this.copyInstruction("planInstruction", "plan", "MCP 编排指令", getDemandPlanInstruction)
+      this.copyInstruction("planInstruction", "plan", "生成需求设计指令", getDemandPlanInstruction)
     },
     copyDevelopInstruction() {
-      this.copyInstruction("developInstruction", "develop", "执行开发指令", getDemandDevelopInstruction)
+      this.copyInstruction("developInstruction", "develop", "执行任务指令", getDemandDevelopInstruction)
     },
     copyInstruction(cacheKey, loadingType, title, loader) {
       if (!this.demandId) return
@@ -370,10 +407,38 @@ export default {
       return demandStatusTagType(value)
     },
     primaryStatusAction(status) {
-      return getPrimaryStatusAction(status)
+      return getPrimaryStatusAction(status, this.roles)
     },
     statusActions(status) {
-      return getStatusActions(status)
+      return getStatusActions(status, this.roles)
+    },
+    canUseDeveloperInstruction() {
+      return canUseDeveloperInstructionForRoles(this.roles)
+    },
+    normalizeAttachmentList(value) {
+      if (!value) {
+        return []
+      }
+      if (Array.isArray(value)) {
+        return value
+      }
+      return String(value).split(",")
+        .map(item => item.trim())
+        .filter(Boolean)
+        .map(item => ({ name: item, url: item }))
+    },
+    attachmentName(name) {
+      const value = String(name || "")
+      return value.lastIndexOf("/") > -1 ? value.slice(value.lastIndexOf("/") + 1) : value
+    },
+    attachmentUrl(url) {
+      if (!url) {
+        return "#"
+      }
+      if (/^https?:\/\//.test(url)) {
+        return url
+      }
+      return process.env.VUE_APP_BASE_API + url
     }
   }
 }
@@ -427,9 +492,37 @@ export default {
   background: #fafafa;
 }
 
+.rich-markdown ::v-deep img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.attachment-item {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.attachment-item span {
+  margin-left: 6px;
+  word-break: break-all;
+}
+
 .detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  clear: both;
   margin-top: 18px;
-  text-align: right;
 }
 
 .process-actions,
@@ -551,11 +644,58 @@ export default {
 }
 
 .embedded-package {
+  clear: both;
+  margin-top: 22px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
   min-height: 240px;
 }
 
 .embedded-package-tabs {
   min-width: 0;
+}
+
+.embedded-package-tabs ::v-deep .el-tabs__content {
+  overflow: visible;
+}
+
+.handoff-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.handoff-heading {
+  min-width: 0;
+}
+
+.handoff-label {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.handoff-title {
+  margin-top: 4px;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  word-break: break-word;
+}
+
+.handoff-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 4px;
+  color: #909399;
+  font-size: 12px;
 }
 
 .artifact-header {
@@ -569,6 +709,9 @@ export default {
 
 .artifact-content {
   min-height: 220px;
+  max-height: 420px;
+  overflow: auto;
+  box-sizing: border-box;
 }
 
 .artifact-time {
@@ -618,6 +761,14 @@ export default {
 
   .process-actions {
     justify-content: flex-start;
+  }
+
+  .embedded-package {
+    padding: 12px;
+  }
+
+  .artifact-content {
+    max-height: 340px;
   }
 
   .embedded-package-tabs ::v-deep .el-tabs__nav-wrap {
