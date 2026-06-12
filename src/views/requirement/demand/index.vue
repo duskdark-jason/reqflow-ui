@@ -113,7 +113,7 @@
         <template slot-scope="scope">{{ optionLabel(demandTypeOptions, scope.row.demandType) }}</template>
       </el-table-column>
       <el-table-column label="来源" align="center" prop="demandSource" width="110">
-        <template slot-scope="scope">{{ optionLabel(demandSourceOptions, scope.row.demandSource) }}</template>
+        <template slot-scope="scope">{{ scope.row.demandSource || "-" }}</template>
       </el-table-column>
       <el-table-column label="所属项目" align="center" min-width="150" :show-overflow-tooltip="true">
         <template slot-scope="scope">{{ projectLabel(scope.row.projectId) }}</template>
@@ -199,7 +199,6 @@ import { listIndexModule } from "@/api/requirement/index"
 import { mapGetters } from "vuex"
 import {
   canEditDemand as canEditDemandRow,
-  demandSourceOptions,
   demandStatusOptions,
   demandStatusTagType,
   nextStatusOptions,
@@ -230,7 +229,6 @@ export default {
         { value: "RESEARCH", label: "调研任务" },
         { value: "OTHER", label: "其他" }
       ],
-      demandSourceOptions: demandSourceOptions,
       demandStatusOptions: demandStatusOptions,
       queryParams: {
         pageNum: 1,

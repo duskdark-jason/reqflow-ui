@@ -17,9 +17,9 @@
 | `src/views/requirement/demand/status.js` | 新增需求状态文案、标签、主流程按钮、角色和按钮权限过滤、返修按钮和编辑权限判断。 |
 | `src/views/requirement/demand/index.vue` | 列表操作列移除 Agent 资料入口，补充来源展示、管理员删除按钮、按角色和权限过滤的统一流程状态按钮和父页签打开参数。 |
 | `src/views/index.vue` | 首页快捷入口按当前用户 `permissions` 过滤，无 MCP 管理权限时不展示 MCP 管理。 |
-| `src/views/requirement/demand/maintain.vue` | 新增不展示创建人 ID/需求编号，增加需求来源必填、富文本业务背景、2MB 图片粘贴和附件上传，保存时剔除系统字段。 |
-| `src/views/requirement/demand/detail.vue` | 详情页头部展示流程确认按钮，工具区展示生成需求设计和执行任务指令，展示来源、富文本背景和附件，内嵌当前需求 Agent 交接资料包和历史版本。 |
-| `src/components/Editor/index.vue`、`src/components/FileUpload/index.vue` | 支持需求专用上传接口，并将文件大小边界改为不超过配置值。 |
+| `src/views/requirement/demand/maintain.vue` | 新增不展示创建人 ID/需求编号，增加需求来源文本输入、业务背景普通文本框和附件上传，粘贴图片或文件时追加到附件，保存时剔除系统字段。 |
+| `src/views/requirement/demand/detail.vue` | 详情页头部展示流程确认按钮，工具区展示生成需求设计和执行任务指令，展示来源、纯文本背景和附件，内嵌当前需求 Agent 交接资料包和历史版本。 |
+| `src/components/FileUpload/index.vue` | 支持需求专用上传接口、大小写扩展名识别和 2MB 文件大小边界。 |
 | `src/views/requirement/package/index.vue` | `demandId` 上下文下进入只读聚焦模式，只展示当前需求标题和各项文档内容。 |
 | `src/api/requirement/demand.js` | 增加需求 MCP 编排指令和执行开发指令接口封装。 |
 | `docs/ai-harness/modules/requirement-platform.md`、`docs/ai-harness/contracts/requirement-platform-ui.md` | 同步模块和 UI 契约。 |
@@ -52,7 +52,7 @@
 | L0 | AC-007 | `sh scripts/check-docs.sh` | 通过 |
 | L1 | AC-001~AC-020 | `npm run build:prod` | 通过；仅有既有包体积提示。 |
 | L2 | AC-003、AC-006、AC-008~AC-020 | 代码静态复核 | 通过；保存 payload 剔除 `creatorId`、`demandNo`、`status`，状态枚举集中到 `status.js`，流程按钮和开发指令按钮按角色与权限过滤，来源/附件字段保存路径和 2MB 上传边界已复核。 |
-| L3 | AC-014、AC-016、AC-018 | 内置浏览器访问新增页和详情页 | 通过；新增页显示需求来源、富文本编辑器、2MB 附件上传提示且无 console error；详情页显示来源和附件区，`packageBeforeActions=true`。 |
+| L3 | AC-014、AC-016、AC-018 | 内置浏览器访问新增页和详情页 | 通过；新增页显示需求来源文本输入、业务背景普通文本框、2MB 附件上传提示且无 console error；详情页显示来源和附件区，`packageBeforeActions=true`。 |
 | L4（可选） | AC-001~AC-020 | 真实新增/状态流转写操作 | 未执行；本次避免改动本地已有业务数据，写入规则由后端 companion 单测覆盖。 |
 
 ## 运行态证据
@@ -78,16 +78,16 @@
 | AC-006 | 已完成 | 状态枚举和主按钮统一在 `status.js`，并按 `requirement_user`、`requirement_developer`、`admin` 角色过滤；列表/详情构建和代码复核通过。 |
 | AC-007 | 已完成 | 模块文档和 UI 契约文档已同步，`check-docs` 通过。 |
 | AC-008 | 已完成 | `Logo.vue` 使用固定图文容器对齐，列表/详情流程按钮使用统一 `status-action-button`/`flow-confirm-button` 风格。 |
-| AC-009 | 已完成 | 详情头部状态区展示流程确认按钮，正文工具区展示复制和跳转工具按钮。 |
+| AC-009 | 已完成 | 详情头部状态区展示流程确认按钮，并用独立白底描边按钮展示当前阶段生成入口；页面不展示复制内容。 |
 | AC-010 | 已完成 | `status.js` 支持 `review -> repairing -> review` 返修路径，按钮文案为提交返修和提交返修验收。 |
-| AC-011 | 已完成 | 详情读取 `/requirement/package/{demandId}` 版本列表并展示历史版本，开发人员和管理员可复制执行任务指令。 |
+| AC-011 | 已完成 | 详情读取 `/requirement/package/{demandId}` 版本列表并展示历史版本，开发人员和管理员可通过单独按钮生成执行任务指令。 |
 | AC-012 | 已完成 | 项目初始化和需求详情指令均直接展示/复制后端返回 `content`，前端不拼接或持久化明文 actionToken；接口冒烟确认内容包含 24 小时有效和一次性提示。 |
 | AC-013 | 已完成 | `/requirement/package?demandId=...` 进入当前需求聚焦模式，隐藏查询、生成、加载最新和保存新版本按钮。 |
 | AC-014 | 已完成 | 详情底部以单一“Agent 交接资料包”区域展示各项文档和版本，不再保留独立的“需求设计与执行方案”预览块。 |
-| AC-015 | 已完成 | 详情文案区分“生成需求设计”和“执行任务”，流程确认按钮在头部状态区，复制类按钮在协作工具区。 |
+| AC-015 | 已完成 | 详情文案区分“生成详细需求设计”和“生成执行任务指令”，流程确认按钮与生成按钮同在头部状态区但样式明显区分，页面不展示协作工具栏。 |
 | AC-016 | 已完成 | 浏览器布局检查显示资料包底部在返回按钮顶部之前，资料包文档内容只在资料包容器内展示。 |
 | AC-017 | 已完成 | 文档记录角色菜单和流程按钮可见性，代码中列表与详情均使用 `status.js` 的角色过滤动作。 |
-| AC-018 | 已完成 | 新增/修改页需求来源必填，业务背景使用 `Editor` 支持粘贴图片，附件使用 `FileUpload` 且单文件 2MB；详情页展示来源、富文本背景和附件区。 |
+| AC-018 | 已完成 | 新增/修改页需求来源为文本输入且必填，业务背景使用普通文本框，粘贴图片或文件会自动上传到附件；附件使用 `FileUpload` 且单文件 2MB；详情页展示来源、纯文本背景和附件区。 |
 | AC-019 | 已完成 | 首页快捷入口按权限过滤，需求人员无 `req:mcp:key:list` 时不展示 MCP 管理。 |
 | AC-020 | 已完成 | 删除按钮仅 `req:demand:remove` 可见，流程按钮同时按角色和 `req:demand:edit` 权限过滤。 |
 

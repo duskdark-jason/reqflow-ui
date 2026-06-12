@@ -22,12 +22,21 @@
               v-hasPermi="['req:demand:edit']"
             >{{ action.label }}</el-button>
           </div>
+          <el-button
+            v-if="instructionAction"
+            size="mini"
+            class="generate-action-button"
+            :icon="instructionAction.icon"
+            :loading="instructionLoadingType === instructionAction.loadingType"
+            @click="handleInstructionAction(instructionAction)"
+            v-hasPermi="['req:demand:query']"
+          >{{ instructionAction.label }}</el-button>
         </div>
       </div>
 
       <el-descriptions :column="3" border size="medium">
         <el-descriptions-item label="需求类型">{{ optionLabel(demandTypeOptions, form.demandType) }}</el-descriptions-item>
-        <el-descriptions-item label="需求来源">{{ optionLabel(demandSourceOptions, form.demandSource) }}</el-descriptions-item>
+        <el-descriptions-item label="需求来源">{{ form.demandSource || "-" }}</el-descriptions-item>
         <el-descriptions-item label="所属项目">{{ projectLabel(form.projectId) }}</el-descriptions-item>
         <el-descriptions-item label="项目分支">{{ variantLabel(form.variantId) }}</el-descriptions-item>
         <el-descriptions-item label="模块">{{ demandModuleLabel }}</el-descriptions-item>
@@ -36,42 +45,13 @@
         <el-descriptions-item label="创建时间">{{ parseTime(form.createTime) || "-" }}</el-descriptions-item>
       </el-descriptions>
 
-      <div class="tool-panel">
-        <div class="tool-panel-title">协作工具</div>
-        <div class="tool-actions">
-          <el-button
-            v-if="canCopyInstruction"
-            size="mini"
-            class="tool-action-button"
-            icon="el-icon-document-copy"
-            :loading="instructionLoadingType === 'plan'"
-            @click="copyPlanInstruction"
-            v-hasPermi="['req:demand:query']"
-          >复制生成需求设计指令</el-button>
-          <el-button
-            v-if="canCopyDevelopInstruction"
-            size="mini"
-            class="tool-action-button"
-            icon="el-icon-position"
-            :loading="instructionLoadingType === 'develop'"
-            @click="copyDevelopInstruction"
-            v-hasPermi="['req:demand:query']"
-          >复制执行任务指令</el-button>
-        </div>
-      </div>
-
-      <div v-if="instructionPreview.content" class="instruction-preview">
-        <div class="instruction-title">{{ instructionPreview.title }}</div>
-        <div>{{ instructionPreview.content }}</div>
-      </div>
-
       <div v-if="isRepairing" class="repair-banner">
         <span>返修中</span>
         <small>下方 Agent 交接资料包保留每次需求设计、执行计划和执行报告回写。</small>
       </div>
 
       <el-divider content-position="left">业务背景</el-divider>
-      <div v-if="form.businessBackground" class="markdown-block rich-markdown" v-html="form.businessBackground"></div>
+      <div v-if="form.businessBackground" class="markdown-block">{{ form.businessBackground }}</div>
       <div v-else class="markdown-block">暂无内容</div>
 
       <el-divider content-position="left">预期结果</el-divider>
@@ -158,7 +138,6 @@ import { getDemandPackage } from "@/api/requirement/package"
 import { mapGetters } from "vuex"
 import {
   canUseDeveloperInstruction as canUseDeveloperInstructionForRoles,
-  demandSourceOptions,
   demandStatusOptions,
   demandStatusTagType,
   optionLabel,
@@ -178,7 +157,6 @@ export default {
       form: {},
       planInstruction: {},
       developInstruction: {},
-      instructionPreview: {},
       projectOptions: [],
       variantOptions: [],
       moduleOptions: [],
@@ -212,7 +190,6 @@ export default {
         { value: "RESEARCH", label: "调研任务" },
         { value: "OTHER", label: "其他" }
       ],
-      demandSourceOptions: demandSourceOptions,
       demandStatusOptions: demandStatusOptions
     }
   },
@@ -241,6 +218,27 @@ export default {
     },
     canCopyDevelopInstruction() {
       return this.canUseDeveloperInstruction() && ["confirmed", "developing", "repairing", "review"].includes(String(this.form.status))
+    },
+    instructionAction() {
+      if (this.canCopyInstruction) {
+        return {
+          cacheKey: "planInstruction",
+          loadingType: "plan",
+          label: "生成详细需求设计",
+          icon: "el-icon-document-checked",
+          loader: getDemandPlanInstruction
+        }
+      }
+      if (this.canCopyDevelopInstruction) {
+        return {
+          cacheKey: "developInstruction",
+          loadingType: "develop",
+          label: "生成执行任务指令",
+          icon: "el-icon-position",
+          loader: getDemandDevelopInstruction
+        }
+      }
+      return null
     },
     isRepairing() {
       return String(this.form.status) === "repairing"
@@ -328,23 +326,19 @@ export default {
         this.getDetail()
       }).catch(() => {})
     },
-    copyPlanInstruction() {
-      this.copyInstruction("planInstruction", "plan", "生成需求设计指令", getDemandPlanInstruction)
+    handleInstructionAction(action) {
+      if (!action) return
+      this.copyInstruction(action.cacheKey, action.loadingType, action.loader)
     },
-    copyDevelopInstruction() {
-      this.copyInstruction("developInstruction", "develop", "执行任务指令", getDemandDevelopInstruction)
-    },
-    copyInstruction(cacheKey, loadingType, title, loader) {
+    copyInstruction(cacheKey, loadingType, loader) {
       if (!this.demandId) return
       if (this[cacheKey].content) {
-        this.instructionPreview = { title: title, content: this[cacheKey].content }
         this.copyText(this[cacheKey].content)
         return
       }
       this.instructionLoadingType = loadingType
       loader(this.demandId).then(response => {
         this[cacheKey] = response.data || {}
-        this.instructionPreview = { title: title, content: this[cacheKey].content || "" }
         this.copyText(this[cacheKey].content || "")
         this.instructionLoadingType = ""
       }).catch(() => {
@@ -504,12 +498,6 @@ export default {
   background: #fafafa;
 }
 
-.rich-markdown ::v-deep img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-}
-
 .attachment-list {
   display: flex;
   flex-direction: column;
@@ -537,8 +525,7 @@ export default {
   margin-top: 18px;
 }
 
-.process-actions,
-.tool-actions {
+.process-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -590,49 +577,20 @@ export default {
   background: #047857;
 }
 
-.tool-panel {
-  margin-top: 16px;
-  padding: 12px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background: #f9fafb;
-}
-
-.tool-panel-title {
-  margin-bottom: 10px;
-  color: #4b5563;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.tool-action-button {
+.generate-action-button {
+  height: 30px;
   margin-left: 0 !important;
   border-color: #d1d5db;
   color: #374151;
   background: #fff;
+  font-weight: 600;
 }
 
-.tool-action-button:hover,
-.tool-action-button:focus {
+.generate-action-button:hover,
+.generate-action-button:focus {
   border-color: #93c5fd;
   color: #1d4ed8;
   background: #eff6ff;
-}
-
-.instruction-preview {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-left: 3px solid #409eff;
-  color: #606266;
-  line-height: 1.7;
-  white-space: pre-wrap;
-  background: #f7fbff;
-}
-
-.instruction-title {
-  margin-bottom: 6px;
-  color: #1d4ed8;
-  font-weight: 600;
 }
 
 .repair-banner {

@@ -11,15 +11,6 @@ export const demandStatusOptions = [
   { value: "archived", label: "已归档", type: "info" }
 ]
 
-export const demandSourceOptions = [
-  { value: "BUSINESS", label: "业务提报" },
-  { value: "CUSTOMER", label: "客户反馈" },
-  { value: "OPERATIONS", label: "运营反馈" },
-  { value: "COMPLIANCE", label: "合规政策" },
-  { value: "INTERNAL", label: "内部优化" },
-  { value: "OTHER", label: "其他" }
-]
-
 export const ROLE_REQUIREMENT_USER = "requirement_user"
 export const ROLE_REQUIREMENT_DEVELOPER = "requirement_developer"
 

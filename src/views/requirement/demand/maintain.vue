@@ -24,14 +24,7 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="需求来源" prop="demandSource">
-                <el-select v-model="form.demandSource" placeholder="请选择需求来源" style="width: 100%">
-                  <el-option
-                    v-for="item in demandSourceOptions"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
-                  />
-                </el-select>
+                <el-input v-model="form.demandSource" placeholder="请输入需求来源，例如：业务部门、客户反馈" maxlength="64" show-word-limit />
               </el-form-item>
             </el-col>
             <el-col :span="12" v-if="form.demandNo">
@@ -155,14 +148,29 @@
           <el-row :gutter="16">
             <el-col :span="24">
               <el-form-item label="业务背景" prop="businessBackground">
-                <editor
+                <el-input
                   v-model="form.businessBackground"
-                  :min-height="180"
-                  :file-size="2"
-                  action="/requirement/demand/upload"
-                  :read-only="isReadonlyDemand"
+                  class="business-background-input"
+                  type="textarea"
+                  :rows="7"
+                  maxlength="4000"
+                  show-word-limit
+                  placeholder="请填写业务背景、问题场景和目标用户。粘贴图片或文件会自动添加到需求附件。"
+                  @paste.native="handleBusinessBackgroundPaste"
                 />
-                <div class="form-tip">支持粘贴图片，单张图片不超过 2MB。</div>
+                <div class="form-tip">这里只保存文本内容；粘贴图片或文件会自动上传为需求附件。</div>
+              </el-form-item>
+            </el-col>
+            <el-col :span="24">
+              <el-form-item label="需求附件">
+                <file-upload
+                  v-model="form.attachments"
+                  action="/requirement/demand/upload"
+                  :file-size="2"
+                  :limit="attachmentLimit"
+                  :file-type="attachmentFileTypes"
+                  :disabled="isReadonlyDemand"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="24">
@@ -175,25 +183,13 @@
                 <el-input v-model="form.acceptanceText" type="textarea" :rows="6" placeholder="请输入可验证的验收标准" />
               </el-form-item>
             </el-col>
-            <el-col :span="24">
-              <el-form-item label="需求附件">
-                <file-upload
-                  v-model="form.attachments"
-                  action="/requirement/demand/upload"
-                  :file-size="2"
-                  :limit="5"
-                  :file-type="attachmentFileTypes"
-                  :disabled="isReadonlyDemand"
-                />
-              </el-form-item>
-            </el-col>
           </el-row>
         </section>
       </el-form>
 
       <div class="maintain-actions">
         <el-button @click="closePage">关 闭</el-button>
-        <el-button type="primary" :loading="saving || impactSuggestLoading" :disabled="isReadonlyDemand" @click="submitForm">保 存</el-button>
+        <el-button type="primary" :loading="saving || impactSuggestLoading || attachmentUploading" :disabled="isReadonlyDemand || attachmentUploading" @click="submitForm">保 存</el-button>
       </div>
     </div>
   </div>
@@ -203,9 +199,8 @@
 import { listProject } from "@/api/requirement/project"
 import { listModule } from "@/api/requirement/module"
 import { getProjectInit } from "@/api/requirement/projectInit"
-import { getDemand, addDemand, listDemandDevelopers, updateDemand } from "@/api/requirement/demand"
+import { getDemand, addDemand, listDemandDevelopers, updateDemand, uploadDemandAttachment } from "@/api/requirement/demand"
 import { listIndexModule, suggestImpact } from "@/api/requirement/index"
-import { demandSourceOptions } from "./status"
 
 export default {
   name: "RequirementDemandMaintain",
@@ -222,6 +217,7 @@ export default {
       formVariantOptions: [],
       moduleOptions: [],
       developerOptions: [],
+      attachmentUploading: false,
       form: this.emptyForm(),
       demandTypeOptions: [
         { value: "FEATURE", label: "功能需求" },
@@ -230,8 +226,9 @@ export default {
         { value: "RESEARCH", label: "调研任务" },
         { value: "OTHER", label: "其他" }
       ],
-      demandSourceOptions: demandSourceOptions,
-      attachmentFileTypes: ["doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "pdf", "png", "jpg", "jpeg", "zip", "rar"],
+      attachmentFileTypes: ["doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "pdf", "png", "jpg", "jpeg", "gif", "bmp", "webp"],
+      attachmentMaxSize: 2,
+      attachmentLimit: 5,
       rules: {
         title: [
           { required: true, message: "需求标题不能为空", trigger: "blur" }
@@ -414,6 +411,105 @@ export default {
         this.developerLoading = false
       })
     },
+    handleBusinessBackgroundPaste(event) {
+      if (this.isReadonlyDemand || !event.clipboardData) {
+        return
+      }
+      const files = this.clipboardFiles(event.clipboardData)
+      if (!files.length) {
+        return
+      }
+      event.preventDefault()
+      this.uploadPastedAttachments(files)
+    },
+    clipboardFiles(clipboardData) {
+      const fileMap = new Map()
+      Array.from(clipboardData.files || []).forEach(file => {
+        if (file) {
+          fileMap.set(file.name + file.size + file.type, file)
+        }
+      })
+      Array.from(clipboardData.items || []).forEach(item => {
+        if (item.kind === "file") {
+          const file = item.getAsFile()
+          if (file) {
+            fileMap.set(file.name + file.size + file.type, file)
+          }
+        }
+      })
+      return Array.from(fileMap.values())
+    },
+    uploadPastedAttachments(files) {
+      const validFiles = files.filter(this.validateAttachmentFile)
+      if (!validFiles.length) {
+        return
+      }
+      const existingCount = this.form.attachments ? String(this.form.attachments).split(",").filter(Boolean).length : 0
+      if (existingCount + validFiles.length > this.attachmentLimit) {
+        this.$modal.msgError("上传文件数量不能超过 " + this.attachmentLimit + " 个!")
+        return
+      }
+      this.attachmentUploading = true
+      this.$modal.loading("正在上传附件，请稍候...")
+      Promise.all(validFiles.map(file => this.uploadAttachmentFile(file))).then(paths => {
+        const uploadedPaths = paths.filter(Boolean)
+        uploadedPaths.forEach(this.appendAttachmentPath)
+        if (uploadedPaths.length) {
+          this.$modal.msgSuccess("已添加到需求附件")
+        }
+      }).finally(() => {
+        this.attachmentUploading = false
+        this.$modal.closeLoading()
+      })
+    },
+    validateAttachmentFile(file) {
+      const ext = this.attachmentExtension(file)
+      if (!this.attachmentFileTypes.includes(ext)) {
+        this.$modal.msgError("文件格式不正确，请上传" + this.attachmentFileTypes.join("/") + "格式文件")
+        return false
+      }
+      if (this.attachmentMaxSize && file.size / 1024 / 1024 > this.attachmentMaxSize) {
+        this.$modal.msgError("上传文件大小不能超过 " + this.attachmentMaxSize + " MB!")
+        return false
+      }
+      return true
+    },
+    attachmentExtension(file) {
+      const name = file.name || ""
+      const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : ""
+      if (ext) {
+        return ext
+      }
+      const mimeMap = {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/gif": "gif",
+        "image/bmp": "bmp",
+        "image/webp": "webp",
+        "application/pdf": "pdf",
+        "text/plain": "txt"
+      }
+      return mimeMap[file.type] || ""
+    },
+    uploadAttachmentFile(file) {
+      const formData = new FormData()
+      formData.append("file", file, file.name || this.defaultAttachmentName(file))
+      return uploadDemandAttachment(formData).then(response => {
+        return response.fileName
+      }).catch(() => {
+        this.$modal.msgError("上传文件失败，请重试")
+        return ""
+      })
+    },
+    defaultAttachmentName(file) {
+      const ext = this.attachmentExtension(file) || "dat"
+      return "clipboard-" + new Date().getTime() + "." + ext
+    },
+    appendAttachmentPath(path) {
+      const list = this.form.attachments ? String(this.form.attachments).split(",").filter(Boolean) : []
+      list.push(path)
+      this.form.attachments = list.join(",")
+    },
     isVariantInitialized(variant) {
       if (!variant || variant.status === "1") {
         return false
@@ -576,6 +672,11 @@ export default {
 .form-tip {
   margin-top: 6px;
   line-height: 18px;
+}
+
+.business-background-input ::v-deep .el-textarea__inner {
+  min-height: 168px;
+  line-height: 1.6;
 }
 
 .readonly-value {

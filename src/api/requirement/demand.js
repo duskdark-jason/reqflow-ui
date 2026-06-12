@@ -75,3 +75,13 @@ export function getDemandDevelopInstruction(demandId) {
     method: 'get'
   })
 }
+
+// 上传需求附件
+export function uploadDemandAttachment(data) {
+  return request({
+    url: '/requirement/demand/upload',
+    method: 'post',
+    data: data,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
