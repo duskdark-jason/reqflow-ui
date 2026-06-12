@@ -10,7 +10,7 @@
 |---|---|---|---|---|---|---|
 | 需求管理 | 项目管理 | 项目列表、项目维护入口和初始化状态 | `src/views/requirement/project/index.vue`、`maintain.vue` | `src/api/requirement/project.js`、`projectInit.js` | `/requirement/project/**`，`req:project:*`；`/requirement/project/init/**`，`req:project:*` | `ReqProjectController`、`ReqProjectInitController`、`ReqProjectInitServiceImpl` |
 | 需求管理 | 分支知识库详情页签 | 按项目分支查看模块知识、索引批次和初始化指令 | `src/views/requirement/project/knowledge.vue` | `src/api/requirement/index.js`、`project.js` | `/requirement/index/module/tree`，`req:index:list`；`/requirement/index/batch/list`，`req:index:list` | `ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
-| 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、状态按钮、详情资料展示、返修版本记录、生成需求设计指令和执行任务指令复制 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue`、`status.js` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；`/requirement/index/impact/suggest`，`req:index:list` | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
+| 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、管理员删除、状态按钮、详情资料展示、返修版本记录、生成需求设计指令和执行任务指令复制 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue`、`status.js` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；删除使用 `req:demand:remove`；`/requirement/index/impact/suggest` 可由需求权限读取 | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
 | 需求管理 | Agent 交接资料 | 查看和保存需求设计、执行计划、执行报告、Review 报告等 artifact；详情页内嵌读取使用需求详情权限 | `src/views/requirement/package/index.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，读取为 `req:package:list` 或 `req:demand:query`，保存为 `req:package:save` | `ReqPackageController`、`ReqPackageServiceImpl` |
 | 需求管理 | MCP 管理 | 管理人员 MCP Key，创建或重置后复制一次性 Key 和多平台 Codex 安装命令 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`/requirement/codex/install.*`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqCodexInstallController`、`ReqMcpController`、`McpService` |
 | 需求管理 | 使用统计 | 展示需求、项目、用户和状态统计 | `src/views/requirement/statistics/index.vue` | `src/api/requirement/statistics.js` | `/requirement/statistics/**`，`req:stats:view` | `ReqStatisticsController`、`ReqStatisticsService` |
@@ -62,13 +62,15 @@
 - 修改需求维护页签中需求编号只能用文本展示，不允许使用 input 样式；非 `draft` 需求进入维护页签时前端应只读，后端仍负责最终拦截。
 - 新增和修改需求维护页签必须填写需求来源；业务背景使用富文本编辑器，支持粘贴图片；需求附件通过上传组件保存，图片和附件均走 `/requirement/demand/upload`，前端单文件限制 2MB。
 - 需求列表操作列不展示 Agent 交接资料入口；需求详情页直接内嵌当前需求的 Agent 交接资料包，以当前需求标题为区块标题，按文档类型展示最新内容和历史版本，不再额外重复展示一组独立的需求设计/执行计划预览；详情页展示“复制生成需求设计指令”和“复制执行任务指令”按钮。
+- 需求删除按钮只使用 `req:demand:remove` 展示，预期仅管理员可见；需求人员和开发人员不可见删除入口。
 - 以 `demandId` 上下文打开 Agent 交接资料页时，页面必须以当前需求为上下文，只展示需求标题和各类文档内容；不得展示需求 ID 查询、手动生成资料、加载最新或保存新版本等管理动作。
 - 需求详情页必须区分流程推进按钮和跳转/复制类协作工具：流程推进按钮放在详情标题区右侧，协作工具放在详情正文工具区，避免状态决策和页面跳转混在同一按钮组。
 - 需求状态文案以 `src/views/requirement/demand/status.js` 为准：新主流程为未提交、待生成需求设计、需求设计待确认、待执行开发、开发中、待验收、返修中、已完成；旧 `需求设计生成中`、`已归档` 仅作为兼容状态展示。
-- 流程按钮由 `status.js` 统一定义并按角色过滤：需求人员可提交需求、确认需求设计、提交返修和确认验收；开发人员可提交需求设计、开始开发、提交验收和提交返修验收；管理员角色可见全部流程按钮。
+- 流程按钮由 `status.js` 统一定义，并同时按角色和 `req:demand:edit` 按钮权限过滤：需求人员可提交需求、确认需求设计、提交返修和确认验收；开发人员可提交需求设计、开始开发、提交验收和提交返修验收；管理员角色可见全部流程按钮。
 - 待验收状态必须同时提供“提交返修”和“确认验收”；返修中状态提交后回到待验收。详情页应通过 `/requirement/package/{demandId}` 展示需求设计、执行计划和执行报告等产物的历史版本，用于判断返修轮次。
 - 初始化指令、生成需求设计指令和执行任务指令中的 actionToken 均为后端生成的一次性短时 token，前端只展示和复制后端返回内容，不得写入本地存储；过期或已使用后用户需要重新生成指令。
 - 角色菜单预期：管理员可见全部功能；需求人员只可见首页、需求列表和使用统计，仍可在需求详情内查看当前需求资料；开发人员可见首页、需求列表、MCP 管理和使用统计。
+- 首页快捷入口必须按 Vuex `permissions` 过滤：没有 `req:mcp:key:list` 时不展示 MCP 管理，没有 `req:project:list` 时不展示项目管理，需求人员首页不得出现 MCP 管理快捷入口。
 
 ## 风险点
 

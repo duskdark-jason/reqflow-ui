@@ -7,8 +7,17 @@
         <p>从需求提交、执行资料、开发交接到 Review 回收，集中观察每个项目的流转状态。</p>
       </div>
       <div class="hero-actions">
-        <el-button type="primary" icon="el-icon-plus" @click="openPage('提交需求', '/requirement/demand')">提交需求</el-button>
-        <el-button icon="el-icon-office-building" @click="openPage('项目管理', '/requirement/project')">项目管理</el-button>
+        <el-button
+          v-if="hasPermission('req:demand:list')"
+          type="primary"
+          icon="el-icon-plus"
+          @click="openPage('提交需求', '/requirement/demand')"
+        >提交需求</el-button>
+        <el-button
+          v-if="hasPermission('req:project:list')"
+          icon="el-icon-office-building"
+          @click="openPage('项目管理', '/requirement/project')"
+        >项目管理</el-button>
       </div>
     </section>
 
@@ -87,7 +96,7 @@
         </div>
       </div>
       <el-row :gutter="12">
-        <el-col :xs="24" :sm="8" v-for="item in quickActions" :key="item.title">
+        <el-col :xs="24" :sm="8" v-for="item in visibleQuickActions" :key="item.title">
           <button class="quick-action" type="button" @click="openPage(item.title, item.path)">
             <i :class="item.icon"></i>
             <span>{{ item.title }}</span>
@@ -101,6 +110,7 @@
 
 <script>
 import { getRequirementOverview, getProjectRank, getUserUsage } from "@/api/requirement/statistics"
+import { mapGetters } from "vuex"
 
 export default {
   name: "Index",
@@ -111,13 +121,16 @@ export default {
       projectRank: [],
       userUsage: [],
       quickActions: [
-        { title: "需求列表", path: "/requirement/demand", icon: "el-icon-tickets", desc: "查看、提交和推进需求" },
-        { title: "执行资料", path: "/requirement/package", icon: "el-icon-document-checked", desc: "生成或查看 Agent 交接资料" },
-        { title: "MCP 管理", path: "/requirement/mcpKey", icon: "el-icon-key", desc: "管理人员 MCP 访问 Key" }
+        { title: "需求列表", path: "/requirement/demand", icon: "el-icon-tickets", desc: "查看、提交和推进需求", permission: "req:demand:list" },
+        { title: "执行资料", path: "/requirement/package", icon: "el-icon-document-checked", desc: "生成或查看 Agent 交接资料", permission: "req:package:list" },
+        { title: "MCP 管理", path: "/requirement/mcpKey", icon: "el-icon-key", desc: "管理人员 MCP 访问 Key", permission: "req:mcp:key:list" }
       ]
     }
   },
   computed: {
+    ...mapGetters([
+      "permissions"
+    ]),
     metrics() {
       return [
         { key: "demand", label: "需求总数", value: this.numberOf(this.overview.demandCount), hint: "已进入平台的需求" },
@@ -127,6 +140,9 @@ export default {
         { key: "review", label: "Review 报告", value: this.numberOf(this.overview.reviewReportCount), hint: "审查回收记录" },
         { key: "active", label: "活跃人员", value: this.numberOf(this.overview.activeUserCount), hint: "近 30 天" }
       ]
+    },
+    visibleQuickActions() {
+      return this.quickActions.filter(item => this.hasPermission(item.permission))
     }
   },
   created() {
@@ -154,6 +170,15 @@ export default {
     percent(value) {
       const number = Number(value || 0)
       return Math.max(0, Math.min(100, Number(number.toFixed(0))))
+    },
+    hasPermission(permission) {
+      if (!permission) {
+        return true
+      }
+      if (!Array.isArray(this.permissions) || !this.permissions.length) {
+        return false
+      }
+      return this.permissions.includes("*:*:*") || this.permissions.includes(permission)
     },
     openPage(title, path) {
       this.$tab.openPage(title, path)

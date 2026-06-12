@@ -26,7 +26,7 @@
 |---|---|
 | 项目管理 | `req:project:list`、`req:project:add`、`req:project:edit`、`req:project:remove`、`req:project:query` |
 | 项目索引 | `req:index:list`、`req:index:import` |
-| 需求列表 | `req:demand:list`、`req:demand:query`、`req:demand:add`、`req:demand:edit` |
+| 需求列表 | `req:demand:list`、`req:demand:query`、`req:demand:add`、`req:demand:edit`；删除按钮使用 `req:demand:remove` |
 | Agent 交接资料 | 独立菜单使用 `req:package:list`、`req:package:save`；需求详情内嵌读取使用 `req:demand:query` |
 | MCP管理 | `req:mcp:key:list`、`req:mcp:key:query`、`req:mcp:key:add`、`req:mcp:key:edit`、`req:mcp:key:remove` |
 | 使用统计 | `req:stats:view` |
@@ -74,8 +74,9 @@
 - 需求列表和详情复用 `src/views/requirement/demand/status.js` 中的状态定义和按钮定义，避免文案分叉。
 - 新主状态文案为：`draft=未提交`、`submitted=待生成需求设计`、`plan_ready=需求设计待确认`、`confirmed=待执行开发`、`developing=开发中`、`review=待验收`、`repairing=返修中`、`completed=已完成`。
 - 兼容状态文案为：`plan_pending=需求设计生成中`、`archived=已归档`。
-- 前端流程按钮必须按角色过滤：`requirement_user` 只能看到提需、需求设计确认、返修和验收动作；`requirement_developer` 只能看到提交需求设计、开始开发、提交验收和提交返修验收动作；`admin` 可见全部动作。角色过滤只控制前端展示，服务端状态接口仍由 `req:demand:edit` 和状态机约束。
-- 列表操作列只保留详情、可编辑草稿的修改按钮和当前状态的下一步按钮，不展示 Agent 资料入口。
+- 前端流程按钮必须同时按角色和 `req:demand:edit` 按钮权限过滤：`requirement_user` 只能看到提需、需求设计确认、返修和验收动作；`requirement_developer` 只能看到提交需求设计、开始开发、提交验收和提交返修验收动作；`admin` 可见全部动作。前端过滤只控制展示，服务端状态接口仍由 `req:demand:edit`、状态机和角色动作约束兜底。
+- 列表操作列只保留详情、可编辑草稿的修改按钮、当前状态的下一步按钮和管理员删除按钮，不展示 Agent 资料入口。
+- 删除按钮只在拥有 `req:demand:remove` 时展示，需求人员和开发人员默认不可见；删除由后端管理员权限和关联数据清理兜底。
 - `review` 状态必须提供“提交返修”和“确认验收”两个流程按钮；`repairing` 状态提供“提交返修验收”并流转回 `review`。
 - 详情页流程推进按钮必须和跳转/复制类协作工具分区展示。流程推进按钮位于详情标题区右侧；复制生成需求设计指令、复制执行任务指令和 Agent 交接资料属于协作工具，不应混在同一按钮组。
 - 详情页在 `submitted`、`plan_pending` 或 `plan_ready` 状态可调用 `/requirement/demand/{demandId}/plan-instruction` 获取“生成需求设计指令”；复制内容由后端生成，必须包含 `reqflow-mcp`、`mcpTool: reqflow.save_requirement_package`、`arguments.actionToken`、24 小时内有效和仅可使用一次的指引，前端不得拼接 actionToken。
@@ -88,6 +89,7 @@
 - 管理员角色可见全部功能。
 - 需求人员角色只可见首页、需求列表和使用统计；没有 MCP 管理和独立 Agent 交接资料菜单，但可在需求详情中查看当前需求资料。
 - 开发人员角色可见首页、需求列表、MCP 管理和使用统计；MCP 回写资料依赖后端隐藏 `req:package:save` 权限。
+- 首页看板快捷入口必须按当前用户 `permissions` 过滤，不能仅依赖静态数组渲染；需求人员没有 `req:mcp:key:list` 时不得显示 MCP 管理快捷入口，没有 `req:package:list` 时不得显示独立 Agent 交接资料入口。
 
 ## 标签页与布局契约
 

@@ -225,6 +225,7 @@ export default {
   },
   computed: {
     ...mapGetters([
+      "permissions",
       "roles"
     ]),
     demandModuleLabel() {
@@ -407,10 +408,10 @@ export default {
       return demandStatusTagType(value)
     },
     primaryStatusAction(status) {
-      return getPrimaryStatusAction(status, this.roles)
+      return getPrimaryStatusAction(status, this.roles, this.permissions)
     },
     statusActions(status) {
-      return getStatusActions(status, this.roles)
+      return getStatusActions(status, this.roles, this.permissions)
     },
     canUseDeveloperInstruction() {
       return canUseDeveloperInstructionForRoles(this.roles)

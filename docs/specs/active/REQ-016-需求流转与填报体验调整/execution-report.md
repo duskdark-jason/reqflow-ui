@@ -14,8 +14,9 @@
 | `src/layout/index.vue`、`src/layout/components/Navbar.vue`、`src/layout/components/index.js` | 移除用户可见布局设置入口。 |
 | `src/layout/components/Sidebar/Logo.vue`、`src/assets/logo/reqflow-logo.svg` | 新增 ReqFlow 品牌 logo 和左侧菜单品牌展示。 |
 | `src/plugins/tab.js` | 隐藏页签关闭时优先回退到 `parentPath`、`backPath` 或 `meta.activeMenu` 父菜单。 |
-| `src/views/requirement/demand/status.js` | 新增需求状态文案、标签、主流程按钮、角色过滤、返修按钮和编辑权限判断。 |
-| `src/views/requirement/demand/index.vue` | 列表操作列移除 Agent 资料入口，补充来源展示、按角色过滤的统一流程状态按钮和父页签打开参数。 |
+| `src/views/requirement/demand/status.js` | 新增需求状态文案、标签、主流程按钮、角色和按钮权限过滤、返修按钮和编辑权限判断。 |
+| `src/views/requirement/demand/index.vue` | 列表操作列移除 Agent 资料入口，补充来源展示、管理员删除按钮、按角色和权限过滤的统一流程状态按钮和父页签打开参数。 |
+| `src/views/index.vue` | 首页快捷入口按当前用户 `permissions` 过滤，无 MCP 管理权限时不展示 MCP 管理。 |
 | `src/views/requirement/demand/maintain.vue` | 新增不展示创建人 ID/需求编号，增加需求来源必填、富文本业务背景、2MB 图片粘贴和附件上传，保存时剔除系统字段。 |
 | `src/views/requirement/demand/detail.vue` | 详情页头部展示流程确认按钮，工具区展示生成需求设计和执行任务指令，展示来源、富文本背景和附件，内嵌当前需求 Agent 交接资料包和历史版本。 |
 | `src/components/Editor/index.vue`、`src/components/FileUpload/index.vue` | 支持需求专用上传接口，并将文件大小边界改为不超过配置值。 |
@@ -49,10 +50,10 @@
 | 层级 | 验收 ID | 命令或方式 | 结果 |
 |---|---|---|---|
 | L0 | AC-007 | `sh scripts/check-docs.sh` | 通过 |
-| L1 | AC-001~AC-018 | `npm run build:prod` | 通过；仅有既有包体积提示。 |
-| L2 | AC-003、AC-006、AC-008~AC-018 | 代码静态复核 | 通过；保存 payload 剔除 `creatorId`、`demandNo`、`status`，状态枚举集中到 `status.js`，流程按钮和开发指令按钮按角色过滤，来源/附件字段保存路径和 2MB 上传边界已复核。 |
+| L1 | AC-001~AC-020 | `npm run build:prod` | 通过；仅有既有包体积提示。 |
+| L2 | AC-003、AC-006、AC-008~AC-020 | 代码静态复核 | 通过；保存 payload 剔除 `creatorId`、`demandNo`、`status`，状态枚举集中到 `status.js`，流程按钮和开发指令按钮按角色与权限过滤，来源/附件字段保存路径和 2MB 上传边界已复核。 |
 | L3 | AC-014、AC-016、AC-018 | 内置浏览器访问新增页和详情页 | 通过；新增页显示需求来源、富文本编辑器、2MB 附件上传提示且无 console error；详情页显示来源和附件区，`packageBeforeActions=true`。 |
-| L4（可选） | AC-001~AC-018 | 真实新增/状态流转写操作 | 未执行；本次避免改动本地已有业务数据，写入规则由后端 companion 单测覆盖。 |
+| L4（可选） | AC-001~AC-020 | 真实新增/状态流转写操作 | 未执行；本次避免改动本地已有业务数据，写入规则由后端 companion 单测覆盖。 |
 
 ## 运行态证据
 
@@ -87,6 +88,8 @@
 | AC-016 | 已完成 | 浏览器布局检查显示资料包底部在返回按钮顶部之前，资料包文档内容只在资料包容器内展示。 |
 | AC-017 | 已完成 | 文档记录角色菜单和流程按钮可见性，代码中列表与详情均使用 `status.js` 的角色过滤动作。 |
 | AC-018 | 已完成 | 新增/修改页需求来源必填，业务背景使用 `Editor` 支持粘贴图片，附件使用 `FileUpload` 且单文件 2MB；详情页展示来源、富文本背景和附件区。 |
+| AC-019 | 已完成 | 首页快捷入口按权限过滤，需求人员无 `req:mcp:key:list` 时不展示 MCP 管理。 |
+| AC-020 | 已完成 | 删除按钮仅 `req:demand:remove` 可见，流程按钮同时按角色和 `req:demand:edit` 权限过滤。 |
 
 ## 计划偏差
 
@@ -106,4 +109,5 @@
 
 - 历史需求数据仍可能保留旧日期编号；新建编号由后端 companion 覆盖为 `REQ-001` 风格。
 - 前端已按角色过滤流程按钮，服务端状态推进接口仍沿用 `req:demand:edit` 和状态机约束。
+- 首页快捷入口已按 Vuex `permissions` 过滤，需求人员无 `req:mcp:key:list` 时不展示 MCP 管理；需求列表删除按钮仅在 `req:demand:remove` 下展示。
 - 本次未新增前端自动化 E2E，真实新增和状态推进写操作建议在测试环境补一轮端到端验收。

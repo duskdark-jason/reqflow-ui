@@ -29,7 +29,7 @@
 | AC-003 | 新增不展示和提交创建人 ID/编号 | `maintain.vue` 保存 payload 删除系统字段 | 新增页截图 `artifacts/target-req016-maintain.png` 无创建人 ID 和需求编号 | 通过 |
 | AC-004 | 修改编号文本展示 | `maintain.vue` 的 `readonly-value` 文本展示和只读状态 | `npm run build:prod`；代码复核编号不再作为可编辑 input | 通过 |
 | AC-005 | 列表移除 Agent 资料，详情展示资料 | `index.vue`、`detail.vue` | 列表代码无 Agent 资料入口；详情内置浏览器展示 Agent 交接资料、需求设计和执行计划 tabs | 通过 |
-| AC-006 | 新状态按钮、文案和角色过滤 | `status.js`、`index.vue`、`detail.vue` | `status.js` 定义角色动作；列表和详情均传入 Vuex `roles` 过滤；构建通过 | 通过 |
+| AC-006 | 新状态按钮、文案和角色过滤 | `status.js`、`index.vue`、`detail.vue` | `status.js` 定义角色动作；列表和详情均传入 Vuex `roles` 和 `permissions` 过滤；构建通过 | 通过 |
 | AC-007 | harness 文档同步 | `docs/ai-harness/modules/requirement-platform.md`、`docs/ai-harness/contracts/requirement-platform-ui.md` | `sh scripts/check-docs.sh` 通过 | 通过 |
 | AC-008 | logo 对齐和流程按钮统一 | `Logo.vue`、`index.vue`、`detail.vue` | 浏览器截图 `artifacts/target-req016-repair-list.png`、`artifacts/target-req016-repair-detail.png` | 通过 |
 | AC-009 | 详情流程确认与工具按钮分区 | `detail.vue` 的头部状态区和正文工具区 | 详情页截图确认流程按钮与复制/跳转按钮分区展示 | 通过 |
@@ -40,8 +40,10 @@
 | AC-014 | 详情内嵌资料包去重 | `detail.vue` | 详情页只展示统一“Agent 交接资料包”区域，不再展示独立“需求设计与执行方案”块 | 通过 |
 | AC-015 | 指令和状态文案拆分 | `detail.vue`、`status.js` | 文案区分“生成需求设计”和“执行任务”，流程按钮与协作工具分区展示 | 通过 |
 | AC-016 | 资料包不重叠 | `detail.vue` | 浏览器布局检查 `packageBeforeActions=true`，返回按钮位于资料包之后 | 通过 |
-| AC-017 | 角色菜单和按钮体验 | `status.js`、harness 文档 | 文档记录角色菜单和按钮边界；前端按角色过滤流程按钮 | 通过 |
+| AC-017 | 角色菜单和按钮体验 | `status.js`、harness 文档 | 文档记录角色菜单和按钮边界；前端按角色和按钮权限过滤流程按钮 | 通过 |
 | AC-018 | 需求来源、背景图片和附件 | `maintain.vue`、`detail.vue`、`Editor`、`FileUpload` | 新增页浏览器冒烟显示来源、富文本编辑器和 2MB 附件上传提示；详情页显示来源和附件区；构建通过 | 通过 |
+| AC-019 | 首页快捷入口权限过滤 | `src/views/index.vue` | 快捷入口按 `permissions` 过滤，构建通过 | 通过 |
+| AC-020 | 删除按钮和流程权限隔离 | `index.vue`、`status.js` | 删除按钮使用 `req:demand:remove`，流程按钮要求 `req:demand:edit` 和角色匹配 | 通过 |
 
 ## 验收复核
 
@@ -77,6 +79,7 @@
 | 修复 ID | 执行处理结果 | 复审结论 | 复审证据 |
 |---|---|---|---|
 | RF-002 | 已完成 logo/按钮/详情分区/返修版本/指令入口返修 | 通过 | `npm run build:prod`、浏览器截图、后端状态与指令单测 |
+| RF-003 | 已完成首页快捷入口权限过滤、管理员删除入口和流程按钮权限隔离 | 通过 | `npm run build:prod`、后端角色与删除 companion 单测 |
 | RF-003 | 已完成复制边界和文档同步 | 通过 | `npm run build:prod`、接口冒烟、代码复核 |
 | RF-004 | 已完成详情内嵌资料包和资料包聚焦模式 | 通过 | `npm run build:prod`、浏览器截图、代码复核 |
 

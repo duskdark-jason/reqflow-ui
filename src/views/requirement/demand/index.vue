@@ -87,6 +87,17 @@
           v-hasPermi="['req:demand:edit']"
         >修改</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="danger"
+          plain
+          icon="el-icon-delete"
+          size="mini"
+          :disabled="multiple"
+          @click="handleDelete"
+          v-hasPermi="['req:demand:remove']"
+        >删除</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -153,6 +164,14 @@
               @click="handleStatusCommand(action, scope.row)"
               v-hasPermi="['req:demand:edit']"
             >{{ action.label }}</el-button>
+            <el-button
+              size="mini"
+              type="text"
+              class="row-delete-button"
+              icon="el-icon-delete"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['req:demand:remove']"
+            >删除</el-button>
           </div>
         </template>
       </el-table-column>
@@ -172,7 +191,7 @@
 import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
-import { listDemand, updateDemandStatus } from "@/api/requirement/demand"
+import { delDemand, listDemand, updateDemandStatus } from "@/api/requirement/demand"
 import { listIndexModule } from "@/api/requirement/index"
 import { mapGetters } from "vuex"
 import {
@@ -194,6 +213,7 @@ export default {
       ids: [],
       selectedRows: [],
       single: true,
+      multiple: true,
       showSearch: true,
       total: 0,
       demandList: [],
@@ -224,6 +244,7 @@ export default {
   computed: {
     ...mapGetters([
       "id",
+      "permissions",
       "roles"
     ]),
     queryVariantOptions() {
@@ -277,6 +298,7 @@ export default {
       this.ids = selection.map(item => item.demandId || item.id)
       this.selectedRows = selection
       this.single = selection.length != 1
+      this.multiple = !selection.length
     },
     handleAdd() {
       this.$tab.openPage("新增需求", "/requirement/demand/maintain", { parentPath: "/requirement/demand" })
@@ -306,7 +328,18 @@ export default {
       }).catch(() => {})
     },
     nextStatusOptions(status) {
-      return nextStatusOptions(status, this.roles)
+      return nextStatusOptions(status, this.roles, this.permissions)
+    },
+    handleDelete(row) {
+      const demandIds = row && (row.demandId || row.id) ? [row.demandId || row.id] : this.ids
+      if (!demandIds.length) return
+      const label = row && row.title ? row.title : demandIds.join(",")
+      this.$modal.confirm('是否确认删除需求"' + label + '"？').then(function() {
+        return delDemand(demandIds.join(","))
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess("删除成功")
+      }).catch(() => {})
     },
     handleDetail(row) {
       const demandId = row.demandId || row.id
@@ -357,10 +390,10 @@ export default {
       return demandStatusTagType(value)
     },
     primaryStatusAction(status) {
-      return getPrimaryStatusAction(status, this.roles)
+      return getPrimaryStatusAction(status, this.roles, this.permissions)
     },
     statusActions(status) {
-      return getStatusActions(status, this.roles)
+      return getStatusActions(status, this.roles, this.permissions)
     },
     canEditDemand(row) {
       return canEditDemandRow(row, this.id)
@@ -412,5 +445,9 @@ export default {
   border-color: #bfdbfe;
   background: #eff6ff;
   color: #075985;
+}
+
+.row-delete-button {
+  color: #f56c6c;
 }
 </style>

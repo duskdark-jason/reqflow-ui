@@ -35,6 +35,14 @@ export function updateDemand(data) {
   })
 }
 
+// 删除需求
+export function delDemand(demandIds) {
+  return request({
+    url: '/requirement/demand/' + demandIds,
+    method: 'delete'
+  })
+}
+
 // 更新需求状态
 export function updateDemandStatus(demandId, status) {
   return request({

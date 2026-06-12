@@ -54,6 +54,8 @@ export const demandStatusActions = {
   ]
 }
 
+const FLOW_ACTION_PERMISSION = "req:demand:edit"
+
 export function optionLabel(options, value) {
   const option = options.find(item => item.value === String(value))
   return option ? option.label : value || "-"
@@ -64,17 +66,17 @@ export function demandStatusTagType(value) {
   return option ? option.type : ""
 }
 
-export function primaryStatusAction(status, roles) {
-  return statusActions(status, roles)[0] || null
+export function primaryStatusAction(status, roles, permissions) {
+  return statusActions(status, roles, permissions)[0] || null
 }
 
-export function statusActions(status, roles) {
+export function statusActions(status, roles, permissions) {
   const actions = demandStatusActions[String(status)] || []
-  return filterActionsByRoles(actions, roles)
+  return filterActionsByPermissions(filterActionsByRoles(actions, roles), permissions)
 }
 
-export function nextStatusOptions(status, roles) {
-  return statusActions(status, roles)
+export function nextStatusOptions(status, roles, permissions) {
+  return statusActions(status, roles, permissions)
 }
 
 export function canUseDeveloperInstruction(roles) {
@@ -83,9 +85,19 @@ export function canUseDeveloperInstruction(roles) {
 
 function filterActionsByRoles(actions, roles) {
   if (!Array.isArray(roles) || !roles.length) {
-    return actions
+    return []
   }
   return actions.filter(action => !action.roles || hasAnyRole(roles, action.roles))
+}
+
+function filterActionsByPermissions(actions, permissions) {
+  if (!Array.isArray(permissions) || !permissions.length) {
+    return []
+  }
+  if (permissions.includes("*:*:*")) {
+    return actions
+  }
+  return permissions.includes(FLOW_ACTION_PERMISSION) ? actions : []
 }
 
 function hasAnyRole(userRoles, expectedRoles) {
