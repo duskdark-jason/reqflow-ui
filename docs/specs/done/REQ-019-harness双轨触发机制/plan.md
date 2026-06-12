@@ -41,7 +41,7 @@
 
 ## 验证计划
 
-- L0 文档/规范：`sh scripts/check-docs.sh`、`sh scripts/check-harness.sh init`、`sh scripts/check-harness.sh complete --spec docs/specs/active/REQ-019-harness双轨触发机制`
+- L0 文档/规范：`sh scripts/check-docs.sh`、`sh scripts/check-harness.sh init`、`sh scripts/check-harness.sh complete --spec docs/specs/done/REQ-019-harness双轨触发机制`
 - L1 编译/构建：不适用，本次不改运行态前端代码。
 - L2 单元/契约：`sh scripts/test-check-harness.sh`
 - L3 运行态冒烟：不适用，本次不改页面、接口或配置。

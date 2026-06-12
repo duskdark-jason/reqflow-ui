@@ -50,7 +50,7 @@
 | L2 | AC-003 | `sh scripts/test-check-harness.sh` | 通过 |
 | L2 | AC-002、AC-004 | `rg "本地 Harness 模式|需求设计确认点|伪造 MCP 回写|search-map|localHarnessWorkflow|searchMap" docs scripts/check-harness.sh` | 通过 |
 | L2 | AC-002、AC-003、AC-004 | 旧术语和降级冲突描述扫描 | 无命中 |
-| L0 | AC-001、AC-002、AC-003、AC-004 | `sh scripts/check-docs.sh && sh scripts/check-harness.sh complete --spec docs/specs/active/REQ-019-harness双轨触发机制` | 通过 |
+| L0 | AC-001、AC-002、AC-003、AC-004 | `sh scripts/check-docs.sh && sh scripts/check-harness.sh complete --spec docs/specs/done/REQ-019-harness双轨触发机制` | 通过 |
 | L3 | AC-001、AC-002、AC-003、AC-004 | 不适用 | 本次不改页面、接口或配置 |
 | L4（可选） | AC-001、AC-002、AC-003、AC-004 | 不适用 | 本次无跨端运行态变更 |
 
