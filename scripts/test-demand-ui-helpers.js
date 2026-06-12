@@ -27,6 +27,7 @@ assert.strictEqual(artifacts.defaultArtifactByStatus("plan_pending"), "requireme
 assert.strictEqual(artifacts.defaultArtifactByStatus("plan_ready"), "requirement")
 assert.strictEqual(artifacts.defaultArtifactByStatus("confirmed"), "requirement")
 assert.strictEqual(artifacts.defaultArtifactByStatus("developing"), "plan")
+assert.strictEqual(artifacts.defaultArtifactByStatus("closeout_pending"), "review_report")
 assert.strictEqual(artifacts.defaultArtifactByStatus("supplement_required"), "requirement_assessment")
 assert(!artifacts.handoffArtifactTypes.some(item => item.value === "requirement_supplement"))
 assert.deepStrictEqual(artifacts.supplementVersionsForArtifact([
@@ -98,6 +99,20 @@ assert.strictEqual(status.canUseDevelopInstruction(developerRoles, {
   status: "repairing",
   developerUserId: 8
 }, 8, flowPermissions), true)
+assert.strictEqual(status.canUseDevelopInstruction(developerRoles, {
+  status: "closeout_pending",
+  developerUserId: 8
+}, 8, flowPermissions), true)
 assert.strictEqual(status.statusActions("confirmed", developerRoles, flowPermissions, assignedDemand, 8)[0].value, "developing")
+assert.strictEqual(status.statusActions("review", ["requirement_user"], flowPermissions, {
+  status: "review",
+  developerUserId: 8,
+  creatorId: 7
+}, 7)[1].value, "closeout_pending")
+assert.strictEqual(status.statusActions("closeout_pending", developerRoles, flowPermissions, {
+  status: "closeout_pending",
+  developerUserId: 8,
+  creatorId: 7
+}, 8)[0].value, "completed")
 
 console.log("demand ui helper tests passed")

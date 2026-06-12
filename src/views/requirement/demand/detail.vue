@@ -307,8 +307,8 @@ export default {
       if (this.canCopyDevelopInstruction) {
         return {
           cacheKey: "developInstruction",
-          loadingType: "develop",
-          label: String(this.form.status) === "repairing" ? "生成返修任务指令" : "生成执行任务指令",
+          loadingType: String(this.form.status) === "closeout_pending" ? "closeout" : "develop",
+          label: this.developInstructionLabel,
           icon: "el-icon-position",
           loader: getDemandDevelopInstruction
         }
@@ -317,6 +317,15 @@ export default {
     },
     isRepairing() {
       return String(this.form.status) === "repairing"
+    },
+    developInstructionLabel() {
+      if (String(this.form.status) === "repairing") {
+        return "生成返修任务指令"
+      }
+      if (String(this.form.status) === "closeout_pending") {
+        return "生成合并归档指令"
+      }
+      return "生成执行任务指令"
     },
     canSubmitSupplement() {
       if (!this.canCurrentUserSubmitSupplement()) {

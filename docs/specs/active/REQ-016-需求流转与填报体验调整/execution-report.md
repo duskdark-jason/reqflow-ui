@@ -21,13 +21,14 @@
 | `src/views/requirement/demand/detail.vue` | 本轮追加 `plan_ready` 阶段“补充调整说明”输入区，需求人可提交调整说明回到待生成需求设计，支持多轮迭代。 |
 | `src/views/index.vue` | 首页快捷入口按当前用户 `permissions` 过滤，无 MCP 管理权限时不展示 MCP 管理；需求入口按 `req:demand:add` 区分“提交需求”和“查看需求”，开发人员首页不展示提交需求语义。 |
 | `src/views/requirement/demand/maintain.vue` | 新增不展示创建人 ID/需求编号，增加需求来源文本输入、业务背景普通文本框和附件上传，粘贴图片或文件时追加到附件，保存时剔除系统字段。 |
-| `src/views/requirement/demand/detail.vue` | 详情页头部展示流程确认按钮，工具区按状态展示生成需求分析、需求设计、执行任务和返修任务指令，展示来源、纯文本背景和附件，内嵌当前需求 Agent 交接资料包和历史版本。 |
+| `src/views/requirement/demand/detail.vue` | 详情页头部展示流程确认按钮，工具区按状态展示生成需求分析、需求设计、执行任务、返修任务和合并归档指令，展示来源、纯文本背景和附件，内嵌当前需求 Agent 交接资料包和历史版本。 |
 | `src/components/FileUpload/index.vue` | 支持需求专用上传接口、大小写扩展名识别和 2MB 文件大小边界。 |
 | `src/views/requirement/package/index.vue` | `demandId` 上下文下进入只读聚焦模式，只展示当前需求标题和各项文档内容。 |
 | `src/views/requirement/demand/artifacts.js`、`src/views/requirement/package/index.vue` | 本轮统一 Agent 交接资料业务标签，移除上下文清单、分支简报、执行提示词和 Review 提示词等页面标签，并按需求阶段默认打开对应文档。 |
 | `src/views/requirement/demand/markdown.js`、`src/views/requirement/demand/detail.vue`、`src/views/requirement/package/index.vue`、`scripts/test-demand-ui-helpers.js` | 本轮新增只读 Markdown 安全渲染 helper，详情页和 `demandId` 聚焦资料包页以 Markdown 阅读态展示 Agent 资料，不再显示原始文本。 |
 | `src/views/requirement/demand/artifacts.js`、`src/views/requirement/demand/detail.vue`、`src/views/requirement/package/index.vue` | 本轮移除“补充说明”一级资料标签，将需求人补充记录折叠展示在需求可行性评估标签内，将需求设计调整记录折叠展示在需求设计标签内，并取消资料正文高度限制。 |
 | `src/views/requirement/demand/status.js`、`src/views/requirement/demand/detail.vue`、`scripts/test-demand-ui-helpers.js` | 本轮收紧详情动作：`confirmed` 阶段不展示生成执行指令，进入 `developing/repairing` 后才展示执行或返修指令；需求设计待确认阶段先显示确认与补充入口，打开补充调整输入区后隐藏确认按钮。 |
+| `src/views/requirement/demand/status.js`、`src/views/requirement/demand/detail.vue`、`src/views/requirement/demand/artifacts.js`、`scripts/test-demand-ui-helpers.js` | 本轮追加待合并归档阶段：需求人确认验收后进入 `closeout_pending`，指定开发人员可生成合并归档指令，资料包默认展示 Review 报告，并通过“确认归档完成”流程按钮触发后端归档验证。 |
 | `src/views/requirement/mcpKey/index.vue`、`src/api/requirement/mcpKey.js` | 本轮调整 MCP Key 管理页：普通用户新增默认绑定自己，管理员才可指定用户；移除修改和重置操作，列表行改为打开安装指令，创建后明文展示 Key 并渲染安装命令。 |
 | `src/views/requirement/demand/modules.js`、`src/views/requirement/demand/maintain.vue`、`scripts/test-demand-ui-helpers.js` | 本轮新增需求模块选择 helper：前后端项目存在前端页面/菜单知识模块时，新增需求下拉只展示前端模块；无前端模块时才回退人工模块和其他索引模块。 |
 | `src/api/requirement/demand.js` | 增加需求 MCP 评估与设计指令、执行开发指令和需求补充说明接口封装。 |
@@ -35,7 +36,7 @@
 
 ## 模块知识库沉淀
 
-- 影响模块：需求管理/需求列表、需求管理/需求详情、需求管理/需求维护页签、隐藏页签返回、系统布局与品牌、需求返修版本记录、需求补充说明、Agent交接资料标签、MCP Key 管理、项目知识库模块选择
+- 影响模块：需求管理/需求列表、需求管理/需求详情、需求管理/需求维护页签、隐藏页签返回、系统布局与品牌、需求返修版本记录、需求补充说明、Agent交接资料标签、MCP Key 管理、项目知识库模块选择、合并归档
 - 模块知识库动作：更新
 - 模块知识库文档：docs/ai-harness/modules/requirement-platform.md
 - 无需更新原因：不适用
@@ -63,6 +64,7 @@
 | L1 | AC-006、AC-011、AC-013、AC-020 | `npm run build:prod` | 本轮通过；结论弹窗、补充说明入口、资料包默认标签和业务标签构建成功，仅有既有包体积提示。 |
 | L2 | AC-021~AC-025 | `node scripts/test-demand-ui-helpers.js` | 本轮补充通过；覆盖资料包 Markdown 安全渲染、HTML 转义、`plan_pending` 默认打开需求可行性评估、`confirmed` 阶段不允许生成执行指令、`developing/repairing` 才允许生成执行或返修指令，以及前端页面/菜单模块优先选择。 |
 | L2 | AC-025 | `node scripts/test-demand-ui-helpers.js` | 本轮通过；覆盖前端页面/菜单模块优先、后端技术能力隐藏和无前端模块时的兜底选择。 |
+| L2 | AC-026 | `node scripts/test-demand-ui-helpers.js` | 本轮通过；覆盖 `closeout_pending` 默认 Review 报告标签、开发指令入口可见、验收确认后流转到待合并归档、待合并归档可确认归档完成。 |
 | L2 | AC-003、AC-006、AC-008~AC-020 | 代码静态复核 | 通过；保存 payload 剔除 `creatorId`、`demandNo`、`status`，状态枚举集中到 `status.js`，流程按钮和开发指令按钮按角色与权限过滤，来源/附件字段保存路径和 2MB 上传边界已复核，首页需求入口按 `req:demand:add` 展示提交或查看语义。 |
 | L3 | AC-014、AC-016、AC-018 | 内置浏览器访问新增页和详情页 | 通过；新增页显示需求来源文本输入、业务背景普通文本框、2MB 附件上传提示且无 console error；详情页显示来源和附件区，`packageBeforeActions=true`。 |
 | L3 | AC-019 | 内置浏览器使用 `yfr/123456` 登录首页 | 通过；研发人员首页顶部按钮和快捷卡片均显示“查看需求”，快捷说明为“查看并处理分配给我的需求”，控制台无 error。 |
@@ -109,6 +111,7 @@
 | AC-023 | 已完成 | 本轮补充：详情页在 `confirmed` 阶段只展示开始开发流程按钮，不展示生成执行指令；进入 `developing` 后才展示生成执行指令；需求设计待确认阶段点击补充调整说明后展开输入区并隐藏确认需求设计按钮。 |
 | AC-024 | 已完成 | 本轮补充：MCP Key 页面普通用户新增时绑定当前用户且选择框不可改，管理员保留用户选择；操作列移除修改/重置，改为使用指令；创建后的安装弹窗明文展示 Key 并将明文渲染到复制命令。 |
 | AC-025 | 已完成 | 本轮补充：新增需求页模块下拉通过 helper 识别 `repoScope=FRONTEND`、`moduleType=PAGE_FUNCTION` 或前端页面路径，存在前端页面模块时只展示前端模块；无前端模块时回退人工模块和其他索引模块。 |
+| AC-026 | 已完成 | 本轮补充：`status.js` 增加 `closeout_pending=待合并归档`，`review` 确认验收流转到待合并归档；详情页在该状态展示“生成合并归档指令”，并保留视觉上独立的生成按钮和流程确认按钮。 |
 
 ## 计划偏差
 
@@ -125,6 +128,7 @@
 | RF-004 | 已修复 | 已将需求详情底部收敛为内嵌 Agent 交接资料包，并让 `demandId` 上下文的资料包页进入只读聚焦模式。 | 浏览器详情和资料包聚焦模式截图通过；`npm run build:prod` 通过 |
 | RF-005 | 已修复 | 已按当前阶段拆分详情生成按钮和文档：需求分析只复制评估指令，需求设计只复制设计指令，返修只复制执行报告和 Review 报告指令。 | 后端 companion 指令单测通过；`npm run build:prod` 通过 |
 | RF-006 | 已修复 | 已将 Agent 交接资料阅读展示改为 Markdown 安全渲染，并在需求设计待确认阶段增加补充调整说明输入区；`plan_pending` 默认标签锁定为需求可行性评估；补充说明不再作为一级标签，改为对应标签内的折叠迭代记录。 | `node scripts/test-demand-ui-helpers.js` 通过；`npm run build:prod` 通过；后端 companion 单测通过 |
+| RF-007 | 已修复 | 已追加待合并归档阶段、合并归档指令入口和默认 Review 报告标签，配合后端平台归档验证后结束任务。 | `node scripts/test-demand-ui-helpers.js` 通过；后端 companion 单测通过 |
 
 ## 风险与后续
 

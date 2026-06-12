@@ -34,6 +34,7 @@ export function defaultArtifactByStatus(status) {
     case "review":
       return "execution_report"
     case "repairing":
+    case "closeout_pending":
     case "completed":
     case "archived":
       return "review_report"

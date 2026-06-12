@@ -8,6 +8,7 @@ export const demandStatusOptions = [
   { value: "developing", label: "开发中", type: "primary" },
   { value: "review", label: "待验收", type: "warning" },
   { value: "repairing", label: "返修中", type: "danger" },
+  { value: "closeout_pending", label: "待合并归档", type: "warning" },
   { value: "completed", label: "已完成", type: "success" },
   { value: "rejected", label: "需求无法实现", type: "info" },
   { value: "archived", label: "已归档", type: "info" }
@@ -64,10 +65,13 @@ export const demandStatusActions = {
   ],
   review: [
     { value: "repairing", label: "提交返修", tone: "repair", icon: "el-icon-refresh-left", roles: requirementUserRoles, confirm: "确认本次验收需要返修，并进入返修流程？" },
-    { value: "completed", label: "确认验收", tone: "complete", icon: "el-icon-check", roles: requirementUserRoles, confirm: "确认需求人员已验收通过并结束任务流？" }
+    { value: "closeout_pending", label: "确认验收通过", tone: "complete", icon: "el-icon-check", roles: requirementUserRoles, confirm: "确认验收通过，并交由研发人员完成合并归档？" }
   ],
   repairing: [
     { value: "review", label: "提交返修验收", tone: "confirm", icon: "el-icon-finished", roles: developerRoles, confirm: "确认返修版本已完成并重新提交验收？" }
+  ],
+  closeout_pending: [
+    { value: "completed", label: "确认归档完成", tone: "complete", icon: "el-icon-circle-check", roles: developerRoles, confirm: "确认已按归档指令完成压缩合并、推送、知识库发布和本地开发分支删除？平台验证通过后才会结束任务。" }
   ]
 }
 
@@ -116,7 +120,7 @@ export function canUsePlanInstruction(roles, row, currentUserId, permissions) {
 
 export function canUseDevelopInstruction(roles, row, currentUserId, permissions) {
   return canUseDeveloperInstruction(roles, row, currentUserId, permissions) &&
-    ["developing", "repairing"].includes(String(row && row.status))
+    ["developing", "repairing", "closeout_pending"].includes(String(row && row.status))
 }
 
 function filterActionsByRoles(actions, roles) {

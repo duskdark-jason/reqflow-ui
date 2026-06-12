@@ -46,6 +46,10 @@
 | AC-020 | 删除按钮和流程权限隔离 | `index.vue`、`status.js` | 删除按钮使用 `req:demand:remove`，流程按钮要求 `req:demand:edit` 和角色匹配 | 通过 |
 | AC-021 | 结论选择、补充说明和资料包阶段标签 | `status.js`、`index.vue`、`detail.vue`、`artifacts.js`、`package/index.vue`、`demand.js` | 构建通过；代码复核结论弹窗、补充说明接口、业务文档标签和阶段默认标签；后端 companion 单测覆盖状态与补充接口 | 通过 |
 | AC-022 | Markdown 阅读态、确认阶段补充调整、补充记录内嵌折叠和研发阶段默认可行性评估 | `markdown.js`、`detail.vue`、`package/index.vue`、`artifacts.js` | `node scripts/test-demand-ui-helpers.js` 覆盖 Markdown 渲染、HTML 转义、补充说明不作为一级标签、补充/调整记录归属和 `plan_pending` 默认标签；后端 companion 单测覆盖 `plan_ready` 调整回退 | 通过 |
+| AC-023 | 开始开发后才展示执行指令、补充调整后重新生成设计 | `status.js`、`detail.vue`、`scripts/test-demand-ui-helpers.js` | helper 测试覆盖 `confirmed` 阶段不允许生成执行指令、`developing/repairing` 才展示执行或返修指令；后端 companion 单测覆盖补充调整后需新需求设计 | 通过 |
+| AC-024 | MCP Key 管理安装指令体验 | `mcpKey/index.vue`、`mcpKey.js` | 构建通过；代码复核普通用户绑定自己、列表使用指令入口、创建后明文展示 Key 并渲染安装命令；后端 companion 单测覆盖接口 | 通过 |
+| AC-025 | 前端页面/菜单模块优先选择 | `modules.js`、`maintain.vue`、`scripts/test-demand-ui-helpers.js` | helper 测试覆盖存在前端页面模块时只展示前端模块，无前端模块时回退人工模块和其他索引模块 | 通过 |
+| AC-026 | 待合并归档阶段和合并归档指令入口 | `status.js`、`detail.vue`、`artifacts.js`、`scripts/test-demand-ui-helpers.js` | helper 测试覆盖 `closeout_pending` 默认 Review 报告标签、开发指令入口可见、验收确认流转到待合并归档和确认归档完成按钮 | 通过 |
 
 ## 验收复核
 
@@ -71,6 +75,10 @@
 - AC-020：通过，删除按钮和流程按钮按权限与角色隔离。
 - AC-021：通过，分析/设计结论弹窗、待补充说明输入区和资料包阶段标签已实现。
 - AC-022：通过，Agent 交接资料使用 Markdown 阅读态，`plan_ready` 阶段需求人可提交补充调整说明，`plan_pending` 默认标签保持需求可行性评估；补充说明不作为一级标签，补充/调整记录在对应标签内折叠展示且正文不限制高度。
+- AC-023：通过，待执行开发阶段不展示生成执行指令，进入开发中后才展示；补充调整后由后端强制新设计版本。
+- AC-024：通过，MCP Key 管理只保留新增、删除和使用指令，创建结果明文展示 Key 并渲染安装命令。
+- AC-025：通过，需求模块下拉在有前端页面/菜单知识时只展示前端模块。
+- AC-026：通过，待合并归档状态、合并归档指令入口和确认归档完成按钮已接入。
 
 ## 返修交接清单
 
@@ -81,6 +89,7 @@
 | RF-004 | 中 | AC-013、AC-014 | 用户反馈详情底部需求设计/执行方案与 Agent 交接资料包重复 | 详情内嵌完整资料包并去除重复预览，资料包页 `demandId` 上下文只读聚焦 | 构建、浏览器截图、代码复核 |
 | RF-005 | 中 | AC-011、AC-012、AC-015 | 用户反馈需求分析、需求生成和返修阶段也应只展示当前阶段相关指令 | 详情生成按钮按当前状态命名；前端只复制后端返回的当前阶段指令；文档同步四阶段 token 边界 | 构建、后端 companion 指令单测、代码复核 |
 | RF-006 | 中 | AC-022 | 用户反馈 Agent 资料包不应显示原始文本，需求设计确认阶段还需要补充调整，多轮迭代，研发人员设计阶段默认看可行性分析，补充说明不应单独显示标签 | 资料包阅读态改为 Markdown 安全渲染；`plan_ready` 展示补充调整说明输入；锁定 `plan_pending` 默认可行性评估；补充说明作为对应标签内折叠迭代记录展示 | 前端 helper 测试、构建、后端 companion 单测、浏览器详情冒烟 |
+| RF-007 | 中 | AC-023、AC-024、AC-025、AC-026 | 用户继续补充执行指令展示时机、MCP Key 使用指令、模块选择和验收后合并归档流程 | 收紧 `confirmed` 阶段执行指令、保留 MCP Key 使用指令体验、前端模块优先选择，并新增待合并归档状态和合并归档指令入口 | helper 测试、构建、后端 companion 单测、harness complete |
 
 ## 复审记录
 
@@ -92,5 +101,6 @@
 | RF-004 | 已完成详情内嵌资料包和资料包聚焦模式 | 通过 | `npm run build:prod`、浏览器截图、代码复核 |
 | RF-005 | 已完成四阶段指令入口和复制边界同步 | 通过 | 后端 companion 指令单测；`npm run build:prod` |
 | RF-006 | 已完成 Markdown 阅读态、确认阶段补充调整、补充记录内嵌折叠和默认标签契约 | 通过 | `node scripts/test-demand-ui-helpers.js`、后端 companion 单测、`npm run build:prod` |
+| RF-007 | 已完成执行指令时机、MCP Key 使用指令、模块选择和待合并归档入口 | 通过 | `node scripts/test-demand-ui-helpers.js`、`npm run build:prod`、后端 companion 单测 |
 
 - 最终结论：通过
