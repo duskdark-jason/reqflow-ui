@@ -10,9 +10,9 @@
         </div>
         <div class="detail-status-panel">
           <el-tag :type="demandStatusTagType(form.status)">{{ optionLabel(demandStatusOptions, form.status) }}</el-tag>
-          <div v-if="statusActions(form).length" class="process-actions">
+          <div v-if="visibleStatusActions(form).length" class="process-actions">
             <el-button
-              v-for="action in statusActions(form)"
+              v-for="action in visibleStatusActions(form)"
               :key="action.value"
               size="mini"
               class="flow-confirm-button"
@@ -22,6 +22,14 @@
               v-hasPermi="['req:demand:edit']"
             >{{ action.label }}</el-button>
           </div>
+          <el-button
+            v-if="canOpenDesignAdjustment"
+            size="mini"
+            class="generate-action-button"
+            icon="el-icon-edit-outline"
+            @click="openDesignAdjustmentPanel"
+            v-hasPermi="['req:demand:edit']"
+          >补充调整说明</el-button>
           <el-button
             v-if="instructionAction"
             size="mini"
@@ -72,6 +80,12 @@
             @click="handleSubmitSupplement"
             v-hasPermi="['req:demand:edit']"
           >{{ supplementSubmitLabel }}</el-button>
+          <el-button
+            v-if="isDesignAdjustmentStage"
+            icon="el-icon-close"
+            :disabled="supplementSubmitting"
+            @click="cancelDesignAdjustment"
+          >取消调整</el-button>
         </div>
       </section>
 
@@ -208,6 +222,8 @@ import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes, su
 import { renderMarkdown } from "./markdown"
 import {
   canUseDeveloperInstruction as canUseDeveloperInstructionForRoles,
+  canUseDevelopInstruction,
+  canUsePlanInstruction,
   demandStatusOptions,
   demandStatusTagType,
   optionLabel,
@@ -227,6 +243,7 @@ export default {
       activeArtifact: "requirement_draft",
       form: {},
       supplementContent: "",
+      showDesignAdjustmentPanel: false,
       planInstruction: {},
       developInstruction: {},
       projectOptions: [],
@@ -272,10 +289,10 @@ export default {
       return this.form.remark || "新增功能"
     },
     canCopyInstruction() {
-      return this.canUseDeveloperInstruction() && ["submitted", "plan_pending", "plan_ready"].includes(String(this.form.status))
+      return canUsePlanInstruction(this.roles, this.form, this.id, this.permissions)
     },
     canCopyDevelopInstruction() {
-      return this.canUseDeveloperInstruction() && ["confirmed", "developing", "repairing"].includes(String(this.form.status))
+      return canUseDevelopInstruction(this.roles, this.form, this.id, this.permissions)
     },
     instructionAction() {
       if (this.canCopyInstruction) {
@@ -302,8 +319,18 @@ export default {
       return String(this.form.status) === "repairing"
     },
     canSubmitSupplement() {
-      return ["supplement_required", "plan_ready"].includes(String(this.form.status)) &&
-        (this.isAdmin() || this.sameUser(this.form.creatorId, this.id))
+      if (!this.canCurrentUserSubmitSupplement()) {
+        return false
+      }
+      if (String(this.form.status) === "supplement_required") {
+        return true
+      }
+      return this.isDesignAdjustmentStage && this.showDesignAdjustmentPanel
+    },
+    canOpenDesignAdjustment() {
+      return this.isDesignAdjustmentStage &&
+        !this.showDesignAdjustmentPanel &&
+        this.canCurrentUserSubmitSupplement()
     },
     isDesignAdjustmentStage() {
       return String(this.form.status) === "plan_ready"
@@ -338,6 +365,10 @@ export default {
       this.loading = true
       getDemand(this.demandId).then(response => {
         this.form = response.data || {}
+        if (!this.isDesignAdjustmentStage) {
+          this.showDesignAdjustmentPanel = false
+          this.supplementContent = ""
+        }
         this.setDefaultActiveArtifact()
         this.loading = false
       }).catch(() => {
@@ -456,6 +487,7 @@ export default {
       submitDemandSupplement(this.demandId, { content: this.supplementContent.trim() }).then(() => {
         this.$modal.msgSuccess(this.isDesignAdjustmentStage ? "调整说明已提交" : "补充说明已提交")
         this.supplementContent = ""
+        this.showDesignAdjustmentPanel = false
         this.getDetail()
         this.loadPackagePreview()
         this.supplementSubmitting = false
@@ -468,6 +500,14 @@ export default {
       if (this.artifacts[target]) {
         this.activeArtifact = target
       }
+    },
+    openDesignAdjustmentPanel() {
+      this.showDesignAdjustmentPanel = true
+      this.supplementContent = ""
+    },
+    cancelDesignAdjustment() {
+      this.showDesignAdjustmentPanel = false
+      this.supplementContent = ""
     },
     renderArtifactMarkdown(artifactType) {
       return renderMarkdown(this.artifacts[artifactType].content)
@@ -563,8 +603,18 @@ export default {
     statusActions(row) {
       return getStatusActions(row.status, this.roles, this.permissions, row, this.id)
     },
+    visibleStatusActions(row) {
+      const actions = this.statusActions(row)
+      if (this.isDesignAdjustmentStage && this.showDesignAdjustmentPanel) {
+        return actions.filter(action => action.value !== "confirmed")
+      }
+      return actions
+    },
     canUseDeveloperInstruction() {
       return canUseDeveloperInstructionForRoles(this.roles, this.form, this.id, this.permissions)
+    },
+    canCurrentUserSubmitSupplement() {
+      return this.isAdmin() || this.sameUser(this.form.creatorId, this.id)
     },
     isAdmin() {
       return (Array.isArray(this.roles) && this.roles.includes("admin")) ||

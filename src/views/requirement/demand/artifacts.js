@@ -27,8 +27,8 @@ export function defaultArtifactByStatus(status) {
     case "rejected":
       return "requirement_assessment"
     case "plan_ready":
-      return "requirement"
     case "confirmed":
+      return "requirement"
     case "developing":
       return "plan"
     case "review":

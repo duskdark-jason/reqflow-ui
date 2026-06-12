@@ -99,7 +99,7 @@
         <section class="form-section">
           <div class="section-header">
             <span class="section-title">模块与功能</span>
-            <span class="section-tip">优先选择知识库模块，找不到时填写新功能名称。</span>
+            <span class="section-tip">优先选择前端页面菜单，找不到时填写新功能名称。</span>
           </div>
           <el-row :gutter="16">
             <el-col :span="12">
@@ -201,6 +201,7 @@ import { listModule } from "@/api/requirement/module"
 import { getProjectInit } from "@/api/requirement/projectInit"
 import { getDemand, addDemand, listDemandDevelopers, updateDemand, uploadDemandAttachment } from "@/api/requirement/demand"
 import { listIndexModule, suggestImpact } from "@/api/requirement/index"
+import { mergeDemandModuleOptions, moduleOptionValue } from "./modules"
 
 export default {
   name: "RequirementDemandMaintain",
@@ -391,7 +392,7 @@ export default {
         listModule({ projectId: projectId, variantId: variantId, status: "0" }).catch(() => ({ rows: [], data: [] })),
         listIndexModule({ projectId: projectId, variantId: variantId, status: "0" }).catch(() => ({ rows: [], data: [] }))
       ]).then(([manualResponse, indexResponse]) => {
-        this.moduleOptions = this.mergeModuleOptions(
+        this.moduleOptions = mergeDemandModuleOptions(
           manualResponse.rows || manualResponse.data || [],
           indexResponse.rows || indexResponse.data || []
         )
@@ -605,24 +606,13 @@ export default {
       }).join("\n") || undefined
     },
     moduleOptionValue(module) {
-      return module.indexModuleId || module.moduleId || module.id
+      return moduleOptionValue(module)
     },
     developerOptionLabel(user) {
       if (!user) {
         return ""
       }
       return user.nickName ? user.nickName + "（" + user.userName + "）" : user.userName
-    },
-    mergeModuleOptions(manualModules, indexModules) {
-      const result = []
-      const seen = new Set()
-      ;(manualModules || []).concat(indexModules || []).forEach(item => {
-        const key = this.moduleOptionValue(item)
-        if (!key || seen.has(String(key))) return
-        seen.add(String(key))
-        result.push(item)
-      })
-      return result
     },
     closePage() {
       this.$tab.closePage()

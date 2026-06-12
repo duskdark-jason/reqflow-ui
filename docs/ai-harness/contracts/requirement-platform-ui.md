@@ -18,7 +18,7 @@
 | `package.js` | `/requirement/package` | Agent 交接资料列表、最新版本、保存新版本和生成草稿资料；需求详情内嵌读取可用需求查询权限 |
 | `statistics.js` | `/requirement/statistics` | 使用统计 |
 | `harness.js` | `/requirement/project/*/harness-*` | 项目接入 harness 模板包查询和初始化结果登记 |
-| `mcpKey.js` | `/requirement/mcp/key` | MCP 人员 Key 列表、创建、修改、重置、删除和用户选择 |
+| `mcpKey.js` | `/requirement/mcp/key` | MCP 人员 Key 列表、创建、删除、使用指令和用户选择 |
 
 ## 权限标识
 
@@ -28,7 +28,7 @@
 | 项目索引 | `req:index:list`、`req:index:import` |
 | 需求列表 | `req:demand:list`、`req:demand:query`、`req:demand:add`、`req:demand:edit`；删除按钮使用 `req:demand:remove` |
 | Agent 交接资料 | 独立菜单使用 `req:package:list`、`req:package:save`；需求详情内嵌读取使用 `req:demand:query` |
-| MCP管理 | `req:mcp:key:list`、`req:mcp:key:query`、`req:mcp:key:add`、`req:mcp:key:edit`、`req:mcp:key:remove` |
+| MCP管理 | `req:mcp:key:list`、`req:mcp:key:query`、`req:mcp:key:add`、`req:mcp:key:remove` |
 | 使用统计 | `req:stats:view` |
 
 ## 项目初始化契约
@@ -59,7 +59,7 @@
 - 当后端 companion 因部分迁移库缺少可选索引表而返回空索引批次或空模块知识库时，项目维护和分支知识库页签必须继续展示项目、仓库和项目分支，把索引内容视为“暂无数据”，不能误判为初始化完成。
 - MCP 索引指引优先使用 `actionToken + remoteUrl` 调用 `publish_repository_index`，兼容旧的 `mcpKey + remoteUrl` 和 `projectId + repoId + branchName` 调用方式。
 - 新建或编辑需求时，列表页只打开 `/requirement/demand/maintain` 隐藏页签，不在列表页弹出维护 dialog。新增页签不展示需求编号和创建人 ID；修改页签用文本展示后端已生成的编号，不使用 input 只读框。
-- 需求维护页签选择项目、项目分支和模块后调用 `/requirement/index/impact/suggest`，模块下拉必须按 `projectId + variantId` 过滤，优先读取 `/requirement/index/module/tree` 的知识库模块，并兼容人工模块；请求携带 `projectId`、`variantId`、`moduleId`、`moduleCode`；后端按所选项目分支和最新索引批次返回 `pages`、`apis`、`tables`、`permissions`、`documents` 五类候选影响面。
+- 需求维护页签选择项目、项目分支和模块后调用 `/requirement/index/impact/suggest`，模块下拉必须按 `projectId + variantId` 过滤，优先读取 `/requirement/index/module/tree` 的知识库模块；如果该分支存在 `repoScope=FRONTEND`、`moduleType=PAGE_FUNCTION` 或前端页面路径识别出的模块，则只展示这些前端菜单/页面模块，不混入后端技术能力或人工后台模块。没有前端页面模块时，才兼容人工模块和其他索引模块兜底。请求携带 `projectId`、`variantId`、`moduleId`、`moduleCode`；后端按所选项目分支和最新索引批次返回 `pages`、`apis`、`tables`、`permissions`、`documents` 五类候选影响面。
 - 新建或编辑需求时，项目分支下拉必须读取 `/requirement/project/init/{projectId}` 的分支初始化上下文，只展示已初始化完成的项目分支。前端已初始化口径与后端兜底一致：分支 `indexedRepositoryCount > 0` 且 `unindexedRepositoryCount = 0`；新功能提需允许当前分支暂时没有既有模块知识，查询筛选可以保留历史分支用于查老需求，但提交表单不能选择未初始化分支。
 - 需求维护页签允许不选择既有模块，改为填写新功能名称；新功能名称通过需求备注兼容提交，用于列表、详情和执行包上下文展示，不写入项目分支知识库。
 - 需求维护页签保存 payload 必须删除 `demandNo`、`creatorId` 和 `status`，避免客户端伪造编号、创建人或绕过状态机。后端新增默认 `draft`，普通编辑只允许创建人修改 `draft` 需求。
@@ -79,16 +79,16 @@
 - 前端流程按钮必须同时按角色、`req:demand:edit` 按钮权限和当前需求参与人过滤：需求创建人只能看到提需、补充说明、需求设计确认、返修和验收动作；指定开发人员只能看到需求分析结论、需求设计结论、开始开发、提交验收和提交返修验收动作；`admin` 可见全部动作。前端过滤只控制展示，服务端状态接口仍由 `req:demand:edit`、状态机、角色动作和参与人约束兜底。
 - `submitted` 和 `plan_pending` 的流程按钮必须打开结论选择弹窗，不得直接提交固定下一状态。需求分析结论可选“可继续设计”“需要补充说明”“需求无法实现”；需求设计结论可选“设计完成”“需要补充说明”“需求无法实现”。结论提交后前端刷新列表或详情，按钮应随新状态自动隐藏。
 - `supplement_required` 状态下，需求详情仅在当前用户为需求创建人或管理员时展示补充说明输入区，调用 `/requirement/demand/{demandId}/supplement`；成功后刷新详情和资料包，默认回到待生成需求设计阶段。
-- `plan_ready` 状态下，需求详情不能只提供“确认需求设计”，还必须向需求创建人或管理员展示“补充调整说明”输入区；提交后调用同一个补充接口，后端追加 `requirement_supplement` 版本并回到 `plan_pending`，允许指定开发人员根据调整说明再次生成需求设计，形成多轮迭代。
+- `plan_ready` 状态下，需求详情不能只提供“确认需求设计”，还必须向需求创建人或管理员展示“补充调整说明”入口；点击补充调整说明后才展开输入区，并隐藏确认需求设计按钮。提交后调用同一个补充接口，后端追加 `requirement_supplement` 版本并回到 `plan_pending`，指定开发人员必须根据调整说明重新生成需求设计后才能继续提交需求人确认，形成多轮迭代。
 - 非管理员列表数据由后端按参与人过滤：当前用户可见自己创建的需求，以及提交后指定给自己的需求。开发人员不应在前端看到他人未提交草稿，也不应看到非本人需求的流程按钮。
 - 列表操作列只保留详情、可编辑草稿的修改按钮、当前状态的下一步按钮和管理员删除按钮，不展示 Agent 资料入口。
 - 删除按钮只在拥有 `req:demand:remove` 时展示，需求人员和开发人员默认不可见；删除由后端管理员权限和关联数据清理兜底。
 - `review` 状态必须提供“提交返修”和“确认验收”两个流程按钮；`repairing` 状态提供“提交返修验收”并流转回 `review`。
 - 详情页不展示协作工具栏，不展示复制出来的指令正文。流程推进按钮位于详情标题区右侧，生成指令按钮也位于标题状态区，但使用白底描边样式与流程确认按钮明显区分。
 - 详情页仅在当前用户是指定开发人员或管理员，且状态为 `submitted`、`plan_pending` 或 `plan_ready` 时，展示 `/requirement/demand/{demandId}/plan-instruction` 的阶段生成按钮；`submitted` 文案为“生成需求分析指令”，复制内容只包含 `reqflow.upload_requirement_assessment` 和一个需求分析 actionToken；`plan_pending/plan_ready` 文案为“生成需求设计指令”，复制内容只包含 `reqflow.save_requirement_package` 和一个需求生成 actionToken。前端不得拼接 actionToken，也不得把下一阶段工具追加到按钮文案或复制内容中。
-- 详情页仅在当前用户是指定开发人员或管理员，且状态为 `confirmed`、`developing` 或 `repairing` 时，展示 `/requirement/demand/{demandId}/develop-instruction` 的阶段生成按钮；`confirmed/developing` 文案为“生成执行任务指令”，复制内容包含 `reqflow.save_development_plan`、`reqflow.upload_execution_report`、`reqflow.upload_review_report` 和一个开发阶段 actionToken；`repairing` 文案为“生成返修任务指令”，复制内容只包含 `reqflow.upload_execution_report`、`reqflow.upload_review_report` 和一个返修阶段 actionToken，不包含执行计划或需求设计生成要求。前端只复制后端返回内容。
+- 详情页仅在当前用户是指定开发人员或管理员，且状态为 `developing` 或 `repairing` 时，展示 `/requirement/demand/{demandId}/develop-instruction` 的阶段生成按钮；`confirmed` 待执行开发阶段只展示“开始开发”流程按钮，不展示生成执行指令。`developing` 文案为“生成执行任务指令”，复制内容包含 `reqflow.save_development_plan`、`reqflow.upload_execution_report`、`reqflow.upload_review_report` 和一个开发阶段 actionToken；`repairing` 文案为“生成返修任务指令”，复制内容只包含 `reqflow.upload_execution_report`、`reqflow.upload_review_report` 和一个返修阶段 actionToken，不包含执行计划或需求设计生成要求。前端只复制后端返回内容。
 - 详情页读取 `/requirement/package/{demandId}` 内嵌展示当前需求的 Agent 交接资料包，后端允许 `req:demand:query` 读取。资料包区块以当前需求标题为标题，一级标签只展示需求草稿、需求可行性评估、需求设计、执行计划、执行报告和 Review 报告等业务文档最新内容；`requirement_supplement` 不单独作为一级标签展示，需求人补充版本折叠展示在需求可行性评估标签内，需求设计调整版本折叠展示在需求设计标签内。每类产物仍展示最近历史版本，补充与调整记录支持展开和收起，标签正文不设置最大高度，按内容自然撑开；不得再在详情底部额外重复展示一组独立的需求设计/执行计划预览。没有资料时展示空状态，不阻断页面打开。保存 artifact 必须追加版本，返修轮次依赖历史版本链判断。详情页和 `demandId` 聚焦模式必须以只读 Markdown 阅读态展示资料内容，不能用 `<pre>` 或原始 textarea 作为阅读展示；渲染前必须转义 HTML，避免 MCP 回写内容直接执行脚本。
-- Agent 交接资料包默认标签必须跟随需求阶段：`draft/submitted` 默认需求草稿，`supplement_required/plan_pending/rejected` 默认需求可行性评估，`plan_ready` 默认需求设计，`confirmed/developing` 默认执行计划，`review` 默认执行报告，`repairing/completed/archived` 默认 Review 报告。
+- Agent 交接资料包默认标签必须跟随需求阶段：`draft/submitted` 默认需求草稿，`supplement_required/plan_pending/rejected` 默认需求可行性评估，`plan_ready/confirmed` 默认需求设计，`developing` 默认执行计划，`review` 默认执行报告，`repairing/completed/archived` 默认 Review 报告。
 - 打开 `/requirement/package?demandId=...` 时进入当前需求聚焦模式：页面顶部只展示当前需求标题和版本摘要，下方按同一组业务文档 artifact 展示内容，并按当前需求状态选择默认标签；不得展示需求 ID 查询框、加载资料、生成资料、加载最新或保存新版本按钮。直接从菜单进入 `/requirement/package` 时可保留管理模式。
 
 ## 角色菜单契约
@@ -134,8 +134,9 @@ review_report
 - 列表读取 `/requirement/mcp/key/list`，一行对应一个 `req_mcp_user_key`，只能展示 Key 名称、Key 前缀、绑定用户、状态、最近使用时间和最近 IP。
 - 新增时通过 `/requirement/mcp/key/user-options` 查询可绑定用户，不调用 `/system/user/list`，避免要求 MCP 维护人员同时具备系统用户菜单权限。
 - 新增时必须选择启用用户并填写 Key 名称；后端返回的 `plainKey` 只在结果弹窗中展示，前端不得把明文 Key 写入列表、查询参数或本地持久化。
-- 后端返回的 `codexSetupPackage.installCommands` 是推荐复制给 Codex 的安装命令，只在创建和重置结果弹窗中以 markdown 代码块样式展示。每个平台命令显示平台名称、语言标识和单独复制按钮；复制时用当次响应的 `plainKey` 替换 `${REQFLOW_MCP_KEY}` 占位符。页面可在当前会话内保留最近一次创建/重置结果并重复打开复制，但不得把明文 Key 写入列表、本地持久化或 URL。完整 `codexSetupPackage` 仅作为高级配置/调试信息折叠展示。
-- 修改只用于 Key 名称、状态和备注；前端禁用绑定用户选择，后端也会拒绝换绑；重置使用 `/requirement/mcp/key/{keyId}/regenerate`，重置后旧 Key 立即失效并弹出新的明文 Key。
+- 普通用户新增 Key 时绑定当前登录用户且不可修改绑定用户，管理员才展示远程用户选择并可指定绑定用户。
+- 后端返回的 `codexSetupPackage.installCommands` 是推荐复制给 Codex 的安装命令，只在创建结果或使用指令弹窗中以 markdown 代码块样式展示。创建结果必须明文展示 `plainKey`，每个平台命令显示平台名称、语言标识和单独复制按钮；复制时用当前弹窗中的明文 Key 替换 `${REQFLOW_MCP_KEY}` 占位符。页面可在当前会话内保留最近一次创建结果并重复打开复制，但不得把明文 Key 写入列表、本地持久化或 URL。历史 Key 通过 `/requirement/mcp/key/{keyId}/instruction` 打开安装模板时不反向恢复明文，用户如已保存明文可粘贴后复制命令。完整 `codexSetupPackage` 仅作为高级配置/调试信息折叠展示。
+- 页面不提供修改和重置 Key 操作；列表操作列只保留“使用指令”和删除。
 - 提需求人员角色默认不分配 `req:mcp:key:*` 权限，因此看不到菜单，也不能调用页面 API。
 
 ## 数据粒度

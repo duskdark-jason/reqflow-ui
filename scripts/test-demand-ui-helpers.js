@@ -20,9 +20,13 @@ function loadEsModule(relativePath) {
 
 const artifacts = loadEsModule("src/views/requirement/demand/artifacts.js")
 const markdown = loadEsModule("src/views/requirement/demand/markdown.js")
+const modules = loadEsModule("src/views/requirement/demand/modules.js")
+const status = loadEsModule("src/views/requirement/demand/status.js")
 
 assert.strictEqual(artifacts.defaultArtifactByStatus("plan_pending"), "requirement_assessment")
 assert.strictEqual(artifacts.defaultArtifactByStatus("plan_ready"), "requirement")
+assert.strictEqual(artifacts.defaultArtifactByStatus("confirmed"), "requirement")
+assert.strictEqual(artifacts.defaultArtifactByStatus("developing"), "plan")
 assert.strictEqual(artifacts.defaultArtifactByStatus("supplement_required"), "requirement_assessment")
 assert(!artifacts.handoffArtifactTypes.some(item => item.value === "requirement_supplement"))
 assert.deepStrictEqual(artifacts.supplementVersionsForArtifact([
@@ -54,5 +58,46 @@ assert(html.includes("<pre><code"))
 assert(html.includes("const ok = 1 &lt; 2"))
 assert(html.includes("&lt;script&gt;alert(1)&lt;/script&gt;"))
 assert(!html.includes("<script>"))
+
+assert.strictEqual(modules.isFrontendKnowledgeModule({
+  repoScope: "FRONTEND",
+  moduleType: "PAGE_FUNCTION",
+  relativePath: "src/views/requirement/demand/index.vue"
+}), true)
+assert.strictEqual(modules.isFrontendKnowledgeModule({
+  repoScope: "BACKEND",
+  moduleType: "SERVICE",
+  relativePath: "src/main/java/com/ruoyi/DemandService.java"
+}), false)
+assert.strictEqual(modules.mergeDemandModuleOptions([
+  { moduleId: 1, moduleName: "人工后台能力", repoScope: "BACKEND" }
+], [
+  { indexModuleId: 2, moduleName: "后端任务", repoScope: "BACKEND" },
+  { indexModuleId: 3, moduleName: "需求列表", repoScope: "FRONTEND", moduleType: "PAGE_FUNCTION" }
+]).map(item => item.moduleName).join(","), "需求列表")
+assert.strictEqual(modules.mergeDemandModuleOptions([
+  { moduleId: 1, moduleName: "人工后台能力", repoScope: "BACKEND" }
+], [
+  { indexModuleId: 2, moduleName: "后端任务", repoScope: "BACKEND" }
+]).map(item => item.moduleName).join(","), "人工后台能力,后端任务")
+
+const developerRoles = ["requirement_developer"]
+const flowPermissions = ["req:demand:edit"]
+const assignedDemand = { status: "confirmed", developerUserId: 8, creatorId: 7 }
+
+assert.strictEqual(status.canUsePlanInstruction(developerRoles, {
+  status: "plan_pending",
+  developerUserId: 8
+}, 8, flowPermissions), true)
+assert.strictEqual(status.canUseDevelopInstruction(developerRoles, assignedDemand, 8, flowPermissions), false)
+assert.strictEqual(status.canUseDevelopInstruction(developerRoles, {
+  status: "developing",
+  developerUserId: 8
+}, 8, flowPermissions), true)
+assert.strictEqual(status.canUseDevelopInstruction(developerRoles, {
+  status: "repairing",
+  developerUserId: 8
+}, 8, flowPermissions), true)
+assert.strictEqual(status.statusActions("confirmed", developerRoles, flowPermissions, assignedDemand, 8)[0].value, "developing")
 
 console.log("demand ui helper tests passed")

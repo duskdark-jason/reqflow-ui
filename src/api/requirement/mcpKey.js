@@ -17,6 +17,14 @@ export function getMcpKey(keyId) {
   })
 }
 
+// 获取MCP Key安装指令包
+export function getMcpKeyInstruction(keyId) {
+  return request({
+    url: '/requirement/mcp/key/' + keyId + '/instruction',
+    method: 'get'
+  })
+}
+
 // 查询MCP Key可绑定用户
 export function listMcpKeyUserOptions(query) {
   return request({
@@ -32,23 +40,6 @@ export function addMcpKey(data) {
     url: '/requirement/mcp/key',
     method: 'post',
     data: data
-  })
-}
-
-// 修改MCP人员Key
-export function updateMcpKey(data) {
-  return request({
-    url: '/requirement/mcp/key',
-    method: 'put',
-    data: data
-  })
-}
-
-// 重置MCP人员Key
-export function regenerateMcpKey(keyId) {
-  return request({
-    url: '/requirement/mcp/key/' + keyId + '/regenerate',
-    method: 'post'
   })
 }
 

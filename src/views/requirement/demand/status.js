@@ -109,6 +109,16 @@ export function canUseDeveloperInstruction(roles, row, currentUserId, permission
   return sameUser(row.developerUserId, currentUserId)
 }
 
+export function canUsePlanInstruction(roles, row, currentUserId, permissions) {
+  return canUseDeveloperInstruction(roles, row, currentUserId, permissions) &&
+    ["submitted", "plan_pending", "plan_ready"].includes(String(row && row.status))
+}
+
+export function canUseDevelopInstruction(roles, row, currentUserId, permissions) {
+  return canUseDeveloperInstruction(roles, row, currentUserId, permissions) &&
+    ["developing", "repairing"].includes(String(row && row.status))
+}
+
 function filterActionsByRoles(actions, roles) {
   if (!Array.isArray(roles) || !roles.length) {
     return []

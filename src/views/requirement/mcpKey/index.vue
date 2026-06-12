@@ -48,17 +48,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['req:mcp:key:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
           type="danger"
           plain
           icon="el-icon-delete"
@@ -111,17 +100,10 @@
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-refresh"
-            @click="handleRegenerate(scope.row)"
-            v-hasPermi="['req:mcp:key:edit']"
-          >重置</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['req:mcp:key:edit']"
-          >修改</el-button>
+            icon="el-icon-document-copy"
+            @click="handleOpenInstructions(scope.row)"
+            v-hasPermi="['req:mcp:key:query']"
+          >使用指令</el-button>
           <el-button
             size="mini"
             type="text"
@@ -145,11 +127,11 @@
       <el-form ref="form" :model="form" :rules="rules" label-width="90px">
         <el-form-item label="绑定用户" prop="userId">
           <el-select
+            v-if="isAdminUser"
             v-model="form.userId"
             filterable
             remote
             reserve-keyword
-            :disabled="!!form.keyId"
             :remote-method="searchUsers"
             :loading="userLoading"
             placeholder="请输入用户账号"
@@ -162,18 +144,10 @@
               :value="item.userId"
             />
           </el-select>
+          <el-input v-else :value="currentUserLabel" disabled />
         </el-form-item>
         <el-form-item label="Key名称" prop="keyName">
           <el-input v-model="form.keyName" placeholder="请输入Key名称" maxlength="100" show-word-limit />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="form.status">
-            <el-radio
-              v-for="item in statusOptions"
-              :key="item.value"
-              :label="item.value"
-            >{{ item.label }}</el-radio>
-          </el-radio-group>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" :rows="3" maxlength="500" show-word-limit />
@@ -189,7 +163,10 @@
       <div class="result-grid">
         <div class="result-field">
           <span class="config-label">明文Key</span>
-          <el-input v-model="createResult.plainKey" readonly />
+          <el-input
+            v-model="createResult.plainKey"
+            placeholder="新建后自动展示明文 Key；历史 Key 可粘贴已保存的明文后复制安装命令"
+          />
         </div>
         <div class="result-field">
           <span class="config-label">Codex安装命令</span>
@@ -225,7 +202,12 @@
         </el-collapse>
       </div>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" icon="el-icon-document-copy" @click="copyText(createResult.plainKey)">复制Key</el-button>
+        <el-button
+          type="primary"
+          icon="el-icon-document-copy"
+          :disabled="!createResult.plainKey"
+          @click="copyText(createResult.plainKey)"
+        >复制Key</el-button>
         <el-button @click="resultOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
@@ -233,7 +215,8 @@
 </template>
 
 <script>
-import { listMcpKey, getMcpKey, listMcpKeyUserOptions, addMcpKey, updateMcpKey, regenerateMcpKey, delMcpKey } from "@/api/requirement/mcpKey"
+import { mapGetters } from "vuex"
+import { listMcpKey, getMcpKeyInstruction, listMcpKeyUserOptions, addMcpKey, delMcpKey } from "@/api/requirement/mcpKey"
 
 export default {
   name: "RequirementMcpKey",
@@ -242,7 +225,6 @@ export default {
       loading: true,
       userLoading: false,
       ids: [],
-      single: true,
       multiple: true,
       showSearch: true,
       total: 0,
@@ -252,10 +234,12 @@ export default {
       open: false,
       resultOpen: false,
       createResult: {
+        key: null,
         plainKey: "",
         codexSetupPackage: null
       },
       lastInstallResult: null,
+      installResultByKeyId: {},
       statusOptions: [
         { value: "0", label: "正常", type: "success" },
         { value: "1", label: "停用", type: "info" }
@@ -274,18 +258,33 @@ export default {
         ],
         keyName: [
           { required: true, message: "Key名称不能为空", trigger: "blur" }
-        ],
-        status: [
-          { required: true, message: "状态不能为空", trigger: "change" }
         ]
       }
     }
   },
   created() {
     this.getList()
-    this.searchUsers("")
+    if (this.isAdminUser) {
+      this.searchUsers("")
+    } else {
+      this.setCurrentUserOption()
+    }
   },
   computed: {
+    ...mapGetters([
+      "id",
+      "name",
+      "nickName",
+      "roles",
+      "permissions"
+    ]),
+    isAdminUser() {
+      return (Array.isArray(this.roles) && this.roles.includes("admin")) ||
+        (Array.isArray(this.permissions) && this.permissions.includes("*:*:*"))
+    },
+    currentUserLabel() {
+      return this.nickName && this.name ? this.nickName + "（" + this.name + "）" : (this.name || this.nickName || this.id || "当前用户")
+    },
     renderedInstallCommands() {
       return this.installCommandsFor(this.createResult)
     }
@@ -302,6 +301,10 @@ export default {
       })
     },
     searchUsers(keyword) {
+      if (!this.isAdminUser) {
+        this.setCurrentUserOption()
+        return
+      }
       this.userLoading = true
       listMcpKeyUserOptions({
         pageNum: 1,
@@ -321,9 +324,8 @@ export default {
     reset() {
       this.form = {
         keyId: undefined,
-        userId: undefined,
+        userId: this.isAdminUser ? undefined : this.id,
         keyName: undefined,
-        status: "0",
         remark: undefined
       }
       this.resetForm("form")
@@ -338,52 +340,30 @@ export default {
     },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.keyId)
-      this.single = selection.length !== 1
       this.multiple = !selection.length
     },
     handleAdd() {
       this.reset()
+      if (!this.isAdminUser) {
+        this.setCurrentUserOption()
+      }
       this.title = "新增MCP Key"
       this.open = true
-    },
-    handleUpdate(row) {
-      this.reset()
-      const keyId = row.keyId || this.ids
-      getMcpKey(Array.isArray(keyId) ? keyId[0] : keyId).then(response => {
-        this.form = response.data || {}
-        this.ensureUserOption(this.form)
-        this.title = "修改MCP Key"
-        this.open = true
-      })
     },
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (!valid) return
-        if (this.form.keyId != null) {
-          updateMcpKey(this.form).then(() => {
-            this.$modal.msgSuccess("修改成功")
-            this.open = false
-            this.getList()
-          })
-        } else {
-          addMcpKey(this.form).then(response => {
-            this.$modal.msgSuccess("新增成功")
-            this.open = false
-            this.showCreateResult(response.data)
-            this.getList()
-          })
+        const payload = Object.assign({}, this.form)
+        if (!this.isAdminUser) {
+          payload.userId = this.id
         }
+        addMcpKey(payload).then(response => {
+          this.$modal.msgSuccess("新增成功")
+          this.open = false
+          this.showCreateResult(response.data)
+          this.getList()
+        })
       })
-    },
-    handleRegenerate(row) {
-      const keyId = row.keyId
-      this.$modal.confirm('是否确认重置"' + row.keyName + '"的MCP Key？').then(function() {
-        return regenerateMcpKey(keyId)
-      }).then(response => {
-        this.$modal.msgSuccess("重置成功")
-        this.showCreateResult(response.data)
-        this.getList()
-      }).catch(() => {})
     },
     handleDelete(row) {
       const keyIds = row.keyId || this.ids
@@ -394,11 +374,30 @@ export default {
         this.$modal.msgSuccess("删除成功")
       }).catch(() => {})
     },
+    handleOpenInstructions(row) {
+      if (!row || !row.keyId) return
+      const cached = this.installResultByKeyId[row.keyId]
+      if (cached) {
+        this.showInstructionResult(cached, false)
+        return
+      }
+      getMcpKeyInstruction(row.keyId).then(response => {
+        this.showInstructionResult(response.data || { key: row, plainKey: "", codexSetupPackage: null }, false)
+      })
+    },
     showCreateResult(data) {
-      this.createResult = data || { plainKey: "", codexSetupPackage: null }
-      if (this.createResult.plainKey) {
-        // 明文 Key 只在创建/重置后返回一次，前端仅在本次会话缓存，便于用户重新打开安装命令。
-        this.lastInstallResult = JSON.parse(JSON.stringify(this.createResult))
+      this.showInstructionResult(data, true)
+    },
+    showInstructionResult(data, rememberPlainKey) {
+      this.createResult = Object.assign({ key: null, plainKey: "", codexSetupPackage: null }, data || {})
+      if (rememberPlainKey && this.createResult.plainKey) {
+        // 明文 Key 只在创建后返回一次，前端仅在本次会话缓存，便于用户重新打开安装命令。
+        const snapshot = JSON.parse(JSON.stringify(this.createResult))
+        this.lastInstallResult = snapshot
+        const keyId = snapshot.key && snapshot.key.keyId
+        if (keyId) {
+          this.$set(this.installResultByKeyId, keyId, snapshot)
+        }
       }
       this.resultOpen = true
     },
@@ -419,10 +418,14 @@ export default {
     },
     renderInstallCommand(command, plainKey) {
       if (!command) return ""
-      return command.replace(/\$\{REQFLOW_MCP_KEY\}/g, plainKey || "创建或重置后返回的Key")
+      return command.replace(/\$\{REQFLOW_MCP_KEY\}/g, plainKey || "请粘贴明文Key")
     },
     copyInstallCommand(command) {
       if (!command) return
+      if (!this.createResult.plainKey) {
+        this.$modal.msgWarning("请先填写明文Key")
+        return
+      }
       this.copyText(command.renderedCommand || "")
     },
     formatSkillPackage(skillPackage) {
@@ -458,15 +461,14 @@ export default {
       if (user.nickName && user.userName) return user.nickName + "（" + user.userName + "）"
       return user.userName || user.nickName || String(user.userId)
     },
-    ensureUserOption(row) {
-      if (!row || !row.userId) return
-      const exists = this.userOptions.some(item => item.userId === row.userId)
-      if (!exists) {
-        this.userOptions.push({
-          userId: row.userId,
-          userName: row.userName,
-          nickName: row.nickName
-        })
+    setCurrentUserOption() {
+      this.userOptions = [{
+        userId: this.id,
+        userName: this.name,
+        nickName: this.nickName
+      }]
+      if (this.form) {
+        this.form.userId = this.id
       }
     },
     statusLabel(value) {

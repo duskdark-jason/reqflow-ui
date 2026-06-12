@@ -27,12 +27,15 @@
 | `src/views/requirement/demand/artifacts.js`、`src/views/requirement/package/index.vue` | 本轮统一 Agent 交接资料业务标签，移除上下文清单、分支简报、执行提示词和 Review 提示词等页面标签，并按需求阶段默认打开对应文档。 |
 | `src/views/requirement/demand/markdown.js`、`src/views/requirement/demand/detail.vue`、`src/views/requirement/package/index.vue`、`scripts/test-demand-ui-helpers.js` | 本轮新增只读 Markdown 安全渲染 helper，详情页和 `demandId` 聚焦资料包页以 Markdown 阅读态展示 Agent 资料，不再显示原始文本。 |
 | `src/views/requirement/demand/artifacts.js`、`src/views/requirement/demand/detail.vue`、`src/views/requirement/package/index.vue` | 本轮移除“补充说明”一级资料标签，将需求人补充记录折叠展示在需求可行性评估标签内，将需求设计调整记录折叠展示在需求设计标签内，并取消资料正文高度限制。 |
+| `src/views/requirement/demand/status.js`、`src/views/requirement/demand/detail.vue`、`scripts/test-demand-ui-helpers.js` | 本轮收紧详情动作：`confirmed` 阶段不展示生成执行指令，进入 `developing/repairing` 后才展示执行或返修指令；需求设计待确认阶段先显示确认与补充入口，打开补充调整输入区后隐藏确认按钮。 |
+| `src/views/requirement/mcpKey/index.vue`、`src/api/requirement/mcpKey.js` | 本轮调整 MCP Key 管理页：普通用户新增默认绑定自己，管理员才可指定用户；移除修改和重置操作，列表行改为打开安装指令，创建后明文展示 Key 并渲染安装命令。 |
+| `src/views/requirement/demand/modules.js`、`src/views/requirement/demand/maintain.vue`、`scripts/test-demand-ui-helpers.js` | 本轮新增需求模块选择 helper：前后端项目存在前端页面/菜单知识模块时，新增需求下拉只展示前端模块；无前端模块时才回退人工模块和其他索引模块。 |
 | `src/api/requirement/demand.js` | 增加需求 MCP 评估与设计指令、执行开发指令和需求补充说明接口封装。 |
 | `docs/ai-harness/modules/requirement-platform.md`、`docs/ai-harness/contracts/requirement-platform-ui.md` | 同步模块和 UI 契约。 |
 
 ## 模块知识库沉淀
 
-- 影响模块：需求管理/需求列表、需求管理/需求详情、需求管理/需求维护页签、隐藏页签返回、系统布局与品牌、需求返修版本记录、需求补充说明、Agent交接资料标签
+- 影响模块：需求管理/需求列表、需求管理/需求详情、需求管理/需求维护页签、隐藏页签返回、系统布局与品牌、需求返修版本记录、需求补充说明、Agent交接资料标签、MCP Key 管理、项目知识库模块选择
 - 模块知识库动作：更新
 - 模块知识库文档：docs/ai-harness/modules/requirement-platform.md
 - 无需更新原因：不适用
@@ -58,7 +61,8 @@
 | L0 | AC-007 | `sh scripts/check-docs.sh` | 通过 |
 | L1 | AC-001~AC-020 | `npm run build:prod` | 通过；仅有既有包体积提示。 |
 | L1 | AC-006、AC-011、AC-013、AC-020 | `npm run build:prod` | 本轮通过；结论弹窗、补充说明入口、资料包默认标签和业务标签构建成功，仅有既有包体积提示。 |
-| L2 | AC-021、AC-022 | `node scripts/test-demand-ui-helpers.js` | 本轮通过；覆盖资料包 Markdown 安全渲染、HTML 转义和 `plan_pending` 默认打开需求可行性评估。 |
+| L2 | AC-021~AC-025 | `node scripts/test-demand-ui-helpers.js` | 本轮补充通过；覆盖资料包 Markdown 安全渲染、HTML 转义、`plan_pending` 默认打开需求可行性评估、`confirmed` 阶段不允许生成执行指令、`developing/repairing` 才允许生成执行或返修指令，以及前端页面/菜单模块优先选择。 |
+| L2 | AC-025 | `node scripts/test-demand-ui-helpers.js` | 本轮通过；覆盖前端页面/菜单模块优先、后端技术能力隐藏和无前端模块时的兜底选择。 |
 | L2 | AC-003、AC-006、AC-008~AC-020 | 代码静态复核 | 通过；保存 payload 剔除 `creatorId`、`demandNo`、`status`，状态枚举集中到 `status.js`，流程按钮和开发指令按钮按角色与权限过滤，来源/附件字段保存路径和 2MB 上传边界已复核，首页需求入口按 `req:demand:add` 展示提交或查看语义。 |
 | L3 | AC-014、AC-016、AC-018 | 内置浏览器访问新增页和详情页 | 通过；新增页显示需求来源文本输入、业务背景普通文本框、2MB 附件上传提示且无 console error；详情页显示来源和附件区，`packageBeforeActions=true`。 |
 | L3 | AC-019 | 内置浏览器使用 `yfr/123456` 登录首页 | 通过；研发人员首页顶部按钮和快捷卡片均显示“查看需求”，快捷说明为“查看并处理分配给我的需求”，控制台无 error。 |
@@ -70,7 +74,7 @@
 - 执行目录：当前子仓库根目录
 - 启动命令：`npm run dev -- --host 127.0.0.1`
 - profile/env/mode：本地开发模式，前端服务运行在 `http://127.0.0.1:1025/`，后端代理到本机 RuoYi 服务。
-- 检查命令：`npm run build:prod`、内置浏览器访问 `http://127.0.0.1:1025/requirement/demand/maintain` 和 `http://127.0.0.1:1025/requirement/demand/detail?demandId=1`；内置浏览器访问 `http://127.0.0.1:1024/` 并使用 `yfr/123456` 验证首页需求入口；内置浏览器使用 `xqr/123456` 打开 `http://127.0.0.1:1024/requirement/demand/detail?demandId=4&parentPath=%2Frequirement%2Fdemand` 验证资料包标签和折叠记录
+- 检查命令：`sh scripts/check-docs.sh`、`node scripts/test-demand-ui-helpers.js`、`npm run build:prod`、`git diff --check`、内置浏览器访问 `http://127.0.0.1:1025/requirement/demand/maintain` 和 `http://127.0.0.1:1025/requirement/demand/detail?demandId=1`；内置浏览器访问 `http://127.0.0.1:1024/` 并使用 `yfr/123456` 验证首页需求入口；内置浏览器使用 `xqr/123456` 打开 `http://127.0.0.1:1024/requirement/demand/detail?demandId=4&parentPath=%2Frequirement%2Fdemand` 验证资料包标签和折叠记录
 - 原始错误摘要：无页面脚本错误；构建仅报告静态资源体积提示。
 - screenshot/trace 路径：内置浏览器截图已在本次会话输出，未落盘到仓库。
 - 是否代表用户环境：否，仅代表当前执行 agent 环境
@@ -102,6 +106,9 @@
 | AC-020 | 已完成 | 删除按钮仅 `req:demand:remove` 可见，流程按钮同时按角色和 `req:demand:edit` 权限过滤。 |
 | AC-021 | 已完成 | 本轮补充：分析/设计阶段流程按钮改为结论选择弹窗；待补充说明状态展示需求人补充输入；Agent 交接资料默认标签按阶段切换，页面只展示需求草稿、可行性评估、需求设计、执行计划、执行报告和 Review 报告等一级标签。 |
 | AC-022 | 已完成 | 本轮补充：Agent 交接资料在详情页和资料包聚焦模式使用 Markdown 阅读态展示并转义 HTML；`plan_ready` 阶段需求人可提交补充调整说明回到 `plan_pending`，多轮生成需求设计；补充/调整记录内嵌到对应标签内折叠展示，正文不限制高度；前端 helper 测试覆盖 `plan_pending` 默认打开需求可行性评估。 |
+| AC-023 | 已完成 | 本轮补充：详情页在 `confirmed` 阶段只展示开始开发流程按钮，不展示生成执行指令；进入 `developing` 后才展示生成执行指令；需求设计待确认阶段点击补充调整说明后展开输入区并隐藏确认需求设计按钮。 |
+| AC-024 | 已完成 | 本轮补充：MCP Key 页面普通用户新增时绑定当前用户且选择框不可改，管理员保留用户选择；操作列移除修改/重置，改为使用指令；创建后的安装弹窗明文展示 Key 并将明文渲染到复制命令。 |
+| AC-025 | 已完成 | 本轮补充：新增需求页模块下拉通过 helper 识别 `repoScope=FRONTEND`、`moduleType=PAGE_FUNCTION` 或前端页面路径，存在前端页面模块时只展示前端模块；无前端模块时回退人工模块和其他索引模块。 |
 
 ## 计划偏差
 
