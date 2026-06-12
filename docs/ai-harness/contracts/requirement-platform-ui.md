@@ -20,6 +20,8 @@
 | `harness.js` | `/requirement/project/*/harness-*` | 项目接入 harness 模板包查询和初始化结果登记 |
 | `mcpKey.js` | `/requirement/mcp/key` | MCP 人员 Key 列表、创建、删除、使用指令和用户选择 |
 
+生产发布时，前端静态访问项目名为 `/reqflow/`，生产 API baseURL 为 `/reqflow-api`；开发环境仍以 `/dev-api` 访问代理，由 `vue.config.js` 转发到后端 `/reqflow-api` context-path。前端 API 文件继续维护 `/requirement/**` 相对业务路径，不把发布项目前缀写入业务 API 封装。
+
 ## 权限标识
 
 | 页面 | 主要权限 |
@@ -131,6 +133,7 @@ review_report
 
 - 菜单路径为 `requirement/mcpKey/index`，后端菜单脚本路径为 `mcp-key`，菜单权限为 `req:mcp:key:list`。
 - 页面不得读取 `/requirement/mcp/key/config`，也不得在列表页顶部常驻展示 MCP 地址、请求头名 `X-MCP-Key`、Codex 配置模板、全局 Skill 包或 Codex 安装包。
+- 页面不得自行拼接 MCP 远程 endpoint。创建或使用指令中的 MCP 地址必须来自后端返回的 `codexSetupPackage.mcpServer.url`，发布默认路径为 `/reqflow-api/requirement/mcp`；前端静态访问项目名 `/reqflow/` 不参与该地址。
 - 列表读取 `/requirement/mcp/key/list`，一行对应一个 `req_mcp_user_key`，只能展示 Key 名称、Key 前缀、绑定用户、状态、最近使用时间和最近 IP。
 - 新增时通过 `/requirement/mcp/key/user-options` 查询可绑定用户，不调用 `/system/user/list`，避免要求 MCP 维护人员同时具备系统用户菜单权限。
 - 新增时必须选择启用用户并填写 Key 名称；后端返回的 `plainKey` 只在结果弹窗中展示，前端不得把明文 Key 写入列表、查询参数或本地持久化。

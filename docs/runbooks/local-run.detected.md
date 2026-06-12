@@ -18,7 +18,9 @@
 - 生产构建命令：`npm run build:prod`
 - 默认开发端口：`80`
 - 开发环境 API 前缀：`/dev-api`
-- 生产环境 API 前缀：`/prod-api`
+- 开发代理后端 context-path：`/reqflow-api`
+- 生产环境静态访问项目名：`/reqflow/`
+- 生产环境 API 前缀：`/reqflow-api`
 - 本地代理配置：`vue.config.js`
 - 默认代理目标：`http://localhost:8080`
 
@@ -36,4 +38,3 @@ sh scripts/check-harness.sh init
 - 后端代理地址
 - 本地端口
 - 测试账号
-
