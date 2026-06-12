@@ -219,14 +219,14 @@ export default {
       return this.canUseDeveloperInstruction() && ["submitted", "plan_pending", "plan_ready"].includes(String(this.form.status))
     },
     canCopyDevelopInstruction() {
-      return this.canUseDeveloperInstruction() && ["confirmed", "developing"].includes(String(this.form.status))
+      return this.canUseDeveloperInstruction() && ["confirmed", "developing", "repairing"].includes(String(this.form.status))
     },
     instructionAction() {
       if (this.canCopyInstruction) {
         return {
           cacheKey: "planInstruction",
           loadingType: "plan",
-          label: "生成需求评估与设计",
+          label: String(this.form.status) === "submitted" ? "生成需求分析指令" : "生成需求设计指令",
           icon: "el-icon-document-checked",
           loader: getDemandPlanInstruction
         }
@@ -235,7 +235,7 @@ export default {
         return {
           cacheKey: "developInstruction",
           loadingType: "develop",
-          label: "生成执行任务指令",
+          label: String(this.form.status) === "repairing" ? "生成返修任务指令" : "生成执行任务指令",
           icon: "el-icon-position",
           loader: getDemandDevelopInstruction
         }

@@ -14,7 +14,7 @@
 | `variant.js` | `/requirement/variant` | 项目分支内部兼容查询 |
 | `module.js` | `/requirement/module` | 人工模块兼容接口，左侧菜单不再暴露 |
 | `index.js` | `/requirement/index` | 仓库索引批次、模块知识和影响面推荐 |
-| `demand.js` | `/requirement/demand` | 需求列表、开发人员候选、维护页签、详情、保存、状态流转、生成需求可行性评估与需求设计指令和执行任务指令 |
+| `demand.js` | `/requirement/demand` | 需求列表、开发人员候选、维护页签、详情、保存、状态流转、生成需求分析、需求设计、执行任务和返修任务指令 |
 | `package.js` | `/requirement/package` | Agent 交接资料列表、最新版本、保存新版本和生成草稿资料；需求详情内嵌读取可用需求查询权限 |
 | `statistics.js` | `/requirement/statistics` | 使用统计 |
 | `harness.js` | `/requirement/project/*/harness-*` | 项目接入 harness 模板包查询和初始化结果登记 |
@@ -74,16 +74,16 @@
 - 需求附件使用 `FileUpload`，位于预期结果上一行，上传接口同为 `/requirement/demand/upload`，单文件最大 2MB，最多 5 个；保存值为后端返回文件路径的英文逗号分隔串；支持 Word、Excel、PDF、TXT、PPT 和常见图片格式，不支持压缩包。
 - 需求列表和详情复用 `src/views/requirement/demand/status.js` 中的状态定义和按钮定义，避免文案分叉。
 - 需求列表和详情必须展示指定开发人员，显示优先级为昵称加账号，其次账号，缺失时显示空占位。
-- 新主状态文案为：`draft=未提交`、`submitted=待生成需求设计`、`plan_ready=需求设计待确认`、`confirmed=待执行开发`、`developing=开发中`、`review=待验收`、`repairing=返修中`、`completed=已完成`。
-- 兼容状态文案为：`plan_pending=需求设计生成中`、`archived=已归档`。
+- 新主状态文案为：`draft=未提交`、`submitted=待需求分析`、`plan_pending=待生成需求设计`、`plan_ready=需求设计待确认`、`confirmed=待执行开发`、`developing=开发中`、`review=待验收`、`repairing=返修中`、`completed=已完成`。
+- 兼容状态文案为：`archived=已归档`。
 - 前端流程按钮必须同时按角色、`req:demand:edit` 按钮权限和当前需求参与人过滤：需求创建人只能看到提需、需求设计确认、返修和验收动作；指定开发人员只能看到提交需求设计、开始开发、提交验收和提交返修验收动作；`admin` 可见全部动作。前端过滤只控制展示，服务端状态接口仍由 `req:demand:edit`、状态机、角色动作和参与人约束兜底。
 - 非管理员列表数据由后端按参与人过滤：当前用户可见自己创建的需求，以及提交后指定给自己的需求。开发人员不应在前端看到他人未提交草稿，也不应看到非本人需求的流程按钮。
 - 列表操作列只保留详情、可编辑草稿的修改按钮、当前状态的下一步按钮和管理员删除按钮，不展示 Agent 资料入口。
 - 删除按钮只在拥有 `req:demand:remove` 时展示，需求人员和开发人员默认不可见；删除由后端管理员权限和关联数据清理兜底。
 - `review` 状态必须提供“提交返修”和“确认验收”两个流程按钮；`repairing` 状态提供“提交返修验收”并流转回 `review`。
 - 详情页不展示协作工具栏，不展示复制出来的指令正文。流程推进按钮位于详情标题区右侧，生成指令按钮也位于标题状态区，但使用白底描边样式与流程确认按钮明显区分。
-- 详情页仅在当前用户是指定开发人员或管理员，且状态为 `submitted`、`plan_pending` 或 `plan_ready` 时，展示 `/requirement/demand/{demandId}/plan-instruction` 的“生成需求评估与设计”按钮；复制内容由后端生成，必须表达“需求设计阶段先创建任务分支并生成需求可行性评估，结论允许后再生成详细需求设计”，并包含 `reqflow-mcp`、`mcpTool: reqflow.upload_requirement_assessment`、`mcpTool: reqflow.save_requirement_package`、建议任务分支、两个 `arguments.actionToken`、当前流程阶段有效和流转后失效的指引，前端不得拼接 actionToken。
-- 详情页仅在当前用户是指定开发人员或管理员，且状态为 `confirmed` 或 `developing` 时，展示 `/requirement/demand/{demandId}/develop-instruction` 的“生成执行任务指令”按钮；复制内容由后端生成，必须包含需求设计阶段任务分支、`reqflow.save_development_plan`、`reqflow.upload_execution_report`、`reqflow.upload_review_report`、一个开发阶段 actionToken、流转到待验收后失效的提示，前端不得拼接 actionToken。
+- 详情页仅在当前用户是指定开发人员或管理员，且状态为 `submitted`、`plan_pending` 或 `plan_ready` 时，展示 `/requirement/demand/{demandId}/plan-instruction` 的阶段生成按钮；`submitted` 文案为“生成需求分析指令”，复制内容只包含 `reqflow.upload_requirement_assessment` 和一个需求分析 actionToken；`plan_pending/plan_ready` 文案为“生成需求设计指令”，复制内容只包含 `reqflow.save_requirement_package` 和一个需求生成 actionToken。前端不得拼接 actionToken，也不得把下一阶段工具追加到按钮文案或复制内容中。
+- 详情页仅在当前用户是指定开发人员或管理员，且状态为 `confirmed`、`developing` 或 `repairing` 时，展示 `/requirement/demand/{demandId}/develop-instruction` 的阶段生成按钮；`confirmed/developing` 文案为“生成执行任务指令”，复制内容包含 `reqflow.save_development_plan`、`reqflow.upload_execution_report`、`reqflow.upload_review_report` 和一个开发阶段 actionToken；`repairing` 文案为“生成返修任务指令”，复制内容只包含 `reqflow.upload_execution_report`、`reqflow.upload_review_report` 和一个返修阶段 actionToken，不包含执行计划或需求设计生成要求。前端只复制后端返回内容。
 - 详情页读取 `/requirement/package/{demandId}` 内嵌展示当前需求的 Agent 交接资料包，后端允许 `req:demand:query` 读取。资料包区块以当前需求标题为标题，按 artifact 类型展示需求草稿、需求可行性评估、需求设计、执行计划、上下文清单、分支执行简报、执行提示词、Review 提示词、执行报告和 Review 报告等文档的最新内容，并展示每类产物最近历史版本；不得再在详情底部额外重复展示一组独立的需求设计/执行计划预览。没有资料时展示空状态，不阻断页面打开。保存 artifact 必须追加版本，返修轮次依赖历史版本链判断。
 - 打开 `/requirement/package?demandId=...` 时进入当前需求聚焦模式：页面顶部只展示当前需求标题和版本摘要，下方按 artifact 类型展示文档内容；不得展示需求 ID 查询框、加载资料、生成资料、加载最新或保存新版本按钮。直接从菜单进入 `/requirement/package` 时可保留管理模式。
 

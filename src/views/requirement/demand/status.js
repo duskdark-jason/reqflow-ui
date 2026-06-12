@@ -1,7 +1,7 @@
 export const demandStatusOptions = [
   { value: "draft", label: "未提交", type: "info" },
-  { value: "submitted", label: "待生成需求设计", type: "warning" },
-  { value: "plan_pending", label: "需求设计生成中", type: "warning" },
+  { value: "submitted", label: "待需求分析", type: "warning" },
+  { value: "plan_pending", label: "待生成需求设计", type: "warning" },
   { value: "plan_ready", label: "需求设计待确认", type: "warning" },
   { value: "confirmed", label: "待执行开发", type: "success" },
   { value: "developing", label: "开发中", type: "primary" },
@@ -19,10 +19,10 @@ const developerRoles = [ROLE_REQUIREMENT_DEVELOPER]
 
 export const demandStatusActions = {
   draft: [
-    { value: "submitted", label: "提交需求", tone: "submit", icon: "el-icon-upload2", roles: requirementUserRoles, confirm: "提交后将进入需求设计生成阶段。" }
+    { value: "submitted", label: "提交需求", tone: "submit", icon: "el-icon-upload2", roles: requirementUserRoles, confirm: "提交后将进入需求分析阶段。" }
   ],
   submitted: [
-    { value: "plan_ready", label: "提交需求设计", tone: "confirm", icon: "el-icon-document-checked", roles: developerRoles, confirm: "确认开发人员已通过 MCP 回写完整需求设计？" }
+    { value: "plan_pending", label: "提交需求分析", tone: "confirm", icon: "el-icon-document-checked", roles: developerRoles, confirm: "确认开发人员已通过 MCP 回写需求可行性评估？" }
   ],
   plan_pending: [
     { value: "plan_ready", label: "提交需求设计", tone: "confirm", icon: "el-icon-document-checked", roles: developerRoles, confirm: "确认开发人员已通过 MCP 回写完整需求设计？" }

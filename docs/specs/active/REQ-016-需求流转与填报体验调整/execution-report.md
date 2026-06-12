@@ -14,11 +14,11 @@
 | `src/layout/index.vue`、`src/layout/components/Navbar.vue`、`src/layout/components/index.js` | 移除用户可见布局设置入口。 |
 | `src/layout/components/Sidebar/Logo.vue`、`src/assets/logo/reqflow-logo.svg` | 新增 ReqFlow 品牌 logo 和左侧菜单品牌展示。 |
 | `src/plugins/tab.js` | 隐藏页签关闭时优先回退到 `parentPath`、`backPath` 或 `meta.activeMenu` 父菜单。 |
-| `src/views/requirement/demand/status.js` | 新增需求状态文案、标签、主流程按钮、角色和按钮权限过滤、返修按钮和编辑权限判断。 |
+| `src/views/requirement/demand/status.js` | 新增需求状态文案、标签、主流程按钮、角色和按钮权限过滤、返修按钮和编辑权限判断；`submitted` 流转到需求分析完成，`plan_pending` 流转到需求设计完成。 |
 | `src/views/requirement/demand/index.vue` | 列表操作列移除 Agent 资料入口，补充来源展示、管理员删除按钮、按角色和权限过滤的统一流程状态按钮和父页签打开参数。 |
 | `src/views/index.vue` | 首页快捷入口按当前用户 `permissions` 过滤，无 MCP 管理权限时不展示 MCP 管理。 |
 | `src/views/requirement/demand/maintain.vue` | 新增不展示创建人 ID/需求编号，增加需求来源文本输入、业务背景普通文本框和附件上传，粘贴图片或文件时追加到附件，保存时剔除系统字段。 |
-| `src/views/requirement/demand/detail.vue` | 详情页头部展示流程确认按钮，工具区展示生成需求设计和执行任务指令，展示来源、纯文本背景和附件，内嵌当前需求 Agent 交接资料包和历史版本。 |
+| `src/views/requirement/demand/detail.vue` | 详情页头部展示流程确认按钮，工具区按状态展示生成需求分析、需求设计、执行任务和返修任务指令，展示来源、纯文本背景和附件，内嵌当前需求 Agent 交接资料包和历史版本。 |
 | `src/components/FileUpload/index.vue` | 支持需求专用上传接口、大小写扩展名识别和 2MB 文件大小边界。 |
 | `src/views/requirement/package/index.vue` | `demandId` 上下文下进入只读聚焦模式，只展示当前需求标题和各项文档内容。 |
 | `src/api/requirement/demand.js` | 增加需求 MCP 评估与设计指令和执行开发指令接口封装。 |
@@ -80,11 +80,11 @@
 | AC-008 | 已完成 | `Logo.vue` 使用固定图文容器对齐，列表/详情流程按钮使用统一 `status-action-button`/`flow-confirm-button` 风格。 |
 | AC-009 | 已完成 | 详情头部状态区展示流程确认按钮，并用独立白底描边按钮展示当前阶段生成入口；页面不展示复制内容。 |
 | AC-010 | 已完成 | `status.js` 支持 `review -> repairing -> review` 返修路径，按钮文案为提交返修和提交返修验收。 |
-| AC-011 | 已完成 | 详情读取 `/requirement/package/{demandId}` 版本列表，展示需求可行性评估、需求设计、执行计划、执行报告和 Review 报告历史版本，开发人员和管理员可通过单独按钮生成执行任务指令。 |
-| AC-012 | 已完成 | 项目初始化和需求详情指令均直接展示/复制后端返回 `content`，前端不拼接或持久化明文 actionToken；接口冒烟确认内容包含 24 小时有效和一次性提示。 |
+| AC-011 | 已完成 | 详情读取 `/requirement/package/{demandId}` 版本列表，展示需求可行性评估、需求设计、执行计划、执行报告和 Review 报告历史版本，开发人员和管理员可按当前状态通过单独按钮生成需求分析、需求设计、执行任务或返修任务指令。 |
+| AC-012 | 已完成 | 项目初始化和需求详情指令均直接展示/复制后端返回 `content`，前端不拼接或持久化明文 actionToken；后端 companion 单测确认需求分析、需求生成、开发执行和返修阶段只暴露当前阶段工具并随流程流转失效。 |
 | AC-013 | 已完成 | `/requirement/package?demandId=...` 进入当前需求聚焦模式，隐藏查询、生成、加载最新和保存新版本按钮。 |
 | AC-014 | 已完成 | 详情底部以单一“Agent 交接资料包”区域展示各项文档和版本，不再保留独立的“需求设计与执行方案”预览块。 |
-| AC-015 | 已完成 | 详情文案区分“生成需求评估与设计”和“生成执行任务指令”，流程确认按钮与生成按钮同在头部状态区但样式明显区分，页面不展示协作工具栏。 |
+| AC-015 | 已完成 | 详情文案区分“生成需求分析指令”“生成需求设计指令”“生成执行任务指令”和“生成返修任务指令”，流程确认按钮与生成按钮同在头部状态区但样式明显区分，页面不展示协作工具栏。 |
 | AC-016 | 已完成 | 浏览器布局检查显示资料包底部在返回按钮顶部之前，资料包文档内容只在资料包容器内展示。 |
 | AC-017 | 已完成 | 文档记录角色菜单和流程按钮可见性，代码中列表与详情均使用 `status.js` 的角色过滤动作。 |
 | AC-018 | 已完成 | 新增/修改页需求来源为文本输入且必填，业务背景使用普通文本框，粘贴图片或文件会自动上传到附件；附件使用 `FileUpload` 且单文件 2MB；详情页展示来源、纯文本背景和附件区。 |
@@ -104,6 +104,7 @@
 | RF-002 | 已修复 | 已修复 logo 对齐、按钮风格、详情动作分区、MCP 指令入口、返修流程和历史版本记录展示。 | `npm run build:prod` 通过；浏览器详情和列表截图通过；后端 companion 单测通过 |
 | RF-003 | 已修复 | 已同步 actionToken 按流程阶段有效、流转后失效的复制边界和文档；前端不拼接或持久化明文 actionToken。 | 接口冒烟确认指令包含阶段有效提示；`npm run build:prod` 通过 |
 | RF-004 | 已修复 | 已将需求详情底部收敛为内嵌 Agent 交接资料包，并让 `demandId` 上下文的资料包页进入只读聚焦模式。 | 浏览器详情和资料包聚焦模式截图通过；`npm run build:prod` 通过 |
+| RF-005 | 已修复 | 已按当前阶段拆分详情生成按钮和文档：需求分析只复制评估指令，需求设计只复制设计指令，返修只复制执行报告和 Review 报告指令。 | 后端 companion 指令单测通过；`npm run build:prod` 通过 |
 
 ## 风险与后续
 
