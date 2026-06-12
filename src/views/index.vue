@@ -10,9 +10,9 @@
         <el-button
           v-if="hasPermission('req:demand:list')"
           type="primary"
-          icon="el-icon-plus"
-          @click="openPage('提交需求', '/requirement/demand')"
-        >提交需求</el-button>
+          :icon="demandEntry.icon"
+          @click="openPage(demandEntry.title, demandEntry.path)"
+        >{{ demandEntry.title }}</el-button>
         <el-button
           v-if="hasPermission('req:project:list')"
           icon="el-icon-office-building"
@@ -119,12 +119,7 @@ export default {
       loading: false,
       overview: {},
       projectRank: [],
-      userUsage: [],
-      quickActions: [
-        { title: "需求列表", path: "/requirement/demand", icon: "el-icon-tickets", desc: "查看、提交和推进需求", permission: "req:demand:list" },
-        { title: "执行资料", path: "/requirement/package", icon: "el-icon-document-checked", desc: "生成或查看 Agent 交接资料", permission: "req:package:list" },
-        { title: "MCP 管理", path: "/requirement/mcpKey", icon: "el-icon-key", desc: "管理人员 MCP 访问 Key", permission: "req:mcp:key:list" }
-      ]
+      userUsage: []
     }
   },
   computed: {
@@ -141,8 +136,25 @@ export default {
         { key: "active", label: "活跃人员", value: this.numberOf(this.overview.activeUserCount), hint: "近 30 天" }
       ]
     },
+    demandEntry() {
+      const canSubmit = this.hasPermission("req:demand:add")
+      return {
+        title: canSubmit ? "提交需求" : "查看需求",
+        path: "/requirement/demand",
+        icon: canSubmit ? "el-icon-plus" : "el-icon-tickets",
+        desc: canSubmit ? "查看、提交和推进需求" : "查看并处理分配给我的需求",
+        permission: "req:demand:list"
+      }
+    },
+    quickActionItems() {
+      return [
+        this.demandEntry,
+        { title: "执行资料", path: "/requirement/package", icon: "el-icon-document-checked", desc: "生成或查看 Agent 交接资料", permission: "req:package:list" },
+        { title: "MCP 管理", path: "/requirement/mcpKey", icon: "el-icon-key", desc: "管理人员 MCP 访问 Key", permission: "req:mcp:key:list" }
+      ]
+    },
     visibleQuickActions() {
-      return this.quickActions.filter(item => this.hasPermission(item.permission))
+      return this.quickActionItems.filter(item => this.hasPermission(item.permission))
     }
   },
   created() {
