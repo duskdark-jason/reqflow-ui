@@ -60,7 +60,7 @@ export function updateDemandStatus(demandId, status) {
   })
 }
 
-// 获取生成需求设计的 MCP 指令
+// 获取生成需求可行性评估和需求设计的 MCP 指令
 export function getDemandPlanInstruction(demandId) {
   return request({
     url: '/requirement/demand/' + demandId + '/plan-instruction',

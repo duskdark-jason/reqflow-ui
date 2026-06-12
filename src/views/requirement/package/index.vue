@@ -136,6 +136,7 @@ export default {
   data() {
     const artifactTypes = [
       { value: "requirement_draft", label: "需求草稿" },
+      { value: "requirement_assessment", label: "需求可行性评估" },
       { value: "requirement", label: "需求设计" },
       { value: "plan", label: "执行计划" },
       { value: "context_manifest", label: "上下文清单" },

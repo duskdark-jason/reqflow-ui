@@ -47,7 +47,7 @@
 
       <div v-if="isRepairing" class="repair-banner">
         <span>返修中</span>
-        <small>下方 Agent 交接资料包保留每次需求设计、执行计划和执行报告回写。</small>
+        <small>下方 Agent 交接资料包保留每次需求可行性评估、需求设计、执行计划、执行报告和 Review 报告回写。</small>
       </div>
 
       <el-divider content-position="left">业务背景</el-divider>
@@ -162,6 +162,7 @@ export default {
       moduleOptions: [],
       packageVersions: [],
       artifactTypes: [
+        { value: "requirement_assessment", label: "需求可行性评估" },
         { value: "requirement", label: "需求设计" },
         { value: "plan", label: "执行计划" },
         { value: "execution_report", label: "执行报告" },
@@ -174,6 +175,7 @@ export default {
       ],
       artifacts: {
         requirement_draft: { content: "", version: undefined, updateTime: undefined },
+        requirement_assessment: { content: "", version: undefined, updateTime: undefined },
         requirement: { content: "", version: undefined, updateTime: undefined },
         plan: { content: "", version: undefined, updateTime: undefined },
         context_manifest: { content: "", version: undefined, updateTime: undefined },
@@ -224,7 +226,7 @@ export default {
         return {
           cacheKey: "planInstruction",
           loadingType: "plan",
-          label: "生成详细需求设计",
+          label: "生成需求评估与设计",
           icon: "el-icon-document-checked",
           loader: getDemandPlanInstruction
         }

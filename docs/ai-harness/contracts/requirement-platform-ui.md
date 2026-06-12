@@ -14,7 +14,7 @@
 | `variant.js` | `/requirement/variant` | 项目分支内部兼容查询 |
 | `module.js` | `/requirement/module` | 人工模块兼容接口，左侧菜单不再暴露 |
 | `index.js` | `/requirement/index` | 仓库索引批次、模块知识和影响面推荐 |
-| `demand.js` | `/requirement/demand` | 需求列表、开发人员候选、维护页签、详情、保存、状态流转、生成需求设计指令和执行任务指令 |
+| `demand.js` | `/requirement/demand` | 需求列表、开发人员候选、维护页签、详情、保存、状态流转、生成需求可行性评估与需求设计指令和执行任务指令 |
 | `package.js` | `/requirement/package` | Agent 交接资料列表、最新版本、保存新版本和生成草稿资料；需求详情内嵌读取可用需求查询权限 |
 | `statistics.js` | `/requirement/statistics` | 使用统计 |
 | `harness.js` | `/requirement/project/*/harness-*` | 项目接入 harness 模板包查询和初始化结果登记 |
@@ -46,10 +46,10 @@
 ## Harness 初始化下发契约
 
 - 项目维护页签是项目配置、保存、初始化指令复制和初始化状态查看的主入口。
-- 用户触发 harness 初始化时，前端读取后端模板包；实际写入目标 workspace 的动作由 Codex 通过需求平台 MCP 或接口获取模板后完成，前端不直接操作用户本机文件系统。
+- 用户触发 harness 初始化时，前端读取后端模板包；实际写入目标 workspace 的动作由 Codex 通过需求平台 MCP 或接口获取模板后完成，前端不直接操作用户本机文件系统。初始化指令必须引导本地 agent 先拉取默认基线最新代码，初始化校验通过后提交并推送初始化文件，再登记 commit、push 结果和失败原因。
 - 多仓项目必须同时展示 workspace 根目录入口 `AGENTS.md` 和各子仓库 `AGENTS.md` 的下发状态；workspace 入口只做分流，业务规则仍写入子仓库。
 - 初始化完成口径必须包含模块知识库落地：目标子仓库不能只保留 `docs/ai-harness/modules/.gitkeep`，至少要生成一个按菜单目录、子菜单、功能接口、权限标识和涉及文件建立索引的 `docs/ai-harness/modules/*.md`。
-- 初始化结果必须展示 Codex 回写的写入文件清单、校验命令、校验结果和失败原因；失败时保留“复制错误信息”和“重新生成初始化指引”入口。
+- 初始化结果必须展示 Codex 回写的写入文件清单、校验命令、校验结果、commit、push 结果和失败原因；失败时保留“复制错误信息”和“重新生成初始化指引”入口。
 - 前端不得把个人本机绝对路径保存到项目配置；本地路径只允许作为用户当前初始化会话中的临时提示。
 
 ## 项目索引契约
@@ -82,9 +82,9 @@
 - 删除按钮只在拥有 `req:demand:remove` 时展示，需求人员和开发人员默认不可见；删除由后端管理员权限和关联数据清理兜底。
 - `review` 状态必须提供“提交返修”和“确认验收”两个流程按钮；`repairing` 状态提供“提交返修验收”并流转回 `review`。
 - 详情页不展示协作工具栏，不展示复制出来的指令正文。流程推进按钮位于详情标题区右侧，生成指令按钮也位于标题状态区，但使用白底描边样式与流程确认按钮明显区分。
-- 详情页仅在当前用户是指定开发人员或管理员，且状态为 `submitted`、`plan_pending` 或 `plan_ready` 时，展示 `/requirement/demand/{demandId}/plan-instruction` 的“生成详细需求设计”按钮；复制内容由后端生成，必须表达“根据基础需求生成详细需求设计”，并包含 `reqflow-mcp`、`mcpTool: reqflow.save_requirement_package`、`arguments.actionToken`、24 小时内有效和仅可使用一次的指引，前端不得拼接 actionToken。
-- 详情页仅在当前用户是指定开发人员或管理员，且状态为 `confirmed`、`developing`、`repairing` 或 `review` 时，展示 `/requirement/demand/{demandId}/develop-instruction` 的“生成执行任务指令”按钮；复制内容由后端生成，必须包含 `reqflow.save_development_plan`、`reqflow.upload_execution_report`、两个一次性 actionToken、过期或已使用后重新生成的提示，前端不得拼接 actionToken。
-- 详情页读取 `/requirement/package/{demandId}` 内嵌展示当前需求的 Agent 交接资料包，后端允许 `req:demand:query` 读取。资料包区块以当前需求标题为标题，按 artifact 类型展示需求草稿、需求设计、执行计划、上下文清单、分支执行简报、执行提示词、Review 提示词、执行报告和 Review 报告等文档的最新内容，并展示每类产物最近历史版本；不得再在详情底部额外重复展示一组独立的需求设计/执行计划预览。没有资料时展示空状态，不阻断页面打开。保存 artifact 必须追加版本，返修轮次依赖历史版本链判断。
+- 详情页仅在当前用户是指定开发人员或管理员，且状态为 `submitted`、`plan_pending` 或 `plan_ready` 时，展示 `/requirement/demand/{demandId}/plan-instruction` 的“生成需求评估与设计”按钮；复制内容由后端生成，必须表达“需求设计阶段先创建任务分支并生成需求可行性评估，结论允许后再生成详细需求设计”，并包含 `reqflow-mcp`、`mcpTool: reqflow.upload_requirement_assessment`、`mcpTool: reqflow.save_requirement_package`、建议任务分支、两个 `arguments.actionToken`、24 小时内有效和仅可使用一次的指引，前端不得拼接 actionToken。
+- 详情页仅在当前用户是指定开发人员或管理员，且状态为 `confirmed`、`developing`、`repairing` 或 `review` 时，展示 `/requirement/demand/{demandId}/develop-instruction` 的“生成执行任务指令”按钮；复制内容由后端生成，必须包含需求设计阶段任务分支、`reqflow.save_development_plan`、`reqflow.upload_execution_report`、`reqflow.upload_review_report`、三个一次性 actionToken、过期或已使用后重新生成的提示，前端不得拼接 actionToken。
+- 详情页读取 `/requirement/package/{demandId}` 内嵌展示当前需求的 Agent 交接资料包，后端允许 `req:demand:query` 读取。资料包区块以当前需求标题为标题，按 artifact 类型展示需求草稿、需求可行性评估、需求设计、执行计划、上下文清单、分支执行简报、执行提示词、Review 提示词、执行报告和 Review 报告等文档的最新内容，并展示每类产物最近历史版本；不得再在详情底部额外重复展示一组独立的需求设计/执行计划预览。没有资料时展示空状态，不阻断页面打开。保存 artifact 必须追加版本，返修轮次依赖历史版本链判断。
 - 打开 `/requirement/package?demandId=...` 时进入当前需求聚焦模式：页面顶部只展示当前需求标题和版本摘要，下方按 artifact 类型展示文档内容；不得展示需求 ID 查询框、加载资料、生成资料、加载最新或保存新版本按钮。直接从菜单进入 `/requirement/package` 时可保留管理模式。
 
 ## 角色菜单契约
@@ -112,6 +112,7 @@
 
 ```text
 requirement_draft
+requirement_assessment
 requirement
 plan
 context_manifest

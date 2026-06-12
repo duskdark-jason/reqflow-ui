@@ -10,8 +10,8 @@
 |---|---|---|---|---|---|---|
 | 需求管理 | 项目管理 | 项目列表、项目维护入口和初始化状态 | `src/views/requirement/project/index.vue`、`maintain.vue` | `src/api/requirement/project.js`、`projectInit.js` | `/requirement/project/**`，`req:project:*`；`/requirement/project/init/**`，`req:project:*` | `ReqProjectController`、`ReqProjectInitController`、`ReqProjectInitServiceImpl` |
 | 需求管理 | 分支知识库详情页签 | 按项目分支查看模块知识、索引批次和初始化指令 | `src/views/requirement/project/knowledge.vue` | `src/api/requirement/index.js`、`project.js` | `/requirement/index/module/tree`，`req:index:list`；`/requirement/index/batch/list`，`req:index:list` | `ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
-| 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、管理员删除、状态按钮、详情资料展示、返修版本记录、生成需求设计指令和执行任务指令复制 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue`、`status.js` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；删除使用 `req:demand:remove`；`/requirement/index/impact/suggest` 可由需求权限读取 | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
-| 需求管理 | Agent 交接资料 | 查看和保存需求设计、执行计划、执行报告、Review 报告等 artifact；详情页内嵌读取使用需求详情权限 | `src/views/requirement/package/index.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，读取为 `req:package:list` 或 `req:demand:query`，保存为 `req:package:save` | `ReqPackageController`、`ReqPackageServiceImpl` |
+| 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、管理员删除、状态按钮、详情资料展示、返修版本记录、生成需求可行性评估与需求设计指令和执行任务指令复制 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue`、`status.js` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；删除使用 `req:demand:remove`；`/requirement/index/impact/suggest` 可由需求权限读取 | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
+| 需求管理 | Agent 交接资料 | 查看和保存需求可行性评估、需求设计、执行计划、执行报告、Review 报告等 artifact；详情页内嵌读取使用需求详情权限 | `src/views/requirement/package/index.vue`、`src/views/requirement/demand/detail.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，读取为 `req:package:list` 或 `req:demand:query`，保存为 `req:package:save` | `ReqPackageController`、`ReqPackageServiceImpl` |
 | 需求管理 | MCP 管理 | 管理人员 MCP Key，创建或重置后复制一次性 Key 和多平台 Codex 安装命令 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`/requirement/codex/install.*`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqCodexInstallController`、`ReqMcpController`、`McpService` |
 | 需求管理 | 使用统计 | 展示需求、项目、用户和状态统计 | `src/views/requirement/statistics/index.vue` | `src/api/requirement/statistics.js` | `/requirement/statistics/**`，`req:stats:view` | `ReqStatisticsController`、`ReqStatisticsService` |
 | 需求管理 | 隐藏兼容能力 | 仓库、项目分支、人工模块兼容 CRUD，不作为左侧菜单独立入口 | `src/views/requirement/repository/index.vue`、`variant/index.vue`、`module/index.vue` | `src/api/requirement/repository.js`、`variant.js`、`module.js` | `/requirement/repository/**`、`/requirement/variant/**`、`/requirement/module/**` | `ReqRepositoryController`、`ReqVariantController`、`ReqModuleController` |
@@ -51,7 +51,7 @@
 - 需求维护页签允许填写新功能名称并通过需求备注提交；列表和详情在没有模块标识时展示该新功能名称。
 - 影响范围不在需求维护页签和详情页展示；保存时按知识库推荐自动写入后端影响字段，没有推荐内容时提交空值。
 - Agent 交接资料内容使用 textarea，不引入 Markdown 编辑器依赖。
-- Harness 初始化模板由需求平台存储和下发给 Codex；前端不直接写文件，后端不直接执行 Git 或文件系统写入。
+- Harness 初始化模板由需求平台存储和下发给 Codex；前端不直接写文件，后端不直接执行 Git 或文件系统写入。执行初始化的本地 agent 必须先拉取默认基线最新代码，初始化校验通过后提交并推送 harness 文件，再登记初始化结果。
 - MCP 管理页面只管理绑定到人员的访问 Key。页面不得常驻展示 MCP 地址、`X-MCP-Key` 请求头、Codex 配置、全局 Skill 包或 Codex 安装包；创建或重置后只在结果弹窗展示一次明文 Key 和 Codex 安装包，列表不得展示明文或哈希。
 - MCP 管理菜单和按钮必须使用 `req:mcp:key:*` 权限，需求人员角色默认不分配这些权限；开发人员角色可见 MCP 管理菜单。
 - 人员 MCP Key 不能替代项目分支动作 token：页面负责人员认证 Key，项目接入和索引指引中的 `actionToken` 是项目分支和目标动作识别 token。
@@ -69,8 +69,8 @@
 - 需求状态文案以 `src/views/requirement/demand/status.js` 为准：新主流程为未提交、待生成需求设计、需求设计待确认、待执行开发、开发中、待验收、返修中、已完成；旧 `需求设计生成中`、`已归档` 仅作为兼容状态展示。
 - 流程按钮由 `status.js` 统一定义，并同时按角色、`req:demand:edit` 按钮权限和当前行参与人过滤：需求创建人可提交需求、确认需求设计、提交返修和确认验收；指定开发人员可提交需求设计、开始开发、提交验收和提交返修验收；管理员角色可见全部流程按钮。
 - 需求列表和详情必须展示指定开发人员；非管理员只能看到后端返回的参与人范围内需求，前端按钮也必须避免让其他开发人员看到不属于自己的流转入口。
-- 待验收状态必须同时提供“提交返修”和“确认验收”；返修中状态提交后回到待验收。详情页应通过 `/requirement/package/{demandId}` 展示需求设计、执行计划和执行报告等产物的历史版本，用于判断返修轮次。
-- 初始化指令、生成需求设计指令和执行任务指令中的 actionToken 均为后端生成的一次性短时 token，前端只展示和复制后端返回内容，不得写入本地存储；过期或已使用后用户需要重新生成指令。
+- 待验收状态必须同时提供“提交返修”和“确认验收”；返修中状态提交后回到待验收。详情页应通过 `/requirement/package/{demandId}` 展示需求可行性评估、需求设计、执行计划、执行报告和 Review 报告等产物的历史版本，用于判断返修轮次。
+- 初始化指令、生成需求评估与设计指令和执行任务指令中的 actionToken 均为后端生成的一次性短时 token，前端只展示和复制后端返回内容，不得写入本地存储；过期或已使用后用户需要重新生成指令。生成需求评估与设计指令必须表达计划阶段创建任务分支、先回写需求可行性评估，结论允许后只生成 `requirement.md`；执行任务指令必须表达沿用任务分支，并包含执行计划、执行报告和 Review 报告三个回写 token。
 - 角色菜单预期：管理员可见全部功能；需求人员只可见首页、需求列表和使用统计，仍可在需求详情内查看自己创建的需求资料；开发人员可见首页、需求列表、MCP 管理和使用统计，但只能处理已提交后指定给自己的需求。
 - 首页快捷入口必须按 Vuex `permissions` 过滤：没有 `req:mcp:key:list` 时不展示 MCP 管理，没有 `req:project:list` 时不展示项目管理，需求人员首页不得出现 MCP 管理快捷入口。
 
