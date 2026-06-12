@@ -22,6 +22,7 @@
 8. 指令与资料包再调整：将详情页复制按钮文案改为生成需求分析、需求设计、执行任务和返修任务，资料包区块标题使用当前需求标题，按文档分组展示并修复底部重叠，覆盖 AC-015、AC-016。
 9. 需求填报附件：维护页增加需求来源文本输入、业务背景普通文本框和附件上传；粘贴图片或文件时作为附件保存；详情页展示来源、纯文本背景和附件，覆盖 AC-018。
 10. 文档同步：更新模块文档和契约文档，覆盖 AC-007、AC-017、AC-018、AC-019、AC-020。
+11. 资料包阅读与多轮调整：新增只读 Markdown 渲染 helper，详情页和需求聚焦资料包页使用 Markdown 阅读态展示；`plan_ready` 阶段向需求人展示补充调整说明输入区，提交后回到 `plan_pending` 继续生成需求设计；补充说明不作为一级标签，按语义折叠展示在需求可行性评估或需求设计标签内，覆盖 AC-022。
 
 ## 文件改动范围
 
@@ -36,7 +37,9 @@
 | 修改 | `src/views/requirement/demand/index.vue` | 操作列和状态按钮调整。 |
 | 修改 | `src/views/requirement/demand/maintain.vue` | 表单体验和保存 payload 调整。 |
 | 修改 | `src/views/requirement/demand/detail.vue` | 详情状态动作、Agent 资料摘要、MCP 指令复制和资料历史版本。 |
+| 新增 | `src/views/requirement/demand/markdown.js` | 只读 Markdown 安全渲染 helper。 |
 | 修改 | `src/api/requirement/demand.js` | 状态 API 封装保持或补充语义方法。 |
+| 新增 | `scripts/test-demand-ui-helpers.js` | 前端状态默认标签和 Markdown helper 契约测试。 |
 | 修改 | `docs/ai-harness/modules/requirement-platform.md`、`docs/ai-harness/contracts/requirement-platform-ui.md` | 长期规则同步。 |
 
 ## 模块知识库计划
@@ -53,7 +56,7 @@
 
 - L0 文档/规范：`sh scripts/check-docs.sh`
 - L1 编译/构建：`npm run build:prod`
-- L2 单元/契约：当前前端无独立单测脚本，以构建和静态搜索验证 payload/状态枚举。
+- L2 单元/契约：运行 `node scripts/test-demand-ui-helpers.js` 验证资料包 Markdown 安全渲染和阶段默认标签；其余页面契约以构建和静态搜索验证 payload/状态枚举。
 - L3 运行态冒烟：启动前端后用浏览器检查布局、返回、需求列表、维护和详情页面；若后端不可用，则用页面打开和 console 检查记录风险。
 - L4 跨端/端到端（可选）：本次不新增 Playwright 测试；真实保存流由后端 companion 单测和后续本地联调补验。
 
@@ -82,6 +85,7 @@
 | AC-019 | 首页快捷入口权限过滤 | 构建、代码静态复核 |
 | AC-020 | 删除按钮和流程权限隔离 | 构建、后端 companion 单测 |
 | AC-021 | 结论选择、补充说明和资料包阶段标签 | `npm run build:prod`、代码静态复核、后端 companion 单测 |
+| AC-022 | Markdown 阅读态、确认阶段补充调整、补充记录内嵌折叠和研发阶段默认可行性评估 | `node scripts/test-demand-ui-helpers.js`、`npm run build:prod`、浏览器详情冒烟、后端 companion 单测 |
 
 ## 执行约束
 

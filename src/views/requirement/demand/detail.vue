@@ -52,8 +52,8 @@
 
       <section v-if="canSubmitSupplement" class="supplement-panel">
         <div class="supplement-heading">
-          <span>补充说明</span>
-          <small>提交后将回到需求设计生成阶段</small>
+          <span>{{ supplementPanelTitle }}</span>
+          <small>{{ supplementPanelHint }}</small>
         </div>
         <el-input
           v-model="supplementContent"
@@ -62,7 +62,7 @@
           maxlength="4000"
           show-word-limit
           resize="vertical"
-          placeholder="请输入需要补充的业务背景、边界范围、验收口径或附件说明"
+          :placeholder="supplementPlaceholder"
         />
         <div class="supplement-actions">
           <el-button
@@ -71,7 +71,7 @@
             :loading="supplementSubmitting"
             @click="handleSubmitSupplement"
             v-hasPermi="['req:demand:edit']"
-          >提交补充说明</el-button>
+          >{{ supplementSubmitLabel }}</el-button>
         </div>
       </section>
 
@@ -125,8 +125,27 @@
                 v{{ artifacts[artifact.value].version }}
               </el-tag>
             </div>
-            <div class="markdown-block artifact-content">
-              {{ artifacts[artifact.value].content || "MCP 回写资料包后将在这里展示。" }}
+            <div
+              v-if="artifacts[artifact.value].content"
+              class="markdown-reader artifact-content"
+              v-html="renderArtifactMarkdown(artifact.value)"
+            />
+            <el-empty v-else :description="artifact.label + '暂无内容'" :image-size="80" class="artifact-empty" />
+            <div v-if="artifactSupplementVersions(artifact.value).length" class="iteration-section">
+              <div class="iteration-heading">补充与调整记录</div>
+              <el-collapse class="iteration-collapse">
+                <el-collapse-item
+                  v-for="(version, index) in artifactSupplementVersions(artifact.value)"
+                  :key="artifact.value + '-supplement-' + version.versionNo"
+                  :name="artifact.value + '-supplement-' + version.versionNo"
+                >
+                  <template slot="title">
+                    <span>{{ iterationTitle(version, index) }}</span>
+                    <small>{{ parseTime(version.createTime) || "历史记录" }}</small>
+                  </template>
+                  <div class="markdown-reader iteration-content" v-html="renderSupplementMarkdown(version)" />
+                </el-collapse-item>
+              </el-collapse>
             </div>
             <div v-if="artifactVersions(artifact.value).length" class="version-history">
               <span
@@ -185,7 +204,8 @@ import { listIndexModule } from "@/api/requirement/index"
 import { getDemand, getDemandDevelopInstruction, getDemandPlanInstruction, submitDemandSupplement, updateDemandStatus } from "@/api/requirement/demand"
 import { getDemandPackage } from "@/api/requirement/package"
 import { mapGetters } from "vuex"
-import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes } from "./artifacts"
+import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes, supplementVersionsForArtifact as getSupplementVersionsForArtifact } from "./artifacts"
+import { renderMarkdown } from "./markdown"
 import {
   canUseDeveloperInstruction as canUseDeveloperInstructionForRoles,
   demandStatusOptions,
@@ -282,7 +302,27 @@ export default {
       return String(this.form.status) === "repairing"
     },
     canSubmitSupplement() {
-      return String(this.form.status) === "supplement_required" && (this.isAdmin() || this.sameUser(this.form.creatorId, this.id))
+      return ["supplement_required", "plan_ready"].includes(String(this.form.status)) &&
+        (this.isAdmin() || this.sameUser(this.form.creatorId, this.id))
+    },
+    isDesignAdjustmentStage() {
+      return String(this.form.status) === "plan_ready"
+    },
+    supplementPanelTitle() {
+      return this.isDesignAdjustmentStage ? "补充调整说明" : "补充说明"
+    },
+    supplementPanelHint() {
+      return this.isDesignAdjustmentStage
+        ? "提交后回到需求设计生成阶段，可由开发人员按调整说明重新生成需求设计"
+        : "提交后将回到需求设计生成阶段"
+    },
+    supplementPlaceholder() {
+      return this.isDesignAdjustmentStage
+        ? "请输入对当前需求设计需要调整的范围、规则、异常分支或验收样例"
+        : "请输入需要补充的业务背景、边界范围、验收口径或附件说明"
+    },
+    supplementSubmitLabel() {
+      return this.isDesignAdjustmentStage ? "提交调整说明" : "提交补充说明"
     },
     feedbackOptions() {
       return this.feedbackDialog.action && this.feedbackDialog.action.feedbackOptions
@@ -342,6 +382,9 @@ export default {
         .filter(item => item.artifactType === artifactType)
         .sort((a, b) => Number(b.versionNo || 0) - Number(a.versionNo || 0))
         .slice(0, 5)
+    },
+    artifactSupplementVersions(artifactType) {
+      return getSupplementVersionsForArtifact(this.packageVersions, artifactType)
     },
     latestArtifactVersion(artifactType) {
       return this.artifactVersions(artifactType)[0]
@@ -406,12 +449,12 @@ export default {
     },
     handleSubmitSupplement() {
       if (!String(this.supplementContent || "").trim()) {
-        this.$modal.msgWarning("请输入补充说明")
+        this.$modal.msgWarning(this.isDesignAdjustmentStage ? "请输入调整说明" : "请输入补充说明")
         return
       }
       this.supplementSubmitting = true
       submitDemandSupplement(this.demandId, { content: this.supplementContent.trim() }).then(() => {
-        this.$modal.msgSuccess("补充说明已提交")
+        this.$modal.msgSuccess(this.isDesignAdjustmentStage ? "调整说明已提交" : "补充说明已提交")
         this.supplementContent = ""
         this.getDetail()
         this.loadPackagePreview()
@@ -425,6 +468,17 @@ export default {
       if (this.artifacts[target]) {
         this.activeArtifact = target
       }
+    },
+    renderArtifactMarkdown(artifactType) {
+      return renderMarkdown(this.artifacts[artifactType].content)
+    },
+    renderSupplementMarkdown(version) {
+      return renderMarkdown(version && version.content)
+    },
+    iterationTitle(version, index) {
+      const note = version && version.versionNote ? version.versionNote : "补充记录"
+      const versionNo = version && version.versionNo ? "v" + version.versionNo : "第" + (index + 1) + "轮"
+      return versionNo + " · " + note
     },
     handleInstructionAction(action) {
       if (!action) return
@@ -817,9 +871,137 @@ export default {
 
 .artifact-content {
   min-height: 220px;
-  max-height: 420px;
-  overflow: auto;
   box-sizing: border-box;
+}
+
+.artifact-empty {
+  min-height: 220px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #fbfcfe;
+}
+
+.markdown-reader {
+  min-height: 220px;
+  padding: 18px 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  color: #1f2937;
+  line-height: 1.75;
+  background: #fbfcfe;
+  word-break: break-word;
+}
+
+.markdown-reader ::v-deep h1,
+.markdown-reader ::v-deep h2,
+.markdown-reader ::v-deep h3,
+.markdown-reader ::v-deep h4,
+.markdown-reader ::v-deep h5,
+.markdown-reader ::v-deep h6 {
+  margin: 18px 0 10px;
+  color: #111827;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.markdown-reader ::v-deep h1 {
+  margin-top: 0;
+  font-size: 22px;
+}
+
+.markdown-reader ::v-deep h2 {
+  font-size: 18px;
+}
+
+.markdown-reader ::v-deep h3 {
+  font-size: 16px;
+}
+
+.markdown-reader ::v-deep p {
+  margin: 0 0 12px;
+}
+
+.markdown-reader ::v-deep ul,
+.markdown-reader ::v-deep ol {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+.markdown-reader ::v-deep li {
+  margin: 4px 0;
+}
+
+.markdown-reader ::v-deep blockquote {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-left: 3px solid #60a5fa;
+  color: #374151;
+  background: #eff6ff;
+}
+
+.markdown-reader ::v-deep code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #92400e;
+  background: #fef3c7;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 12px;
+}
+
+.markdown-reader ::v-deep pre {
+  margin: 12px 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 6px;
+  background: #111827;
+}
+
+.markdown-reader ::v-deep pre code {
+  padding: 0;
+  color: #f9fafb;
+  background: transparent;
+  white-space: pre;
+}
+
+.markdown-reader ::v-deep a {
+  color: #2563eb;
+}
+
+.iteration-section {
+  margin-top: 14px;
+}
+
+.iteration-heading {
+  margin-bottom: 8px;
+  color: #374151;
+  font-weight: 700;
+}
+
+.iteration-collapse {
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.iteration-collapse ::v-deep .el-collapse-item__header {
+  min-height: 44px;
+  height: auto;
+  line-height: 20px;
+  gap: 8px;
+  padding: 8px 0;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.iteration-collapse ::v-deep .el-collapse-item__header small {
+  margin-left: 8px;
+  color: #909399;
+  font-weight: 400;
+}
+
+.iteration-content {
+  min-height: 0;
+  margin-bottom: 12px;
+  background: #fff;
 }
 
 .artifact-time {
@@ -905,7 +1087,7 @@ export default {
   }
 
   .artifact-content {
-    max-height: 340px;
+    min-height: 180px;
   }
 
   .embedded-package-tabs ::v-deep .el-tabs__nav-wrap {

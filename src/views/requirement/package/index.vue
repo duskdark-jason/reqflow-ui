@@ -104,15 +104,37 @@
           </el-row>
 
           <div class="artifact-meta">
-            <span>制品类型：{{ artifact.value }}</span>
+            <span v-if="!focusedMode">制品类型：{{ artifact.value }}</span>
             <span v-if="artifacts[artifact.value].version">版本：{{ artifacts[artifact.value].version }}</span>
             <span v-if="artifacts[artifact.value].updateTime">更新时间：{{ parseTime(artifacts[artifact.value].updateTime) }}</span>
           </div>
 
-          <div v-if="focusedMode" class="artifact-viewer">
-            <pre v-if="artifacts[artifact.value].content">{{ artifacts[artifact.value].content }}</pre>
-            <el-empty v-else :description="artifact.label + '暂无内容'" :image-size="80" />
-          </div>
+          <template v-if="focusedMode">
+            <div class="artifact-viewer">
+              <div
+                v-if="artifacts[artifact.value].content"
+                class="markdown-reader package-markdown"
+                v-html="renderArtifactMarkdown(artifact.value)"
+              />
+              <el-empty v-else :description="artifact.label + '暂无内容'" :image-size="80" />
+            </div>
+            <div v-if="artifactSupplementVersions(artifact.value).length" class="iteration-section">
+              <div class="iteration-heading">补充与调整记录</div>
+              <el-collapse class="iteration-collapse">
+                <el-collapse-item
+                  v-for="(version, index) in artifactSupplementVersions(artifact.value)"
+                  :key="artifact.value + '-supplement-' + version.versionNo"
+                  :name="artifact.value + '-supplement-' + version.versionNo"
+                >
+                  <template slot="title">
+                    <span>{{ iterationTitle(version, index) }}</span>
+                    <small>{{ parseTime(version.createTime) || "历史记录" }}</small>
+                  </template>
+                  <div class="markdown-reader iteration-content" v-html="renderSupplementMarkdown(version)" />
+                </el-collapse-item>
+              </el-collapse>
+            </div>
+          </template>
           <el-input
             v-else
             v-model="artifacts[artifact.value].content"
@@ -130,7 +152,8 @@
 <script>
 import { getDemand } from "@/api/requirement/demand"
 import { getDemandPackage, getLatestPackageArtifact, savePackageArtifact, generatePackage } from "@/api/requirement/package"
-import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes } from "@/views/requirement/demand/artifacts"
+import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes, supplementVersionsForArtifact as getSupplementVersionsForArtifact } from "@/views/requirement/demand/artifacts"
+import { renderMarkdown } from "@/views/requirement/demand/markdown"
 
 export default {
   name: "RequirementPackage",
@@ -305,6 +328,21 @@ export default {
       if (this.artifacts[target]) {
         this.activeArtifact = target
       }
+    },
+    renderArtifactMarkdown(artifactType) {
+      return renderMarkdown(this.artifacts[artifactType].content)
+    },
+    artifactSupplementVersions(artifactType) {
+      const source = this.packageInfo && (this.packageInfo.artifacts || this.packageInfo.items || this.packageInfo)
+      return getSupplementVersionsForArtifact(Array.isArray(source) ? source : [], artifactType)
+    },
+    renderSupplementMarkdown(version) {
+      return renderMarkdown(version && version.content)
+    },
+    iterationTitle(version, index) {
+      const note = version && version.versionNote ? version.versionNote : "补充记录"
+      const versionNo = version && version.versionNo ? "v" + version.versionNo : "第" + (index + 1) + "轮"
+      return versionNo + " · " + note
     }
   }
 }
@@ -368,15 +406,123 @@ export default {
   background: #fbfcfe;
 }
 
-.artifact-viewer pre {
+.package-markdown {
   min-height: 360px;
-  margin: 0;
-  padding: 16px;
+  padding: 18px 20px;
   color: #1f2937;
-  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
-  font-size: 13px;
-  line-height: 1.7;
-  white-space: pre-wrap;
+  line-height: 1.75;
   word-break: break-word;
+}
+
+.markdown-reader ::v-deep h1,
+.markdown-reader ::v-deep h2,
+.markdown-reader ::v-deep h3,
+.markdown-reader ::v-deep h4,
+.markdown-reader ::v-deep h5,
+.markdown-reader ::v-deep h6 {
+  margin: 18px 0 10px;
+  color: #111827;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.markdown-reader ::v-deep h1 {
+  margin-top: 0;
+  font-size: 22px;
+}
+
+.markdown-reader ::v-deep h2 {
+  font-size: 18px;
+}
+
+.markdown-reader ::v-deep h3 {
+  font-size: 16px;
+}
+
+.markdown-reader ::v-deep p {
+  margin: 0 0 12px;
+}
+
+.markdown-reader ::v-deep ul,
+.markdown-reader ::v-deep ol {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+.markdown-reader ::v-deep li {
+  margin: 4px 0;
+}
+
+.markdown-reader ::v-deep blockquote {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-left: 3px solid #60a5fa;
+  color: #374151;
+  background: #eff6ff;
+}
+
+.markdown-reader ::v-deep code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #92400e;
+  background: #fef3c7;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 12px;
+}
+
+.markdown-reader ::v-deep pre {
+  margin: 12px 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 6px;
+  background: #111827;
+}
+
+.markdown-reader ::v-deep pre code {
+  padding: 0;
+  color: #f9fafb;
+  background: transparent;
+  white-space: pre;
+}
+
+.markdown-reader ::v-deep a {
+  color: #2563eb;
+}
+
+.iteration-section {
+  margin-top: 14px;
+}
+
+.iteration-heading {
+  margin-bottom: 8px;
+  color: #374151;
+  font-weight: 700;
+}
+
+.iteration-collapse {
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.iteration-collapse ::v-deep .el-collapse-item__header {
+  min-height: 44px;
+  height: auto;
+  line-height: 20px;
+  gap: 8px;
+  padding: 8px 0;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.iteration-collapse ::v-deep .el-collapse-item__header small {
+  margin-left: 8px;
+  color: #909399;
+  font-weight: 400;
+}
+
+.iteration-content {
+  min-height: 0;
+  margin-bottom: 12px;
+  background: #fff;
 }
 </style>
