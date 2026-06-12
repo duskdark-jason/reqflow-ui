@@ -66,21 +66,30 @@ export function demandStatusTagType(value) {
   return option ? option.type : ""
 }
 
-export function primaryStatusAction(status, roles, permissions) {
-  return statusActions(status, roles, permissions)[0] || null
+export function primaryStatusAction(status, roles, permissions, row, currentUserId) {
+  return statusActions(status, roles, permissions, row, currentUserId)[0] || null
 }
 
-export function statusActions(status, roles, permissions) {
+export function statusActions(status, roles, permissions, row, currentUserId) {
   const actions = demandStatusActions[String(status)] || []
-  return filterActionsByPermissions(filterActionsByRoles(actions, roles), permissions)
+  return filterActionsByParticipant(filterActionsByPermissions(filterActionsByRoles(actions, roles), permissions), row, currentUserId, roles, permissions)
 }
 
-export function nextStatusOptions(status, roles, permissions) {
-  return statusActions(status, roles, permissions)
+export function nextStatusOptions(status, roles, permissions, row, currentUserId) {
+  return statusActions(status, roles, permissions, row, currentUserId)
 }
 
-export function canUseDeveloperInstruction(roles) {
-  return hasAnyRole(roles, developerRoles)
+export function canUseDeveloperInstruction(roles, row, currentUserId, permissions) {
+  if (!hasAnyRole(roles, developerRoles)) {
+    return false
+  }
+  if (isAdmin(roles, permissions)) {
+    return true
+  }
+  if (!row || String(row.status) === "draft") {
+    return false
+  }
+  return sameUser(row.developerUserId, currentUserId)
 }
 
 function filterActionsByRoles(actions, roles) {
@@ -100,6 +109,21 @@ function filterActionsByPermissions(actions, permissions) {
   return permissions.includes(FLOW_ACTION_PERMISSION) ? actions : []
 }
 
+function filterActionsByParticipant(actions, row, currentUserId, roles, permissions) {
+  if (!row || isAdmin(roles, permissions)) {
+    return actions
+  }
+  return actions.filter(action => {
+    if (action.roles && hasAnyRole(action.roles, requirementUserRoles)) {
+      return sameUser(row.creatorId, currentUserId)
+    }
+    if (action.roles && hasAnyRole(action.roles, developerRoles)) {
+      return String(row.status) !== "draft" && sameUser(row.developerUserId, currentUserId)
+    }
+    return true
+  })
+}
+
 function hasAnyRole(userRoles, expectedRoles) {
   if (!Array.isArray(userRoles) || !userRoles.length) {
     return false
@@ -110,15 +134,23 @@ function hasAnyRole(userRoles, expectedRoles) {
   return expectedRoles.some(role => userRoles.includes(role))
 }
 
-export function canEditDemand(row, currentUserId) {
+function isAdmin(roles, permissions) {
+  return (Array.isArray(roles) && roles.includes("admin")) || (Array.isArray(permissions) && permissions.includes("*:*:*"))
+}
+
+function sameUser(left, right) {
+  return left !== undefined && left !== null && right !== undefined && right !== null && String(left) === String(right)
+}
+
+export function canEditDemand(row, currentUserId, roles, permissions) {
   if (!row || String(row.status) !== "draft") {
     return false
+  }
+  if (isAdmin(roles, permissions)) {
+    return true
   }
   if (!row.creatorId) {
     return true
   }
-  if (!currentUserId) {
-    return false
-  }
-  return String(row.creatorId) === String(currentUserId)
+  return sameUser(row.creatorId, currentUserId)
 }

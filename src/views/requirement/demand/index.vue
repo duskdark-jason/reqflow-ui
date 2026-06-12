@@ -124,6 +124,9 @@
       <el-table-column label="模块" align="center" min-width="130" :show-overflow-tooltip="true">
         <template slot-scope="scope">{{ demandModuleLabel(scope.row) }}</template>
       </el-table-column>
+      <el-table-column label="开发人员" align="center" min-width="140" :show-overflow-tooltip="true">
+        <template slot-scope="scope">{{ developerLabel(scope.row) }}</template>
+      </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="190">
         <template slot-scope="scope">
           <el-tag :type="demandStatusTagType(scope.row.status)" size="mini">
@@ -155,7 +158,7 @@
               v-hasPermi="['req:demand:edit']"
             >修改</el-button>
             <el-button
-              v-for="action in statusActions(scope.row.status)"
+              v-for="action in statusActions(scope.row)"
               :key="action.value"
               size="mini"
               class="status-action-button"
@@ -369,6 +372,15 @@ export default {
       }
       return row.remark || "新增功能"
     },
+    developerLabel(row) {
+      if (!row) {
+        return "-"
+      }
+      if (row.developerNickName && row.developerUserName) {
+        return row.developerNickName + "（" + row.developerUserName + "）"
+      }
+      return row.developerNickName || row.developerUserName || "-"
+    },
     moduleOptionValue(module) {
       return module.indexModuleId || module.moduleId || module.id
     },
@@ -390,13 +402,13 @@ export default {
       return demandStatusTagType(value)
     },
     primaryStatusAction(status) {
-      return getPrimaryStatusAction(status, this.roles, this.permissions)
+      return getPrimaryStatusAction(status, this.roles, this.permissions, null, this.id)
     },
-    statusActions(status) {
-      return getStatusActions(status, this.roles, this.permissions)
+    statusActions(row) {
+      return getStatusActions(row.status, this.roles, this.permissions, row, this.id)
     },
     canEditDemand(row) {
-      return canEditDemandRow(row, this.id)
+      return canEditDemandRow(row, this.id, this.roles, this.permissions)
     }
   }
 }

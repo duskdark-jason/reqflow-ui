@@ -9,6 +9,15 @@ export function listDemand(query) {
   })
 }
 
+// 查询需求可指定开发人员
+export function listDemandDevelopers(query) {
+  return request({
+    url: '/requirement/demand/developer-options',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询需求详细
 export function getDemand(demandId) {
   return request({

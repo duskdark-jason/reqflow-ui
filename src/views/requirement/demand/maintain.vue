@@ -45,6 +45,27 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
+              <el-form-item label="指定开发" prop="developerUserId">
+                <el-select
+                  v-model="form.developerUserId"
+                  placeholder="请选择负责需求设计和开发的人员"
+                  filterable
+                  style="width: 100%"
+                  :loading="developerLoading"
+                >
+                  <el-option
+                    v-for="user in developerOptions"
+                    :key="user.userId"
+                    :label="developerOptionLabel(user)"
+                    :value="user.userId"
+                  >
+                    <span>{{ user.nickName || user.userName }}</span>
+                    <span class="option-subtitle">{{ user.userName }}</span>
+                  </el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
               <el-form-item label="所属项目" prop="projectId">
                 <el-select v-model="form.projectId" placeholder="请选择项目" filterable style="width: 100%" @change="handleProjectChange">
                   <el-option
@@ -182,7 +203,7 @@
 import { listProject } from "@/api/requirement/project"
 import { listModule } from "@/api/requirement/module"
 import { getProjectInit } from "@/api/requirement/projectInit"
-import { getDemand, addDemand, updateDemand } from "@/api/requirement/demand"
+import { getDemand, addDemand, listDemandDevelopers, updateDemand } from "@/api/requirement/demand"
 import { listIndexModule, suggestImpact } from "@/api/requirement/index"
 import { demandSourceOptions } from "./status"
 
@@ -195,10 +216,12 @@ export default {
       saving: false,
       formProjectInitLoading: false,
       moduleLoading: false,
+      developerLoading: false,
       impactSuggestLoading: false,
       projectOptions: [],
       formVariantOptions: [],
       moduleOptions: [],
+      developerOptions: [],
       form: this.emptyForm(),
       demandTypeOptions: [
         { value: "FEATURE", label: "功能需求" },
@@ -218,6 +241,9 @@ export default {
         ],
         demandSource: [
           { required: true, message: "需求来源不能为空", trigger: "change" }
+        ],
+        developerUserId: [
+          { required: true, message: "指定开发人员不能为空", trigger: "change" }
         ],
         projectId: [
           { required: true, message: "所属项目不能为空", trigger: "change" }
@@ -261,6 +287,7 @@ export default {
   },
   created() {
     this.demandId = this.$route.query.demandId
+    this.loadDevelopers()
     this.openPage()
   },
   methods: {
@@ -305,6 +332,7 @@ export default {
         variantId: undefined,
         moduleId: undefined,
         featureId: undefined,
+        developerUserId: undefined,
         status: "draft",
         businessBackground: undefined,
         expectedResult: undefined,
@@ -374,6 +402,16 @@ export default {
       }).catch(() => {
         this.moduleOptions = []
         this.moduleLoading = false
+      })
+    },
+    loadDevelopers(userName) {
+      this.developerLoading = true
+      return listDemandDevelopers({ userName: userName }).then(response => {
+        this.developerOptions = response.data || []
+        this.developerLoading = false
+      }).catch(() => {
+        this.developerOptions = []
+        this.developerLoading = false
       })
     },
     isVariantInitialized(variant) {
@@ -472,6 +510,12 @@ export default {
     },
     moduleOptionValue(module) {
       return module.indexModuleId || module.moduleId || module.id
+    },
+    developerOptionLabel(user) {
+      if (!user) {
+        return ""
+      }
+      return user.nickName ? user.nickName + "（" + user.userName + "）" : user.userName
     },
     mergeModuleOptions(manualModules, indexModules) {
       const result = []

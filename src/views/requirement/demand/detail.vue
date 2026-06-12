@@ -10,9 +10,9 @@
         </div>
         <div class="detail-status-panel">
           <el-tag :type="demandStatusTagType(form.status)">{{ optionLabel(demandStatusOptions, form.status) }}</el-tag>
-          <div v-if="statusActions(form.status).length" class="process-actions">
+          <div v-if="statusActions(form).length" class="process-actions">
             <el-button
-              v-for="action in statusActions(form.status)"
+              v-for="action in statusActions(form)"
               :key="action.value"
               size="mini"
               class="flow-confirm-button"
@@ -32,6 +32,7 @@
         <el-descriptions-item label="项目分支">{{ variantLabel(form.variantId) }}</el-descriptions-item>
         <el-descriptions-item label="模块">{{ demandModuleLabel }}</el-descriptions-item>
         <el-descriptions-item label="创建人">{{ form.createBy || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="开发人员">{{ developerLabel(form) }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ parseTime(form.createTime) || "-" }}</el-descriptions-item>
       </el-descriptions>
 
@@ -225,6 +226,7 @@ export default {
   },
   computed: {
     ...mapGetters([
+      "id",
       "permissions",
       "roles"
     ]),
@@ -408,13 +410,22 @@ export default {
       return demandStatusTagType(value)
     },
     primaryStatusAction(status) {
-      return getPrimaryStatusAction(status, this.roles, this.permissions)
+      return getPrimaryStatusAction(status, this.roles, this.permissions, this.form, this.id)
     },
-    statusActions(status) {
-      return getStatusActions(status, this.roles, this.permissions)
+    statusActions(row) {
+      return getStatusActions(row.status, this.roles, this.permissions, row, this.id)
     },
     canUseDeveloperInstruction() {
-      return canUseDeveloperInstructionForRoles(this.roles)
+      return canUseDeveloperInstructionForRoles(this.roles, this.form, this.id, this.permissions)
+    },
+    developerLabel(row) {
+      if (!row) {
+        return "-"
+      }
+      if (row.developerNickName && row.developerUserName) {
+        return row.developerNickName + "（" + row.developerUserName + "）"
+      }
+      return row.developerNickName || row.developerUserName || "-"
     },
     normalizeAttachmentList(value) {
       if (!value) {
