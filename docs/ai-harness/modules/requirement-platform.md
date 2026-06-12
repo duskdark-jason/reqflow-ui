@@ -29,6 +29,7 @@
 | 使用统计 | `src/views/requirement/statistics/index.vue` | 看板统计。 |
 | API 封装 | `src/api/requirement/*.js` | 与后端 `/requirement/**` 契约保持一致。 |
 | 后端契约 | `docs/ai-harness/contracts/requirement-platform-ui.md` | 前端请求、响应和 UI 状态约束。 |
+| Harness 导航 | `docs/ai-harness/search-map.md`、`docs/process/local-harness-workflow.md` | 初次接触模型的关键词索引，以及未接入 MCP 时的本地闭环流程。 |
 
 ## 不变量
 
@@ -53,6 +54,8 @@
 - 影响范围不在需求维护页签和详情页展示；保存时按知识库推荐自动写入后端影响字段，没有推荐内容时提交空值。
 - Agent 交接资料在需求详情和 `demandId` 聚焦模式下使用只读 Markdown 阅读态展示，必须先转义 HTML 再渲染标题、列表、引用、代码块等常见 Markdown；独立管理模式可保留 textarea 保存能力，不引入 Markdown 编辑器依赖。
 - Harness 初始化模板由需求平台存储和下发给 Codex；前端不直接写文件，后端不直接执行 Git 或文件系统写入。执行初始化的本地 agent 必须先拉取默认基线最新代码，初始化校验通过后提交并推送 harness 文件，再登记初始化结果。
+- 前端 harness 必须和后端模板保持一致：包含 `docs/ai-harness/search-map.md`、`docs/process/local-harness-workflow.md`，并在 `harness-index.json` 登记 `searchMap` 和 `localHarnessWorkflow` 入口。
+- 本地 Harness 模式和 MCP 模式必须共享需求设计确认点：`planning` 阶段只允许迭代 `meta.md` 和 `requirement.md`；`plan.md`、`execution-report.md`、`review-report.md` 必须等明确执行授权后由 Execution Agent/Review Agent 按阶段生成。
 - MCP 管理页面只管理绑定到人员的访问 Key。普通用户新增 Key 默认绑定自己且不可修改绑定用户，管理员才可指定用户；页面不得提供修改或重置 Key 操作。页面不得常驻展示 MCP 地址、`X-MCP-Key` 请求头、Codex 配置、全局 Skill 包或 Codex 安装包；创建后只在结果弹窗展示一次明文 Key 和 Codex 安装包，列表不得展示明文或哈希。
 - MCP 管理菜单和按钮必须使用 `req:mcp:key:*` 权限，需求人员角色默认不分配这些权限；开发人员角色可见 MCP 管理菜单。
 - 人员 MCP Key 不能替代项目分支动作 token：页面负责人员认证 Key，项目接入和索引指引中的 `actionToken` 是项目分支和目标动作识别 token。
@@ -86,6 +89,7 @@
 - 初始化指令、需求分析指令、需求生成指令、执行任务指令和返修任务指令中的明文 `actionToken` 只用于复制给 MCP 调用，前端不得持久化到本地存储、查询条件或日志；缺少 `initInstruction` 时只能展示兼容降级提示。
 - Agent 交接资料存在多个 artifact type，前端 tab 的 key 必须使用后端支持的类型值。
 - Harness 初始化失败时，必须区分平台模板生成失败、Codex 本地写入失败、仓库远端不匹配和校验脚本失败，不能统一显示为“初始化失败”。
+- Harness 模板或脚本调整时，必须同步后端模板源、当前后端 harness、前端 harness 和 `search-map.md`；确认点门禁不能只写在文档里，必须由 `scripts/check-harness.sh` 测试覆盖。
 - 索引推荐依赖后端 `/requirement/index/**` 接口，且必须让后端按项目分支 `variantId` 解析真实分支并限定最新索引批次；接口缺失时需求表单只能保留人工填写影响范围。
 - 旧数据如果存在 `variantId` 为空的项目级模块，不能在分支知识库里默认混入；需要由团队迁移或重新初始化到对应项目分支。
 - 统计表格返回字段是聚合字段，不能按基础实体字段假设。
