@@ -55,7 +55,7 @@
 - Agent 交接资料在需求详情和 `demandId` 聚焦模式下使用只读 Markdown 阅读态展示，必须先转义 HTML 再渲染标题、列表、引用、代码块等常见 Markdown；独立管理模式可保留 textarea 保存能力，不引入 Markdown 编辑器依赖。
 - Harness 初始化模板由需求平台存储和下发给 Codex；前端不直接写文件，后端不直接执行 Git 或文件系统写入。执行初始化的本地 agent 必须先拉取默认基线最新代码，初始化校验通过后提交并推送 harness 文件，再登记初始化结果。
 - 前端 harness 必须和后端模板保持一致：包含 `docs/ai-harness/search-map.md`、`docs/process/local-harness-workflow.md`，并在 `harness-index.json` 登记 `searchMap` 和 `localHarnessWorkflow` 入口。
-- 本地 Harness 模式和 MCP 模式必须共享需求设计确认点：`planning` 阶段只允许迭代 `meta.md` 和 `requirement.md`；`plan.md`、`execution-report.md`、`review-report.md` 必须等明确执行授权后由 Execution Agent/Review Agent 按阶段生成。
+- 本地 Harness 模式和 MCP 接入模式必须共享需求设计确认点：`planning` 阶段只允许迭代 `meta.md` 和 `requirement.md`；`plan.md`、`execution-report.md`、`review-report.md` 必须等明确执行授权后由 Execution Agent/Review Agent 按阶段生成。
 - MCP 管理页面只管理绑定到人员的访问 Key。普通用户新增 Key 默认绑定自己且不可修改绑定用户，管理员才可指定用户；页面不得提供修改或重置 Key 操作。页面不得常驻展示 MCP 地址、`X-MCP-Key` 请求头、Codex 配置、全局 Skill 包或 Codex 安装包；创建后只在结果弹窗展示一次明文 Key 和 Codex 安装包，列表不得展示明文或哈希。
 - MCP 管理菜单和按钮必须使用 `req:mcp:key:*` 权限，需求人员角色默认不分配这些权限；开发人员角色可见 MCP 管理菜单。
 - 人员 MCP Key 不能替代项目分支动作 token：页面负责人员认证 Key，项目接入和索引指引中的 `actionToken` 是项目分支和目标动作识别 token。
