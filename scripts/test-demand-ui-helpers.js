@@ -33,13 +33,19 @@ assert(!artifacts.handoffArtifactTypes.some(item => item.value === "requirement_
 assert.deepStrictEqual(artifacts.supplementVersionsForArtifact([
   { artifactType: "requirement_supplement", versionNo: 1, versionNote: "需求人补充说明" },
   { artifactType: "requirement_supplement", versionNo: 2, versionNote: "需求设计调整说明" },
+  { artifactType: "requirement_supplement", versionNo: 3, versionNote: "需求人返修问题说明" },
   { artifactType: "requirement", versionNo: 1 }
 ], "requirement_assessment").map(item => item.versionNo), [1])
 assert.deepStrictEqual(artifacts.supplementVersionsForArtifact([
   { artifactType: "requirement_supplement", versionNo: 1, versionNote: "需求人补充说明" },
   { artifactType: "requirement_supplement", versionNo: 2, versionNote: "需求设计调整说明" },
+  { artifactType: "requirement_supplement", versionNo: 3, versionNote: "需求人返修问题说明" },
   { artifactType: "requirement", versionNo: 1 }
 ], "requirement").map(item => item.versionNo), [2])
+assert.deepStrictEqual(artifacts.supplementVersionsForArtifact([
+  { artifactType: "requirement_supplement", versionNo: 1, versionNote: "需求人补充说明" },
+  { artifactType: "requirement_supplement", versionNo: 3, versionNote: "需求人返修问题说明" }
+], "review_report").map(item => item.versionNo), [3])
 
 const html = markdown.renderMarkdown(`# 需求设计
 
@@ -90,6 +96,38 @@ assert.strictEqual(status.canUsePlanInstruction(developerRoles, {
   status: "plan_pending",
   developerUserId: 8
 }, 8, flowPermissions), true)
+assert.strictEqual(status.hasFeedbackConclusionAction({
+  status: "submitted",
+  developerUserId: 8
+}, developerRoles, flowPermissions, 8), true)
+assert.strictEqual(status.hasFeedbackConclusionAction({
+  status: "plan_pending",
+  developerUserId: 8
+}, developerRoles, flowPermissions, 8), true)
+assert.strictEqual(status.canUseListPlanInstruction(developerRoles, {
+  status: "submitted",
+  developerUserId: 8
+}, 8, flowPermissions), true)
+assert.strictEqual(status.canUseListPlanInstruction(developerRoles, {
+  status: "plan_pending",
+  developerUserId: 8
+}, 8, flowPermissions), true)
+assert.strictEqual(status.canUseListPlanInstruction(developerRoles, {
+  status: "plan_ready",
+  developerUserId: 8
+}, 8, flowPermissions), false)
+assert.strictEqual(status.listStatusActions("submitted", developerRoles, flowPermissions, {
+  status: "submitted",
+  developerUserId: 8
+}, 8).map(action => action.value).join(","), "")
+assert.strictEqual(status.listStatusActions("plan_pending", developerRoles, flowPermissions, {
+  status: "plan_pending",
+  developerUserId: 8
+}, 8).map(action => action.value).join(","), "")
+assert.strictEqual(status.listStatusActions("repairing", developerRoles, flowPermissions, {
+  status: "repairing",
+  developerUserId: 8
+}, 8).map(action => action.value).join(","), "")
 assert.strictEqual(status.canUseDevelopInstruction(developerRoles, assignedDemand, 8, flowPermissions), false)
 assert.strictEqual(status.canUseDevelopInstruction(developerRoles, {
   status: "developing",
@@ -103,6 +141,46 @@ assert.strictEqual(status.canUseDevelopInstruction(developerRoles, {
   status: "closeout_pending",
   developerUserId: 8
 }, 8, flowPermissions), true)
+assert.strictEqual(status.hasDevelopmentResultArtifacts([]), false)
+assert.strictEqual(status.hasDevelopmentResultArtifacts([
+  { artifactType: "plan", versionNo: 1 },
+  { artifactType: "execution_report", versionNo: 1 }
+]), false)
+assert.strictEqual(status.hasDevelopmentResultArtifacts([
+  { artifactType: "execution_report", versionNo: 1 },
+  { artifactType: "review_report", versionNo: 1 }
+]), true)
+assert.strictEqual(status.canShowDevelopInstructionByArtifacts("developing", []), true)
+assert.strictEqual(status.canShowDevelopSubmitAction("developing", []), false)
+assert.strictEqual(status.canShowDevelopInstructionByArtifacts("developing", [
+  { artifactType: "execution_report", versionNo: 1 },
+  { artifactType: "review_report", versionNo: 1 }
+]), false)
+assert.strictEqual(status.canShowDevelopSubmitAction("developing", [
+  { artifactType: "execution_report", versionNo: 1 },
+  { artifactType: "review_report", versionNo: 1 }
+]), true)
+assert.strictEqual(status.canShowDevelopSubmitAction("repairing", [
+  { artifactType: "execution_report", packageId: 10, createTime: "2026-06-13 10:00:00" },
+  { artifactType: "review_report", packageId: 11, createTime: "2026-06-13 10:10:00" },
+  { artifactType: "requirement_supplement", versionNote: "需求人返修问题说明", packageId: 12, createTime: "2026-06-13 10:20:00" }
+]), false)
+assert.strictEqual(status.canShowDevelopInstructionByArtifacts("repairing", [
+  { artifactType: "execution_report", packageId: 10, createTime: "2026-06-13 10:00:00" },
+  { artifactType: "review_report", packageId: 11, createTime: "2026-06-13 10:10:00" },
+  { artifactType: "requirement_supplement", versionNote: "需求人返修问题说明", packageId: 12, createTime: "2026-06-13 10:20:00" }
+]), true)
+assert.strictEqual(status.canShowDevelopSubmitAction("repairing", [
+  { artifactType: "requirement_supplement", versionNote: "需求人返修问题说明", packageId: 12, createTime: "2026-06-13 10:20:00" },
+  { artifactType: "execution_report", packageId: 13, createTime: "2026-06-13 10:30:00" },
+  { artifactType: "review_report", packageId: 14, createTime: "2026-06-13 10:40:00" }
+]), true)
+assert.strictEqual(status.canShowDevelopSubmitAction("closeout_pending", []), true)
+assert.strictEqual(status.canShowCloseoutInstruction(false), true)
+assert.strictEqual(status.canShowCloseoutSubmitAction("closeout_pending", false), false)
+assert.strictEqual(status.canShowCloseoutInstruction(true), false)
+assert.strictEqual(status.canShowCloseoutSubmitAction("closeout_pending", true), true)
+assert.strictEqual(status.canShowCloseoutSubmitAction("review", false), true)
 assert.strictEqual(status.statusActions("confirmed", developerRoles, flowPermissions, assignedDemand, 8)[0].value, "developing")
 assert.strictEqual(status.statusActions("review", ["requirement_user"], flowPermissions, {
   status: "review",

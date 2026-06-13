@@ -59,13 +59,13 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-if="lastInstallResult && lastInstallResult.plainKey"
-          type="info"
+          v-if="isAdminUser"
+          type="warning"
           plain
-          icon="el-icon-document-copy"
+          icon="el-icon-setting"
           size="mini"
-          @click="reopenInstallCommands"
-        >重新打开安装命令</el-button>
+          @click="handleOpenMcpConfig"
+        >配置请求地址</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -73,7 +73,6 @@
     <el-table v-loading="loading" :data="mcpKeyList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="Key名称" align="center" prop="keyName" min-width="170" :show-overflow-tooltip="true" />
-      <el-table-column label="Key前缀" align="center" prop="keyPrefix" min-width="150" :show-overflow-tooltip="true" />
       <el-table-column label="绑定用户" align="center" min-width="180" :show-overflow-tooltip="true">
         <template slot-scope="scope">
           <span>{{ userDisplay(scope.row) }}</span>
@@ -159,21 +158,44 @@
       </div>
     </el-dialog>
 
+    <el-dialog title="MCP请求地址配置" :visible.sync="configOpen" width="620px" append-to-body>
+      <el-form
+        ref="mcpConfigForm"
+        :model="mcpConfig"
+        label-width="100px"
+        v-loading="configLoading"
+      >
+        <el-form-item label="MCP请求地址">
+          <el-input
+            v-model.trim="mcpConfig.publicHost"
+            placeholder="域名/IP:端口，例如 mcp.example.com:8443"
+            clearable
+            class="mcp-config-host"
+          />
+        </el-form-item>
+        <el-form-item label="完整地址">
+          <el-input
+            :value="mcpConfig.mcpAddress || '-'"
+            readonly
+            class="mcp-config-address"
+          />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button icon="el-icon-refresh" @click="getMcpConfig">刷 新</el-button>
+        <el-button type="primary" :loading="configSaving" @click="saveMcpConfig">保 存</el-button>
+        <el-button @click="configOpen = false">取 消</el-button>
+      </div>
+    </el-dialog>
+
     <el-dialog title="MCP Key" :visible.sync="resultOpen" width="860px" append-to-body>
       <div class="result-grid">
         <div class="result-field">
-          <span class="config-label">明文Key</span>
-          <el-input
-            v-model="createResult.plainKey"
-            placeholder="新建后自动展示明文 Key；历史 Key 可粘贴已保存的明文后复制安装命令"
-          />
-        </div>
-        <div class="result-field">
-          <span class="config-label">Codex安装命令</span>
-          <div class="install-command-list">
+          <span class="config-label">统一安装指令</span>
+          <div class="install-command-group">
             <div
               v-for="command in renderedInstallCommands"
-              :key="command.platform"
+              :key="'unified-' + command.platform"
               class="install-command-card"
             >
               <div class="install-command-header">
@@ -202,12 +224,6 @@
         </el-collapse>
       </div>
       <div slot="footer" class="dialog-footer">
-        <el-button
-          type="primary"
-          icon="el-icon-document-copy"
-          :disabled="!createResult.plainKey"
-          @click="copyText(createResult.plainKey)"
-        >复制Key</el-button>
         <el-button @click="resultOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
@@ -216,7 +232,15 @@
 
 <script>
 import { mapGetters } from "vuex"
-import { listMcpKey, getMcpKeyInstruction, listMcpKeyUserOptions, addMcpKey, delMcpKey } from "@/api/requirement/mcpKey"
+import {
+  listMcpKey,
+  getMcpKeyInstruction,
+  getMcpKeyConfig,
+  updateMcpKeyConfig,
+  listMcpKeyUserOptions,
+  addMcpKey,
+  delMcpKey
+} from "@/api/requirement/mcpKey"
 
 export default {
   name: "RequirementMcpKey",
@@ -224,6 +248,8 @@ export default {
     return {
       loading: true,
       userLoading: false,
+      configLoading: false,
+      configSaving: false,
       ids: [],
       multiple: true,
       showSearch: true,
@@ -232,14 +258,19 @@ export default {
       userOptions: [],
       title: "",
       open: false,
+      configOpen: false,
       resultOpen: false,
       createResult: {
         key: null,
         plainKey: "",
         codexSetupPackage: null
       },
-      lastInstallResult: null,
       installResultByKeyId: {},
+      mcpConfig: {
+        configKey: "reqflow.mcp.public-host",
+        publicHost: "",
+        mcpAddress: ""
+      },
       statusOptions: [
         { value: "0", label: "正常", type: "success" },
         { value: "1", label: "停用", type: "info" }
@@ -290,6 +321,54 @@ export default {
     }
   },
   methods: {
+    handleOpenMcpConfig() {
+      if (!this.isAdminUser) return
+      this.configOpen = true
+      this.getMcpConfig()
+    },
+    getMcpConfig() {
+      if (!this.isAdminUser) return
+      this.configLoading = true
+      getMcpKeyConfig().then(response => {
+        this.mcpConfig = Object.assign({
+          configKey: "reqflow.mcp.public-host",
+          publicHost: "",
+          mcpAddress: ""
+        }, response.data || {})
+        this.configLoading = false
+      }).catch(() => {
+        this.configLoading = false
+      })
+    },
+    saveMcpConfig() {
+      if (!this.isAdminUser) return
+      const publicHost = (this.mcpConfig.publicHost || "").trim()
+      if (!publicHost) {
+        this.$modal.msgWarning("请输入MCP请求地址")
+        return
+      }
+      if (/^https?:\/\//i.test(publicHost) || /[\\/?#\s]/.test(publicHost)) {
+        this.$modal.msgWarning("只填写域名/IP和端口，不要填写协议或路径")
+        return
+      }
+      this.configSaving = true
+      updateMcpKeyConfig({ publicHost }).then(response => {
+        this.$modal.msgSuccess("保存成功")
+        if (response.data) {
+          this.mcpConfig = Object.assign({
+            configKey: "reqflow.mcp.public-host",
+            publicHost: "",
+            mcpAddress: ""
+          }, response.data)
+        } else {
+          this.getMcpConfig()
+        }
+        this.configOpen = false
+        this.configSaving = false
+      }).catch(() => {
+        this.configSaving = false
+      })
+    },
     getList() {
       this.loading = true
       listMcpKey(this.queryParams).then(response => {
@@ -360,7 +439,7 @@ export default {
         addMcpKey(payload).then(response => {
           this.$modal.msgSuccess("新增成功")
           this.open = false
-          this.showCreateResult(response.data)
+          this.showInstructionResult(response.data)
           this.getList()
         })
       })
@@ -378,22 +457,21 @@ export default {
       if (!row || !row.keyId) return
       const cached = this.installResultByKeyId[row.keyId]
       if (cached) {
-        this.showInstructionResult(cached, false)
+        this.showInstructionResult(cached)
         return
       }
       getMcpKeyInstruction(row.keyId).then(response => {
-        this.showInstructionResult(response.data || { key: row, plainKey: "", codexSetupPackage: null }, false)
+        this.showInstructionResult(response.data || { key: row, plainKey: "", codexSetupPackage: null })
       })
     },
-    showCreateResult(data) {
-      this.showInstructionResult(data, true)
-    },
-    showInstructionResult(data, rememberPlainKey) {
+    showInstructionResult(data) {
       this.createResult = Object.assign({ key: null, plainKey: "", codexSetupPackage: null }, data || {})
-      if (rememberPlainKey && this.createResult.plainKey) {
-        // 明文 Key 只在创建后返回一次，前端仅在本次会话缓存，便于用户重新打开安装命令。
+      const plainKey = this.plainKeyForResult(this.createResult)
+      if (plainKey && !this.createResult.plainKey) {
+        this.$set(this.createResult, "plainKey", plainKey)
+      }
+      if (plainKey) {
         const snapshot = JSON.parse(JSON.stringify(this.createResult))
-        this.lastInstallResult = snapshot
         const keyId = snapshot.key && snapshot.key.keyId
         if (keyId) {
           this.$set(this.installResultByKeyId, keyId, snapshot)
@@ -401,29 +479,35 @@ export default {
       }
       this.resultOpen = true
     },
-    reopenInstallCommands() {
-      if (!this.lastInstallResult || !this.lastInstallResult.plainKey) return
-      this.createResult = JSON.parse(JSON.stringify(this.lastInstallResult))
-      this.resultOpen = true
-    },
     installCommandsFor(result) {
       const setupPackage = result && result.codexSetupPackage
       const commands = setupPackage && Array.isArray(setupPackage.installCommands) ? setupPackage.installCommands : []
-      return commands.map(command => {
+      return this.renderCommandList(commands, this.plainKeyForResult(result))
+    },
+    plainKeyForResult(result) {
+      if (!result) return ""
+      return result.plainKey || (result.key && result.key.plainKey) || ""
+    },
+    renderCommandList(commands, plainKey) {
+      const sourceCommands = Array.isArray(commands) ? commands : []
+      return sourceCommands.map(command => {
         // 安装包模板不直接写死 Key，渲染时再替换，避免复制高级配置时泄漏到长期模板字段。
+        const commandText = command.command || ""
         return Object.assign({}, command, {
-          renderedCommand: this.renderInstallCommand(command.command, result.plainKey)
+          renderedCommand: this.renderInstallCommand(commandText, plainKey),
+          requiresPlainKey: commandText.indexOf("${REQFLOW_MCP_KEY}") >= 0
         })
       })
     },
     renderInstallCommand(command, plainKey) {
       if (!command) return ""
-      return command.replace(/\$\{REQFLOW_MCP_KEY\}/g, plainKey || "请粘贴明文Key")
+      if (!plainKey) return command
+      return command.replace(/\$\{REQFLOW_MCP_KEY\}/g, plainKey)
     },
     copyInstallCommand(command) {
       if (!command) return
-      if (!this.createResult.plainKey) {
-        this.$modal.msgWarning("请先填写明文Key")
+      if (command.requiresPlainKey && !this.plainKeyForResult(this.createResult)) {
+        this.$modal.msgWarning("当前Key暂无明文，请重新生成Key")
         return
       }
       this.copyText(command.renderedCommand || "")
@@ -488,6 +572,14 @@ export default {
   min-width: 0;
 }
 
+.mcp-config-host {
+  width: 100%;
+}
+
+.mcp-config-address {
+  width: 100%;
+}
+
 .result-field {
   min-width: 0;
 }
@@ -505,9 +597,21 @@ export default {
   gap: 14px;
 }
 
-.install-command-list {
-  display: grid;
-  gap: 12px;
+.install-command-group {
+  padding: 10px 12px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.install-command-group:last-child {
+  border-bottom: none;
+}
+
+.install-group-title {
+  margin-bottom: 8px;
+  color: #606266;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
 }
 
 .install-command-card {
@@ -515,6 +619,10 @@ export default {
   border-radius: 4px;
   overflow: hidden;
   background: #fff;
+}
+
+.install-command-card + .install-command-card {
+  margin-top: 8px;
 }
 
 .install-command-header {

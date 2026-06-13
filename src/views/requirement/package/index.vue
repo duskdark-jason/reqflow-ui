@@ -50,7 +50,18 @@
     <el-card shadow="never" class="package-card" v-loading="loading">
       <div slot="header" class="package-header">
         <span>{{ focusedMode ? "需求文档" : "Agent 交接资料" }}</span>
-        <span class="package-meta" v-if="packageVersionTotal">版本数：{{ packageVersionTotal }}</span>
+        <div class="package-header-actions">
+          <span class="package-meta" v-if="packageVersionTotal">版本数：{{ packageVersionTotal }}</span>
+          <el-button
+            v-if="focusedMode"
+            type="primary"
+            plain
+            icon="el-icon-refresh"
+            size="mini"
+            :loading="loading"
+            @click="handleRefresh"
+          >刷新</el-button>
+        </div>
       </div>
 
       <el-tabs v-model="activeArtifact">
@@ -207,7 +218,7 @@ export default {
       }
     },
     loadDemandInfo() {
-      getDemand(this.queryParams.demandId).then(response => {
+      return getDemand(this.queryParams.demandId).then(response => {
         this.demandInfo = response.data || {}
         this.setDefaultActiveArtifact()
       })
@@ -218,7 +229,7 @@ export default {
         return
       }
       this.loading = true
-      getDemandPackage(this.queryParams.demandId).then(response => {
+      return getDemandPackage(this.queryParams.demandId).then(response => {
         this.packageInfo = response.data || {}
         this.resetArtifacts()
         this.fillArtifacts(this.packageInfo)
@@ -226,6 +237,15 @@ export default {
         this.loading = false
       }).catch(() => {
         this.loading = false
+      })
+    },
+    handleRefresh() {
+      if (!this.queryParams.demandId || this.loading) return
+      Promise.all([
+        this.loadDemandInfo(),
+        this.handleLoadPackage()
+      ]).then(() => {
+        this.$modal.msgSuccess("刷新成功")
       })
     },
     handleLoadLatest(artifactType) {
@@ -324,7 +344,7 @@ export default {
       URL.revokeObjectURL(link.href)
     },
     setDefaultActiveArtifact() {
-      const target = defaultArtifactByStatus(this.demandInfo.status)
+      const target = defaultArtifactByStatus(this.demandInfo.status, this.artifacts)
       if (this.artifacts[target]) {
         this.activeArtifact = target
       }
@@ -386,6 +406,13 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.package-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .package-meta,

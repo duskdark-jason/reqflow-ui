@@ -18,13 +18,13 @@
 | 需求列表 | 需求新增、编辑、状态按钮、详情和指令复制 | `docs/ai-harness/modules/requirement-platform.md` | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue` |
 | 需求设计确认 | `plan_ready` 多轮补充调整、确认需求设计、回到待生成需求设计 | `docs/ai-harness/modules/requirement-platform.md` | `src/views/requirement/demand/detail.vue`、`status.js` |
 | Agent 交接资料 | 需求草稿、可行性评估、需求设计、执行计划、执行报告、Review 报告展示 | `docs/ai-harness/contracts/requirement-platform-ui.md` | `src/views/requirement/package/index.vue`、`src/views/requirement/demand/detail.vue` |
-| MCP 管理 | 人员 MCP Key、一次性明文 Key、安装命令复制 | `docs/ai-harness/modules/requirement-platform.md` | `src/views/requirement/mcpKey/index.vue`、`src/api/requirement/mcpKey.js` |
+| MCP 管理 | 人员 MCP Key、明文 Key 渲染安装命令、多客户端交互安装命令和 MCP 请求地址配置 | `docs/ai-harness/modules/requirement-platform.md` | `src/views/requirement/mcpKey/index.vue`、`src/api/requirement/mcpKey.js` |
 | 项目接入初始化 | 复制初始化指令、actionToken、初始化状态展示 | `docs/process/platform-key-workflow.md` | `src/api/requirement/projectInit.js`、项目维护页签 |
 | 本地 Harness 模式 | 未接入 MCP 或无 Key 时的本地需求、执行、Review、返修闭环 | `docs/process/local-harness-workflow.md` | `docs/specs/active/`、`scripts/check-harness.sh` |
 | MCP 接入模式 | 已接入需求平台后的需求设计、开发、回写和合并归档 | `docs/process/platform-key-workflow.md` | 后端 `McpService`、前端指令复制页面 |
 | search-map | 面向模型的关键词导航和拆分触发 | `docs/ai-harness/search-map.md` | `scripts/check-harness.sh` |
 | 检查脚本 | 文档占位符、harness 初始化、Review、完成态门禁 | `docs/process/agent-workflow.md` | `scripts/check-docs.sh`、`scripts/check-harness.sh` |
-| 权限与菜单 | RuoYi 菜单、按钮权限、首页快捷入口过滤 | `docs/ai-harness/modules/requirement-platform.md` | `src/router/index.js`、`src/store/modules/permission.js`、`src/views/index.vue` |
+| 权限与菜单 | RuoYi 菜单、按钮权限、首页快捷入口过滤 | `docs/ai-harness/modules/requirement-platform.md` | `src/router/index.js`、`src/store/modules/permission.js`、`src/views/index.vue`、`scripts/test-dashboard-quick-actions.js` |
 | 生产路径 | `/reqflow/` 静态访问、`/reqflow-api` API 前缀、开发 `/dev-api` 代理 | `docs/ai-harness/contracts/requirement-platform-ui.md` | `.env.production`、`.env.development`、`vue.config.js` |
 
 ## 维护触发

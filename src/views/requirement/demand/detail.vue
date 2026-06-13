@@ -9,6 +9,14 @@
           <div class="detail-subtitle">{{ form.demandNo || "-" }}</div>
         </div>
         <div class="detail-status-panel">
+          <el-button
+            size="mini"
+            type="primary"
+            plain
+            icon="el-icon-refresh"
+            :loading="refreshing"
+            @click="handleRefresh"
+          >刷新</el-button>
           <el-tag :type="demandStatusTagType(form.status)">{{ optionLabel(demandStatusOptions, form.status) }}</el-tag>
           <div v-if="visibleStatusActions(form).length" class="process-actions">
             <el-button
@@ -207,6 +215,27 @@
         <el-button type="primary" :loading="feedbackDialog.loading" @click="submitFeedbackConclusion">确认提交</el-button>
       </span>
     </el-dialog>
+
+    <el-dialog
+      title="提交返修问题说明"
+      :visible.sync="repairDialog.visible"
+      width="560px"
+      append-to-body
+    >
+      <el-input
+        v-model="repairDialog.content"
+        type="textarea"
+        :rows="6"
+        maxlength="4000"
+        show-word-limit
+        resize="vertical"
+        placeholder="请说明本次验收发现的问题、需要返修的位置和期望结果"
+      />
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="repairDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="repairDialog.loading" @click="submitRepairIssue">提交返修</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -215,7 +244,7 @@ import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
 import { listIndexModule } from "@/api/requirement/index"
-import { getDemand, getDemandDevelopInstruction, getDemandPlanInstruction, submitDemandSupplement, updateDemandStatus } from "@/api/requirement/demand"
+import { getDemand, getDemandCloseoutVerification, getDemandDevelopInstruction, getDemandPlanInstruction, submitDemandRepair, submitDemandSupplement, updateDemandStatus } from "@/api/requirement/demand"
 import { getDemandPackage } from "@/api/requirement/package"
 import { mapGetters } from "vuex"
 import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes, supplementVersionsForArtifact as getSupplementVersionsForArtifact } from "./artifacts"
@@ -224,6 +253,10 @@ import {
   canUseDeveloperInstruction as canUseDeveloperInstructionForRoles,
   canUseDevelopInstruction,
   canUsePlanInstruction,
+  canShowCloseoutInstruction,
+  canShowCloseoutSubmitAction,
+  canShowDevelopInstructionByArtifacts,
+  canShowDevelopSubmitAction,
   demandStatusOptions,
   demandStatusTagType,
   optionLabel,
@@ -237,6 +270,7 @@ export default {
     return {
       loading: false,
       artifactLoading: false,
+      refreshing: false,
       instructionLoadingType: "",
       supplementSubmitting: false,
       demandId: undefined,
@@ -246,6 +280,10 @@ export default {
       showDesignAdjustmentPanel: false,
       planInstruction: {},
       developInstruction: {},
+      closeoutVerification: {
+        verified: false,
+        message: ""
+      },
       projectOptions: [],
       variantOptions: [],
       moduleOptions: [],
@@ -256,6 +294,11 @@ export default {
         visible: false,
         action: null,
         selected: "",
+        loading: false
+      },
+      repairDialog: {
+        visible: false,
+        content: "",
         loading: false
       },
       demandTypeOptions: [
@@ -289,10 +332,13 @@ export default {
       return this.form.remark || "新增功能"
     },
     canCopyInstruction() {
-      return canUsePlanInstruction(this.roles, this.form, this.id, this.permissions)
+      return canUsePlanInstruction(this.roles, this.form, this.id, this.permissions) &&
+        !this.hasFeedbackArtifactForStatus(this.form.status)
     },
     canCopyDevelopInstruction() {
-      return canUseDevelopInstruction(this.roles, this.form, this.id, this.permissions)
+      return canUseDevelopInstruction(this.roles, this.form, this.id, this.permissions) &&
+        (String(this.form.status) !== "closeout_pending" || canShowCloseoutInstruction(this.closeoutVerification.verified)) &&
+        canShowDevelopInstructionByArtifacts(this.form.status, this.packageVersions)
     },
     instructionAction() {
       if (this.canCopyInstruction) {
@@ -372,7 +418,7 @@ export default {
   methods: {
     getDetail() {
       this.loading = true
-      getDemand(this.demandId).then(response => {
+      return getDemand(this.demandId).then(response => {
         this.form = response.data || {}
         if (!this.isDesignAdjustmentStage) {
           this.showDesignAdjustmentPanel = false
@@ -380,13 +426,14 @@ export default {
         }
         this.setDefaultActiveArtifact()
         this.loading = false
+        return this.loadCloseoutVerification()
       }).catch(() => {
         this.loading = false
       })
     },
     loadPackagePreview() {
       this.artifactLoading = true
-      getDemandPackage(this.demandId).then(response => {
+      return getDemandPackage(this.demandId).then(response => {
         this.packageVersions = this.normalizePackageVersions(response.data)
         this.artifactTypes.forEach(item => {
           this.setArtifact(item.value, this.latestArtifactVersion(item.value) || {})
@@ -398,6 +445,37 @@ export default {
         this.artifactTypes.forEach(item => this.setArtifact(item.value, {}))
         this.setDefaultActiveArtifact()
         this.artifactLoading = false
+      })
+    },
+    loadCloseoutVerification() {
+      if (String(this.form.status) !== "closeout_pending" || !this.demandId ||
+        !canUseDevelopInstruction(this.roles, this.form, this.id, this.permissions)) {
+        this.closeoutVerification = { verified: false, message: "" }
+        return Promise.resolve()
+      }
+      return getDemandCloseoutVerification(this.demandId).then(response => {
+        const data = response.data || {}
+        this.closeoutVerification = {
+          verified: !!data.verified,
+          message: data.message || ""
+        }
+      }).catch(() => {
+        this.closeoutVerification = {
+          verified: false,
+          message: "归档验证结果读取失败"
+        }
+      })
+    },
+    handleRefresh() {
+      if (!this.demandId || this.refreshing) return
+      this.refreshing = true
+      Promise.all([
+        this.getDetail(),
+        this.loadPackagePreview()
+      ]).then(() => {
+        this.$modal.msgSuccess("刷新成功")
+      }).finally(() => {
+        this.refreshing = false
       })
     },
     setArtifact(artifactType, data) {
@@ -455,6 +533,10 @@ export default {
         this.openFeedbackDialog(action)
         return
       }
+      if (this.isRepairAction(action)) {
+        this.openRepairDialog()
+        return
+      }
       this.$modal.confirm(action.confirm || "是否确认更新需求状态？").then(() => {
         return updateDemandStatus(this.demandId, action.value)
       }).then(() => {
@@ -467,6 +549,32 @@ export default {
       this.feedbackDialog.selected = action.feedbackOptions[0].value
       this.feedbackDialog.loading = false
       this.feedbackDialog.visible = true
+    },
+    isRepairAction(action) {
+      return action && action.value === "repairing" && String(this.form.status) === "review"
+    },
+    openRepairDialog() {
+      this.repairDialog.content = ""
+      this.repairDialog.loading = false
+      this.repairDialog.visible = true
+    },
+    submitRepairIssue() {
+      const content = String(this.repairDialog.content || "").trim()
+      if (!content) {
+        this.$modal.msgWarning("请输入返修问题说明")
+        return
+      }
+      this.repairDialog.loading = true
+      submitDemandRepair(this.demandId, { content }).then(() => {
+        this.repairDialog.visible = false
+        this.repairDialog.loading = false
+        this.repairDialog.content = ""
+        this.$modal.msgSuccess("返修问题已提交")
+        this.getDetail()
+        this.loadPackagePreview()
+      }).catch(() => {
+        this.repairDialog.loading = false
+      })
     },
     submitFeedbackConclusion() {
       const option = this.feedbackOptions.find(item => item.value === this.feedbackDialog.selected)
@@ -505,7 +613,7 @@ export default {
       })
     },
     setDefaultActiveArtifact() {
-      const target = defaultArtifactByStatus(this.form.status)
+      const target = defaultArtifactByStatus(this.form.status, this.artifacts)
       if (this.artifacts[target]) {
         this.activeArtifact = target
       }
@@ -614,10 +722,31 @@ export default {
     },
     visibleStatusActions(row) {
       const actions = this.statusActions(row)
+      const artifactAwareActions = actions.filter(action => {
+        if (action.value === "review" && !canShowDevelopSubmitAction(row && row.status, this.packageVersions)) {
+          return false
+        }
+        if (action.value === "completed" && !canShowCloseoutSubmitAction(row && row.status, this.closeoutVerification.verified)) {
+          return false
+        }
+        if (!action.feedbackOptions || !action.feedbackOptions.length) {
+          return true
+        }
+        return this.hasFeedbackArtifactForStatus(row && row.status)
+      })
       if (this.isDesignAdjustmentStage && this.showDesignAdjustmentPanel) {
-        return actions.filter(action => action.value !== "confirmed")
+        return artifactAwareActions.filter(action => action.value !== "confirmed")
       }
-      return actions
+      return artifactAwareActions
+    },
+    hasFeedbackArtifactForStatus(status) {
+      if (String(status) === "submitted") {
+        return !!this.latestArtifactVersion("requirement_assessment")
+      }
+      if (String(status) === "plan_pending") {
+        return !!this.latestArtifactVersion("requirement")
+      }
+      return false
     },
     canUseDeveloperInstruction() {
       return canUseDeveloperInstructionForRoles(this.roles, this.form, this.id, this.permissions)

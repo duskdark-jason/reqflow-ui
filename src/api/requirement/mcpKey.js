@@ -25,6 +25,23 @@ export function getMcpKeyInstruction(keyId) {
   })
 }
 
+// 查询MCP请求地址配置
+export function getMcpKeyConfig() {
+  return request({
+    url: '/requirement/mcp/key/config',
+    method: 'get'
+  })
+}
+
+// 修改MCP请求地址配置
+export function updateMcpKeyConfig(data) {
+  return request({
+    url: '/requirement/mcp/key/config',
+    method: 'put',
+    data: data
+  })
+}
+
 // 查询MCP Key可绑定用户
 export function listMcpKeyUserOptions(query) {
   return request({

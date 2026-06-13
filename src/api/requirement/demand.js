@@ -69,6 +69,15 @@ export function submitDemandSupplement(demandId, data) {
   })
 }
 
+// 提交需求返修问题说明
+export function submitDemandRepair(demandId, data) {
+  return request({
+    url: '/requirement/demand/' + demandId + '/repair',
+    method: 'post',
+    data: data
+  })
+}
+
 // 获取生成需求可行性评估和需求设计的 MCP 指令
 export function getDemandPlanInstruction(demandId) {
   return request({
@@ -81,6 +90,14 @@ export function getDemandPlanInstruction(demandId) {
 export function getDemandDevelopInstruction(demandId) {
   return request({
     url: '/requirement/demand/' + demandId + '/develop-instruction',
+    method: 'get'
+  })
+}
+
+// 查询合并归档平台验证结果
+export function getDemandCloseoutVerification(demandId) {
+  return request({
+    url: '/requirement/demand/' + demandId + '/closeout-verification',
     method: 'get'
   })
 }

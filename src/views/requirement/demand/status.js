@@ -96,6 +96,17 @@ export function statusActions(status, roles, permissions, row, currentUserId) {
   return filterActionsByParticipant(filterActionsByPermissions(filterActionsByRoles(actions, roles), permissions), row, currentUserId, roles, permissions)
 }
 
+export function listStatusActions(status, roles, permissions, row, currentUserId) {
+  const actions = statusActions(status, roles, permissions, row, currentUserId)
+  if (String(status) === "repairing") {
+    return actions.filter(action => action.value !== "review")
+  }
+  if (canUsePlanInstruction(roles, row, currentUserId, permissions)) {
+    return actions.filter(action => !action.feedbackOptions || !action.feedbackOptions.length)
+  }
+  return actions
+}
+
 export function nextStatusOptions(status, roles, permissions, row, currentUserId) {
   return statusActions(status, roles, permissions, row, currentUserId)
 }
@@ -115,12 +126,97 @@ export function canUseDeveloperInstruction(roles, row, currentUserId, permission
 
 export function canUsePlanInstruction(roles, row, currentUserId, permissions) {
   return canUseDeveloperInstruction(roles, row, currentUserId, permissions) &&
-    ["submitted", "plan_pending", "plan_ready"].includes(String(row && row.status))
+    ["submitted", "plan_pending"].includes(String(row && row.status))
+}
+
+export function canUseListPlanInstruction(roles, row, currentUserId, permissions) {
+  return canUsePlanInstruction(roles, row, currentUserId, permissions)
 }
 
 export function canUseDevelopInstruction(roles, row, currentUserId, permissions) {
   return canUseDeveloperInstruction(roles, row, currentUserId, permissions) &&
     ["developing", "repairing", "closeout_pending"].includes(String(row && row.status))
+}
+
+export function hasDevelopmentResultArtifacts(packageVersions) {
+  return hasPackageArtifact(packageVersions, "execution_report") &&
+    hasPackageArtifact(packageVersions, "review_report")
+}
+
+export function canShowDevelopInstructionByArtifacts(status, packageVersions) {
+  return !["developing", "repairing"].includes(String(status)) ||
+    !hasDevelopmentResultArtifactsForStatus(status, packageVersions)
+}
+
+export function canShowDevelopSubmitAction(status, packageVersions) {
+  return !["developing", "repairing"].includes(String(status)) ||
+    hasDevelopmentResultArtifactsForStatus(status, packageVersions)
+}
+
+export function canShowCloseoutInstruction(verified) {
+  return !verified
+}
+
+export function canShowCloseoutSubmitAction(status, verified) {
+  return String(status) !== "closeout_pending" || !!verified
+}
+
+export function hasFeedbackConclusionAction(row, roles, permissions, currentUserId) {
+  return statusActions(row && row.status, roles, permissions, row, currentUserId)
+    .some(action => action.feedbackOptions && action.feedbackOptions.length)
+}
+
+function hasPackageArtifact(packageVersions, artifactType) {
+  if (!Array.isArray(packageVersions)) {
+    return false
+  }
+  return packageVersions.some(item => item && item.artifactType === artifactType)
+}
+
+function hasDevelopmentResultArtifactsForStatus(status, packageVersions) {
+  if (String(status) !== "repairing") {
+    return hasDevelopmentResultArtifacts(packageVersions)
+  }
+  const repairRequest = latestPackageVersion(packageVersions, item =>
+    item.artifactType === "requirement_supplement" && String(item.versionNote || "").includes("返修"))
+  if (!repairRequest) {
+    return false
+  }
+  return hasPackageArtifactNotEarlier(packageVersions, "execution_report", repairRequest) &&
+    hasPackageArtifactNotEarlier(packageVersions, "review_report", repairRequest)
+}
+
+function hasPackageArtifactNotEarlier(packageVersions, artifactType, baseline) {
+  return !!latestPackageVersion(packageVersions, item => item.artifactType === artifactType && isPackageVersionNotEarlier(item, baseline))
+}
+
+function latestPackageVersion(packageVersions, predicate) {
+  if (!Array.isArray(packageVersions)) {
+    return null
+  }
+  return packageVersions
+    .filter(item => item && predicate(item))
+    .sort((a, b) => versionComparableValue(b) - versionComparableValue(a))[0] || null
+}
+
+function isPackageVersionNotEarlier(candidate, baseline) {
+  const candidateTime = Date.parse(candidate.createTime || candidate.updateTime || "")
+  const baselineTime = Date.parse(baseline.createTime || baseline.updateTime || "")
+  if (!Number.isNaN(candidateTime) && !Number.isNaN(baselineTime)) {
+    return candidateTime >= baselineTime
+  }
+  if (candidate.packageId !== undefined && candidate.packageId !== null && baseline.packageId !== undefined && baseline.packageId !== null) {
+    return Number(candidate.packageId) >= Number(baseline.packageId)
+  }
+  return false
+}
+
+function versionComparableValue(version) {
+  const time = Date.parse(version.createTime || version.updateTime || "")
+  if (!Number.isNaN(time)) {
+    return time
+  }
+  return Number(version.packageId || version.versionNo || 0)
 }
 
 function filterActionsByRoles(actions, roles) {
