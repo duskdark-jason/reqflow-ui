@@ -10,19 +10,20 @@
 6. 修复需求详情开发和返修阶段入口互斥：执行报告与 Review 报告未回写齐全前隐藏验收提交按钮，回写齐全后隐藏生成任务指令。覆盖 AC-011。
 7. 修复需求详情合并归档阶段入口互斥：归档验证未通过前隐藏确认归档完成，验证通过后隐藏生成合并归档指令。覆盖 AC-012。
 8. 修复提交返修流程：列表页和详情页点击提交返修时先弹窗要求填写问题说明，调用专用 `/repair` 接口，并将返修说明归入 Review 报告标签。覆盖 AC-013。
-9. 同步前端模块文档、UI 契约和搜索索引。覆盖 AC-005、AC-007、AC-008、AC-009、AC-010、AC-011、AC-012、AC-013。
-10. Harness 门禁修正：补充 `--spec` 只能指向 `docs/specs/active/` 的脚本约束、流程说明和测试。覆盖 AC-006。
-11. 运行静态检查、生产构建、harness 校验和 diff 检查。覆盖 AC-001、AC-002、AC-003、AC-004、AC-005、AC-006、AC-007、AC-008、AC-009、AC-010、AC-011、AC-012、AC-013。
+9. 修复返修验收入口顺序：列表页不直接展示返修验收，详情页只有本轮返修说明之后的新执行报告和 Review 报告齐全后才展示返修验收。覆盖 AC-014。
+10. 同步前端模块文档、UI 契约和搜索索引。覆盖 AC-005、AC-007、AC-008、AC-009、AC-010、AC-011、AC-012、AC-013、AC-014。
+11. Harness 门禁修正：补充 `--spec` 只能指向 `docs/specs/active/` 的脚本约束、流程说明和测试。覆盖 AC-006。
+12. 运行静态检查、生产构建、harness 校验和 diff 检查。覆盖 AC-001、AC-002、AC-003、AC-004、AC-005、AC-006、AC-007、AC-008、AC-009、AC-010、AC-011、AC-012、AC-013、AC-014。
 
 ## 分层验证
 
 | 层级 | 覆盖验收 | 命令或方式 |
 |---|---|---|
 | L2 | AC-001、AC-002、AC-003、AC-004、AC-005、AC-007、AC-008、AC-009 | `node scripts/test-mcp-install-dialog-unified.js` |
-| L2 | AC-010、AC-011、AC-012、AC-013 | `node scripts/test-demand-ui-helpers.js` |
+| L2 | AC-010、AC-011、AC-012、AC-013、AC-014 | `node scripts/test-demand-ui-helpers.js` |
 | L2 | AC-006 | `sh scripts/test-check-harness.sh` |
-| L1 | AC-001、AC-002、AC-003、AC-004、AC-010、AC-011、AC-012、AC-013 | `npm run build:prod` |
-| L0 | AC-005、AC-006、AC-007、AC-008、AC-009、AC-010、AC-011、AC-012、AC-013 | `sh scripts/check-docs.sh && sh scripts/check-harness.sh complete --spec docs/specs/active/REQ-022-MCP-Key明文持久与交互安装` |
+| L1 | AC-001、AC-002、AC-003、AC-004、AC-010、AC-011、AC-012、AC-013、AC-014 | `npm run build:prod` |
+| L0 | AC-005、AC-006、AC-007、AC-008、AC-009、AC-010、AC-011、AC-012、AC-013、AC-014 | `sh scripts/check-docs.sh && sh scripts/check-harness.sh complete --spec docs/specs/active/REQ-022-MCP-Key明文持久与交互安装` |
 
 ## 风险与处理
 

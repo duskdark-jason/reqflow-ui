@@ -124,6 +124,10 @@ assert.strictEqual(status.listStatusActions("plan_pending", developerRoles, flow
   status: "plan_pending",
   developerUserId: 8
 }, 8).map(action => action.value).join(","), "")
+assert.strictEqual(status.listStatusActions("repairing", developerRoles, flowPermissions, {
+  status: "repairing",
+  developerUserId: 8
+}, 8).map(action => action.value).join(","), "")
 assert.strictEqual(status.canUseDevelopInstruction(developerRoles, assignedDemand, 8, flowPermissions), false)
 assert.strictEqual(status.canUseDevelopInstruction(developerRoles, {
   status: "developing",
@@ -155,6 +159,21 @@ assert.strictEqual(status.canShowDevelopInstructionByArtifacts("developing", [
 assert.strictEqual(status.canShowDevelopSubmitAction("developing", [
   { artifactType: "execution_report", versionNo: 1 },
   { artifactType: "review_report", versionNo: 1 }
+]), true)
+assert.strictEqual(status.canShowDevelopSubmitAction("repairing", [
+  { artifactType: "execution_report", packageId: 10, createTime: "2026-06-13 10:00:00" },
+  { artifactType: "review_report", packageId: 11, createTime: "2026-06-13 10:10:00" },
+  { artifactType: "requirement_supplement", versionNote: "需求人返修问题说明", packageId: 12, createTime: "2026-06-13 10:20:00" }
+]), false)
+assert.strictEqual(status.canShowDevelopInstructionByArtifacts("repairing", [
+  { artifactType: "execution_report", packageId: 10, createTime: "2026-06-13 10:00:00" },
+  { artifactType: "review_report", packageId: 11, createTime: "2026-06-13 10:10:00" },
+  { artifactType: "requirement_supplement", versionNote: "需求人返修问题说明", packageId: 12, createTime: "2026-06-13 10:20:00" }
+]), true)
+assert.strictEqual(status.canShowDevelopSubmitAction("repairing", [
+  { artifactType: "requirement_supplement", versionNote: "需求人返修问题说明", packageId: 12, createTime: "2026-06-13 10:20:00" },
+  { artifactType: "execution_report", packageId: 13, createTime: "2026-06-13 10:30:00" },
+  { artifactType: "review_report", packageId: 14, createTime: "2026-06-13 10:40:00" }
 ]), true)
 assert.strictEqual(status.canShowDevelopSubmitAction("closeout_pending", []), true)
 assert.strictEqual(status.canShowCloseoutInstruction(false), true)

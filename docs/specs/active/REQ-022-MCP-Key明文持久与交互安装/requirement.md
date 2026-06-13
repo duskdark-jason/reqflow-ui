@@ -51,6 +51,7 @@ MCP 管理页已展示统一安装指令。用户补充要求：
 - AC-011：需求详情页 `developing` 未同时回写 `execution_report` 和 `review_report` 时，只展示“生成执行任务指令”，不展示“提交验收”；两类产物都回写后隐藏生成执行任务指令并展示“提交验收”。`repairing` 的返修任务指令和提交返修验收遵循同样规则。
 - AC-012：需求详情页 `closeout_pending` 读取 `/requirement/demand/{demandId}/closeout-verification`，未返回 `verified=true` 时只展示“生成合并归档指令”，不展示“确认归档完成”；验证通过后隐藏合并归档指令并展示“确认归档完成”。
 - AC-013：需求列表页和详情页点击待验收状态的“提交返修”时，必须先弹窗要求填写返修问题说明，非空提交后调用 `/requirement/demand/{demandId}/repair`；资料包中的“需求人返修问题说明”折叠展示在 Review 报告标签内。
+- AC-014：需求列表页 `repairing` 行不得直接展示“提交返修验收”；详情页 `repairing` 必须先展示“生成返修任务指令”，只有最新“需求人返修问题说明”之后回写了新的 `execution_report` 和 `review_report`，才展示“提交返修验收”。
 
 ## 影响范围
 
