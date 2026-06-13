@@ -90,6 +90,34 @@ assert.strictEqual(status.canUsePlanInstruction(developerRoles, {
   status: "plan_pending",
   developerUserId: 8
 }, 8, flowPermissions), true)
+assert.strictEqual(status.hasFeedbackConclusionAction({
+  status: "submitted",
+  developerUserId: 8
+}, developerRoles, flowPermissions, 8), true)
+assert.strictEqual(status.hasFeedbackConclusionAction({
+  status: "plan_pending",
+  developerUserId: 8
+}, developerRoles, flowPermissions, 8), true)
+assert.strictEqual(status.canUseListPlanInstruction(developerRoles, {
+  status: "submitted",
+  developerUserId: 8
+}, 8, flowPermissions), true)
+assert.strictEqual(status.canUseListPlanInstruction(developerRoles, {
+  status: "plan_pending",
+  developerUserId: 8
+}, 8, flowPermissions), true)
+assert.strictEqual(status.canUseListPlanInstruction(developerRoles, {
+  status: "plan_ready",
+  developerUserId: 8
+}, 8, flowPermissions), true)
+assert.strictEqual(status.listStatusActions("submitted", developerRoles, flowPermissions, {
+  status: "submitted",
+  developerUserId: 8
+}, 8).map(action => action.value).join(","), "")
+assert.strictEqual(status.listStatusActions("plan_pending", developerRoles, flowPermissions, {
+  status: "plan_pending",
+  developerUserId: 8
+}, 8).map(action => action.value).join(","), "")
 assert.strictEqual(status.canUseDevelopInstruction(developerRoles, assignedDemand, 8, flowPermissions), false)
 assert.strictEqual(status.canUseDevelopInstruction(developerRoles, {
   status: "developing",

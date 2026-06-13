@@ -289,7 +289,8 @@ export default {
       return this.form.remark || "新增功能"
     },
     canCopyInstruction() {
-      return canUsePlanInstruction(this.roles, this.form, this.id, this.permissions)
+      return canUsePlanInstruction(this.roles, this.form, this.id, this.permissions) &&
+        !this.hasFeedbackArtifactForStatus(this.form.status)
     },
     canCopyDevelopInstruction() {
       return canUseDevelopInstruction(this.roles, this.form, this.id, this.permissions)
@@ -614,10 +615,25 @@ export default {
     },
     visibleStatusActions(row) {
       const actions = this.statusActions(row)
+      const artifactAwareActions = actions.filter(action => {
+        if (!action.feedbackOptions || !action.feedbackOptions.length) {
+          return true
+        }
+        return this.hasFeedbackArtifactForStatus(row && row.status)
+      })
       if (this.isDesignAdjustmentStage && this.showDesignAdjustmentPanel) {
-        return actions.filter(action => action.value !== "confirmed")
+        return artifactAwareActions.filter(action => action.value !== "confirmed")
       }
-      return actions
+      return artifactAwareActions
+    },
+    hasFeedbackArtifactForStatus(status) {
+      if (String(status) === "submitted") {
+        return !!this.latestArtifactVersion("requirement_assessment")
+      }
+      if (String(status) === "plan_pending") {
+        return !!this.latestArtifactVersion("requirement")
+      }
+      return false
     },
     canUseDeveloperInstruction() {
       return canUseDeveloperInstructionForRoles(this.roles, this.form, this.id, this.permissions)

@@ -225,6 +225,7 @@ import {
   canEditDemand as canEditDemandRow,
   demandStatusOptions,
   demandStatusTagType,
+  listStatusActions as getListStatusActions,
   nextStatusOptions,
   optionLabel,
   primaryStatusAction as getPrimaryStatusAction,
@@ -470,7 +471,7 @@ export default {
       return getPrimaryStatusAction(status, this.roles, this.permissions, null, this.id)
     },
     statusActions(row) {
-      return getStatusActions(row.status, this.roles, this.permissions, row, this.id)
+      return getListStatusActions(row.status, this.roles, this.permissions, row, this.id)
     },
     canEditDemand(row) {
       return canEditDemandRow(row, this.id, this.roles, this.permissions)

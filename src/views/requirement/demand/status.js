@@ -96,6 +96,14 @@ export function statusActions(status, roles, permissions, row, currentUserId) {
   return filterActionsByParticipant(filterActionsByPermissions(filterActionsByRoles(actions, roles), permissions), row, currentUserId, roles, permissions)
 }
 
+export function listStatusActions(status, roles, permissions, row, currentUserId) {
+  const actions = statusActions(status, roles, permissions, row, currentUserId)
+  if (canUsePlanInstruction(roles, row, currentUserId, permissions)) {
+    return actions.filter(action => !action.feedbackOptions || !action.feedbackOptions.length)
+  }
+  return actions
+}
+
 export function nextStatusOptions(status, roles, permissions, row, currentUserId) {
   return statusActions(status, roles, permissions, row, currentUserId)
 }
@@ -118,9 +126,18 @@ export function canUsePlanInstruction(roles, row, currentUserId, permissions) {
     ["submitted", "plan_pending", "plan_ready"].includes(String(row && row.status))
 }
 
+export function canUseListPlanInstruction(roles, row, currentUserId, permissions) {
+  return canUsePlanInstruction(roles, row, currentUserId, permissions)
+}
+
 export function canUseDevelopInstruction(roles, row, currentUserId, permissions) {
   return canUseDeveloperInstruction(roles, row, currentUserId, permissions) &&
     ["developing", "repairing", "closeout_pending"].includes(String(row && row.status))
+}
+
+export function hasFeedbackConclusionAction(row, roles, permissions, currentUserId) {
+  return statusActions(row && row.status, roles, permissions, row, currentUserId)
+    .some(action => action.feedbackOptions && action.feedbackOptions.length)
 }
 
 function filterActionsByRoles(actions, roles) {
