@@ -14,9 +14,9 @@
 - Review 授权：已授权
 - 目标客户：通用
 - 基线分支：当前任务分支
-- companion 仓库：../reqflow-be/docs/specs/done/REQ-022-MCP-Key明文持久与交互安装
+- companion 仓库：../reqflow-be/docs/specs/active/REQ-022-MCP-Key明文持久与交互安装
 - 关联 spec：REQ-020-MCP多客户端安装支持
-- 影响模块：MCP 管理页、多客户端安装指令、本地 Harness 门禁
+- 影响模块：MCP 管理页、MCP 请求地址配置、多客户端安装指令、本地 Harness 门禁
 - 模块知识库动作：更新
 - 模块知识库文档：docs/ai-harness/modules/requirement-platform.md
 - 无需更新原因：不适用
@@ -24,4 +24,4 @@
 
 ## 状态说明
 
-本需求配合后端把 MCP Key 明文调整为后端持久返回但页面不单独展示，并把统一安装命令调整为执行后选择安装工具。已完成页面、静态检查和文档同步。
+本需求配合后端把 MCP Key 明文调整为后端持久返回但页面不单独展示，并把统一安装命令调整为执行后选择安装工具。后续补充已确保下次打开使用指令仍渲染真实明文 Key，并把 MCP 请求地址配置加入 MCP 管理页且仅管理员可配置。已完成页面、静态检查和文档同步。

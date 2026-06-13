@@ -1,5 +1,36 @@
 <template>
   <div class="app-container mcp-key-page">
+    <el-form
+      v-if="isAdminUser"
+      ref="mcpConfigForm"
+      :model="mcpConfig"
+      size="small"
+      :inline="true"
+      class="mcp-config-form"
+      label-width="100px"
+      v-loading="configLoading"
+    >
+      <el-form-item label="MCP请求地址">
+        <el-input
+          v-model.trim="mcpConfig.publicHost"
+          placeholder="域名/IP:端口，例如 mcp.example.com:8443"
+          clearable
+          class="mcp-config-host"
+        />
+      </el-form-item>
+      <el-form-item label="完整地址">
+        <el-input
+          :value="mcpConfig.mcpAddress || '-'"
+          readonly
+          class="mcp-config-address"
+        />
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" icon="el-icon-check" size="mini" :loading="configSaving" @click="saveMcpConfig">保存</el-button>
+        <el-button icon="el-icon-refresh" size="mini" @click="getMcpConfig">刷新</el-button>
+      </el-form-item>
+    </el-form>
+
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
       <el-form-item label="Key名称" prop="keyName">
         <el-input
@@ -202,7 +233,15 @@
 
 <script>
 import { mapGetters } from "vuex"
-import { listMcpKey, getMcpKeyInstruction, listMcpKeyUserOptions, addMcpKey, delMcpKey } from "@/api/requirement/mcpKey"
+import {
+  listMcpKey,
+  getMcpKeyInstruction,
+  getMcpKeyConfig,
+  updateMcpKeyConfig,
+  listMcpKeyUserOptions,
+  addMcpKey,
+  delMcpKey
+} from "@/api/requirement/mcpKey"
 
 export default {
   name: "RequirementMcpKey",
@@ -210,6 +249,8 @@ export default {
     return {
       loading: true,
       userLoading: false,
+      configLoading: false,
+      configSaving: false,
       ids: [],
       multiple: true,
       showSearch: true,
@@ -226,6 +267,11 @@ export default {
       },
       lastInstallResult: null,
       installResultByKeyId: {},
+      mcpConfig: {
+        configKey: "reqflow.mcp.public-host",
+        publicHost: "",
+        mcpAddress: ""
+      },
       statusOptions: [
         { value: "0", label: "正常", type: "success" },
         { value: "1", label: "停用", type: "info" }
@@ -251,6 +297,7 @@ export default {
   created() {
     this.getList()
     if (this.isAdminUser) {
+      this.getMcpConfig()
       this.searchUsers("")
     } else {
       this.setCurrentUserOption()
@@ -276,6 +323,48 @@ export default {
     }
   },
   methods: {
+    getMcpConfig() {
+      if (!this.isAdminUser) return
+      this.configLoading = true
+      getMcpKeyConfig().then(response => {
+        this.mcpConfig = Object.assign({
+          configKey: "reqflow.mcp.public-host",
+          publicHost: "",
+          mcpAddress: ""
+        }, response.data || {})
+        this.configLoading = false
+      }).catch(() => {
+        this.configLoading = false
+      })
+    },
+    saveMcpConfig() {
+      if (!this.isAdminUser) return
+      const publicHost = (this.mcpConfig.publicHost || "").trim()
+      if (!publicHost) {
+        this.$modal.msgWarning("请输入MCP请求地址")
+        return
+      }
+      if (/^https?:\/\//i.test(publicHost) || /[\\/?#\s]/.test(publicHost)) {
+        this.$modal.msgWarning("只填写域名/IP和端口，不要填写协议或路径")
+        return
+      }
+      this.configSaving = true
+      updateMcpKeyConfig({ publicHost }).then(response => {
+        this.$modal.msgSuccess("保存成功")
+        if (response.data) {
+          this.mcpConfig = Object.assign({
+            configKey: "reqflow.mcp.public-host",
+            publicHost: "",
+            mcpAddress: ""
+          }, response.data)
+        } else {
+          this.getMcpConfig()
+        }
+        this.configSaving = false
+      }).catch(() => {
+        this.configSaving = false
+      })
+    },
     getList() {
       this.loading = true
       listMcpKey(this.queryParams).then(response => {
@@ -376,7 +465,11 @@ export default {
     },
     showInstructionResult(data, rememberPlainKey) {
       this.createResult = Object.assign({ key: null, plainKey: "", codexSetupPackage: null }, data || {})
-      if (this.createResult.plainKey) {
+      const plainKey = this.plainKeyForResult(this.createResult)
+      if (plainKey && !this.createResult.plainKey) {
+        this.$set(this.createResult, "plainKey", plainKey)
+      }
+      if (plainKey) {
         const snapshot = JSON.parse(JSON.stringify(this.createResult))
         if (rememberPlainKey) {
           this.lastInstallResult = snapshot
@@ -396,7 +489,11 @@ export default {
     installCommandsFor(result) {
       const setupPackage = result && result.codexSetupPackage
       const commands = setupPackage && Array.isArray(setupPackage.installCommands) ? setupPackage.installCommands : []
-      return this.renderCommandList(commands, result && result.plainKey)
+      return this.renderCommandList(commands, this.plainKeyForResult(result))
+    },
+    plainKeyForResult(result) {
+      if (!result) return ""
+      return result.plainKey || (result.key && result.key.plainKey) || ""
     },
     renderCommandList(commands, plainKey) {
       const sourceCommands = Array.isArray(commands) ? commands : []
@@ -411,11 +508,12 @@ export default {
     },
     renderInstallCommand(command, plainKey) {
       if (!command) return ""
-      return command.replace(/\$\{REQFLOW_MCP_KEY\}/g, plainKey || "明文Key缺失")
+      if (!plainKey) return command
+      return command.replace(/\$\{REQFLOW_MCP_KEY\}/g, plainKey)
     },
     copyInstallCommand(command) {
       if (!command) return
-      if (command.requiresPlainKey && !this.createResult.plainKey) {
+      if (command.requiresPlainKey && !this.plainKeyForResult(this.createResult)) {
         this.$modal.msgWarning("当前Key暂无明文，请重新生成Key")
         return
       }
@@ -479,6 +577,20 @@ export default {
 <style scoped>
 .mcp-key-page {
   min-width: 0;
+}
+
+.mcp-config-form {
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.mcp-config-host {
+  width: 260px;
+}
+
+.mcp-config-address {
+  width: 360px;
 }
 
 .result-field {
