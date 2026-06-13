@@ -135,9 +135,31 @@ export function canUseDevelopInstruction(roles, row, currentUserId, permissions)
     ["developing", "repairing", "closeout_pending"].includes(String(row && row.status))
 }
 
+export function hasDevelopmentResultArtifacts(packageVersions) {
+  return hasPackageArtifact(packageVersions, "execution_report") &&
+    hasPackageArtifact(packageVersions, "review_report")
+}
+
+export function canShowDevelopInstructionByArtifacts(status, packageVersions) {
+  return !["developing", "repairing"].includes(String(status)) ||
+    !hasDevelopmentResultArtifacts(packageVersions)
+}
+
+export function canShowDevelopSubmitAction(status, packageVersions) {
+  return !["developing", "repairing"].includes(String(status)) ||
+    hasDevelopmentResultArtifacts(packageVersions)
+}
+
 export function hasFeedbackConclusionAction(row, roles, permissions, currentUserId) {
   return statusActions(row && row.status, roles, permissions, row, currentUserId)
     .some(action => action.feedbackOptions && action.feedbackOptions.length)
+}
+
+function hasPackageArtifact(packageVersions, artifactType) {
+  if (!Array.isArray(packageVersions)) {
+    return false
+  }
+  return packageVersions.some(item => item && item.artifactType === artifactType)
 }
 
 function filterActionsByRoles(actions, roles) {

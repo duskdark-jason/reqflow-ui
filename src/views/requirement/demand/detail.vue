@@ -232,6 +232,8 @@ import {
   canUseDeveloperInstruction as canUseDeveloperInstructionForRoles,
   canUseDevelopInstruction,
   canUsePlanInstruction,
+  canShowDevelopInstructionByArtifacts,
+  canShowDevelopSubmitAction,
   demandStatusOptions,
   demandStatusTagType,
   optionLabel,
@@ -302,7 +304,8 @@ export default {
         !this.hasFeedbackArtifactForStatus(this.form.status)
     },
     canCopyDevelopInstruction() {
-      return canUseDevelopInstruction(this.roles, this.form, this.id, this.permissions)
+      return canUseDevelopInstruction(this.roles, this.form, this.id, this.permissions) &&
+        canShowDevelopInstructionByArtifacts(this.form.status, this.packageVersions)
     },
     instructionAction() {
       if (this.canCopyInstruction) {
@@ -637,6 +640,9 @@ export default {
     visibleStatusActions(row) {
       const actions = this.statusActions(row)
       const artifactAwareActions = actions.filter(action => {
+        if (action.value === "review" && !canShowDevelopSubmitAction(row && row.status, this.packageVersions)) {
+          return false
+        }
         if (!action.feedbackOptions || !action.feedbackOptions.length) {
           return true
         }

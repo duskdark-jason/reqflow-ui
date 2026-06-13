@@ -109,7 +109,7 @@ assert.strictEqual(status.canUseListPlanInstruction(developerRoles, {
 assert.strictEqual(status.canUseListPlanInstruction(developerRoles, {
   status: "plan_ready",
   developerUserId: 8
-}, 8, flowPermissions), true)
+}, 8, flowPermissions), false)
 assert.strictEqual(status.listStatusActions("submitted", developerRoles, flowPermissions, {
   status: "submitted",
   developerUserId: 8
@@ -131,6 +131,26 @@ assert.strictEqual(status.canUseDevelopInstruction(developerRoles, {
   status: "closeout_pending",
   developerUserId: 8
 }, 8, flowPermissions), true)
+assert.strictEqual(status.hasDevelopmentResultArtifacts([]), false)
+assert.strictEqual(status.hasDevelopmentResultArtifacts([
+  { artifactType: "plan", versionNo: 1 },
+  { artifactType: "execution_report", versionNo: 1 }
+]), false)
+assert.strictEqual(status.hasDevelopmentResultArtifacts([
+  { artifactType: "execution_report", versionNo: 1 },
+  { artifactType: "review_report", versionNo: 1 }
+]), true)
+assert.strictEqual(status.canShowDevelopInstructionByArtifacts("developing", []), true)
+assert.strictEqual(status.canShowDevelopSubmitAction("developing", []), false)
+assert.strictEqual(status.canShowDevelopInstructionByArtifacts("developing", [
+  { artifactType: "execution_report", versionNo: 1 },
+  { artifactType: "review_report", versionNo: 1 }
+]), false)
+assert.strictEqual(status.canShowDevelopSubmitAction("developing", [
+  { artifactType: "execution_report", versionNo: 1 },
+  { artifactType: "review_report", versionNo: 1 }
+]), true)
+assert.strictEqual(status.canShowDevelopSubmitAction("closeout_pending", []), true)
 assert.strictEqual(status.statusActions("confirmed", developerRoles, flowPermissions, assignedDemand, 8)[0].value, "developing")
 assert.strictEqual(status.statusActions("review", ["requirement_user"], flowPermissions, {
   status: "review",
