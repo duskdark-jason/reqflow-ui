@@ -123,7 +123,7 @@ export function canUseDeveloperInstruction(roles, row, currentUserId, permission
 
 export function canUsePlanInstruction(roles, row, currentUserId, permissions) {
   return canUseDeveloperInstruction(roles, row, currentUserId, permissions) &&
-    ["submitted", "plan_pending", "plan_ready"].includes(String(row && row.status))
+    ["submitted", "plan_pending"].includes(String(row && row.status))
 }
 
 export function canUseListPlanInstruction(roles, row, currentUserId, permissions) {

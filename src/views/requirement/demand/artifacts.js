@@ -16,16 +16,22 @@ export function createEmptyArtifacts() {
   }, {})
 }
 
-export function defaultArtifactByStatus(status) {
+function hasArtifactContent(artifacts, artifactType) {
+  const artifact = artifacts && artifacts[artifactType]
+  return !!(artifact && (artifact.content || artifact.version || artifact.updateTime))
+}
+
+export function defaultArtifactByStatus(status, artifacts) {
   switch (String(status || "")) {
     case "draft":
-    case "submitted":
       return "requirement_draft"
+    case "submitted":
+      return hasArtifactContent(artifacts, "requirement_assessment") ? "requirement_assessment" : "requirement_draft"
     case "supplement_required":
       return "requirement_assessment"
     case "plan_pending":
     case "rejected":
-      return "requirement_assessment"
+      return hasArtifactContent(artifacts, "requirement") ? "requirement" : "requirement_assessment"
     case "plan_ready":
     case "confirmed":
       return "requirement"

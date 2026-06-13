@@ -9,6 +9,14 @@
           <div class="detail-subtitle">{{ form.demandNo || "-" }}</div>
         </div>
         <div class="detail-status-panel">
+          <el-button
+            size="mini"
+            type="primary"
+            plain
+            icon="el-icon-refresh"
+            :loading="refreshing"
+            @click="handleRefresh"
+          >刷新</el-button>
           <el-tag :type="demandStatusTagType(form.status)">{{ optionLabel(demandStatusOptions, form.status) }}</el-tag>
           <div v-if="visibleStatusActions(form).length" class="process-actions">
             <el-button
@@ -237,6 +245,7 @@ export default {
     return {
       loading: false,
       artifactLoading: false,
+      refreshing: false,
       instructionLoadingType: "",
       supplementSubmitting: false,
       demandId: undefined,
@@ -373,7 +382,7 @@ export default {
   methods: {
     getDetail() {
       this.loading = true
-      getDemand(this.demandId).then(response => {
+      return getDemand(this.demandId).then(response => {
         this.form = response.data || {}
         if (!this.isDesignAdjustmentStage) {
           this.showDesignAdjustmentPanel = false
@@ -387,7 +396,7 @@ export default {
     },
     loadPackagePreview() {
       this.artifactLoading = true
-      getDemandPackage(this.demandId).then(response => {
+      return getDemandPackage(this.demandId).then(response => {
         this.packageVersions = this.normalizePackageVersions(response.data)
         this.artifactTypes.forEach(item => {
           this.setArtifact(item.value, this.latestArtifactVersion(item.value) || {})
@@ -399,6 +408,18 @@ export default {
         this.artifactTypes.forEach(item => this.setArtifact(item.value, {}))
         this.setDefaultActiveArtifact()
         this.artifactLoading = false
+      })
+    },
+    handleRefresh() {
+      if (!this.demandId || this.refreshing) return
+      this.refreshing = true
+      Promise.all([
+        this.getDetail(),
+        this.loadPackagePreview()
+      ]).then(() => {
+        this.$modal.msgSuccess("刷新成功")
+      }).finally(() => {
+        this.refreshing = false
       })
     },
     setArtifact(artifactType, data) {
@@ -506,7 +527,7 @@ export default {
       })
     },
     setDefaultActiveArtifact() {
-      const target = defaultArtifactByStatus(this.form.status)
+      const target = defaultArtifactByStatus(this.form.status, this.artifacts)
       if (this.artifacts[target]) {
         this.activeArtifact = target
       }
