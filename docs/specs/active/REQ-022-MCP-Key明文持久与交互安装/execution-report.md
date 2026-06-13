@@ -13,8 +13,8 @@
 | 路径 | 修改说明 |
 |---|---|
 | `src/api/requirement/mcpKey.js` | 新增管理员 MCP 请求地址配置读写接口封装。 |
-| `src/views/requirement/mcpKey/index.vue` | 移除明文 Key 和 Key 前缀可见字段，兼容顶层 `plainKey` 和 `key.plainKey` 渲染统一安装命令；新增管理员 MCP 请求地址配置弹窗。 |
-| `scripts/test-mcp-install-dialog-unified.js` | 增加不展示明文 Key、Key 前缀字段、复开命令带真实明文 Key 和管理员配置弹窗的静态检查。 |
+| `src/views/requirement/mcpKey/index.vue` | 移除明文 Key、Key 前缀和“重新打开安装命令”按钮，兼容顶层 `plainKey` 和 `key.plainKey` 渲染统一安装命令；新增管理员 MCP 请求地址配置弹窗。 |
+| `scripts/test-mcp-install-dialog-unified.js` | 增加不展示明文 Key、Key 前缀字段、复开命令带真实明文 Key、管理员配置弹窗和不保留重新打开按钮的静态检查。 |
 | `docs/ai-harness/modules/requirement-platform.md` | 同步 MCP 管理页面展示约束、交互式统一安装命令和管理员请求地址配置弹窗。 |
 | `docs/ai-harness/contracts/requirement-platform-ui.md` | 同步列表字段、命令渲染、管理员配置弹窗和高级 JSON 边界。 |
 | `docs/ai-harness/search-map.md` | 更新 MCP 管理关键词说明，包含 MCP 请求地址配置。 |
@@ -44,10 +44,10 @@
 
 | 层级 | 验收 ID | 命令或方式 | 结果 |
 |---|---|---|---|
-| L2 | AC-001、AC-002、AC-003、AC-004、AC-005、AC-007、AC-008 | `node scripts/test-mcp-install-dialog-unified.js` | 通过 |
+| L2 | AC-001、AC-002、AC-003、AC-004、AC-005、AC-007、AC-008、AC-009 | `node scripts/test-mcp-install-dialog-unified.js` | 通过 |
 | L2 | AC-006 | `sh scripts/test-check-harness.sh` | 通过 |
 | L1 | AC-001、AC-002、AC-003、AC-004 | `npm run build:prod` | 通过，存在历史体积告警 |
-| L0 | AC-005、AC-006、AC-007、AC-008 | `sh scripts/check-docs.sh && sh scripts/check-harness.sh complete --spec docs/specs/active/REQ-022-MCP-Key明文持久与交互安装` | 通过 |
+| L0 | AC-005、AC-006、AC-007、AC-008、AC-009 | `sh scripts/check-docs.sh && sh scripts/check-harness.sh complete --spec docs/specs/active/REQ-022-MCP-Key明文持久与交互安装` | 通过 |
 
 ## 运行态证据
 
@@ -63,6 +63,7 @@
 
 - 用户指出执行中不应写 `docs/specs/done/`，已将当前 spec 移回 `active/`，并收紧 `check-harness.sh --spec` 目标路径。
 - 用户补充“下次打开使用指令仍带真实明文 Key”和“MCP 请求地址配置加到 MCP 管理页且仅管理员可配置”，已补页面逻辑、API 封装、静态检查和 harness 文档；后续补充“请求地址改为弹窗配置”，已从顶部表单调整为按钮入口加弹窗。
+- 用户补充“页面上不需要重新打开命令的按钮”，已移除工具栏按钮、相关状态和方法，保留行内“使用指令”入口。
 
 ## Review 返修记录
 

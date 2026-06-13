@@ -140,7 +140,7 @@ review_report
 - 新增时必须选择启用用户并填写 Key 名称；后端返回的顶层 `plainKey` 或 `key.plainKey` 只用于渲染统一安装命令，前端下次打开使用指令时也必须替换出真实明文 Key。前端不得单独展示明文 Key 字段，不得写入列表、查询参数或本地持久化。
 - 普通用户新增 Key 时绑定当前登录用户且不可修改绑定用户，管理员才展示远程用户选择并可指定绑定用户。
 - 后端返回的 `codexSetupPackage.installCommands` 是推荐展示的统一安装指令，只在创建结果或使用指令弹窗中以代码块样式展示。页面只展示一组统一安装命令，不得按 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode 分组展示普通安装内容。复制包含 `${REQFLOW_MCP_KEY}` 的安装脚本时，用当前响应中的明文 Key 替换占位符，但不单独展示明文 Key 字段。统一命令执行后由脚本提示用户选择 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode 或全部工具；高级 JSON 中可保留带 `--client`/`-Client` 的单客户端命令供自动化和排障使用。完整 `codexSetupPackage` 仅作为高级配置/调试信息折叠展示，其中 `clientInstructions` 只供手工配置或排障参考。
-- 页面不提供修改和重置 Key 操作；列表操作列只保留“使用指令”和删除。
+- 页面不提供修改、重置 Key 或“重新打开安装命令”工具栏入口；列表操作列只保留“使用指令”和删除，需要再次查看命令时从对应 Key 行点击“使用指令”。
 - 提需求人员角色默认不分配 `req:mcp:key:*` 权限，因此看不到菜单，也不能调用页面 API。
 
 ## 数据粒度

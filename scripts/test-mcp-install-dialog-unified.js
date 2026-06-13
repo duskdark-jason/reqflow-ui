@@ -46,6 +46,11 @@ assert(
   "MCP Key 页面不应再把历史 Key 当作需要用户手工粘贴明文的场景。"
 )
 assert(
+  !component.includes("重新打开安装命令") && !component.includes("reopenInstallCommands") &&
+    !component.includes("lastInstallResult"),
+  "MCP Key 页面不应展示或保留重新打开安装命令按钮。"
+)
+assert(
   component.includes("plainKeyForResult(result)"),
   "MCP Key 使用指令应统一从响应中解析明文 Key，支持下次打开时渲染真实安装命令。"
 )

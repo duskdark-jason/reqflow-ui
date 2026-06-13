@@ -56,7 +56,7 @@
 - Harness 初始化模板由需求平台存储和下发给 Codex；前端不直接写文件，后端不直接执行 Git 或文件系统写入。执行初始化的本地 agent 必须先拉取默认基线最新代码，初始化校验通过后提交并推送 harness 文件，再登记初始化结果。
 - 前端 harness 必须和后端模板保持一致：包含 `docs/ai-harness/search-map.md`、`docs/process/local-harness-workflow.md`，并在 `harness-index.json` 登记 `searchMap` 和 `localHarnessWorkflow` 入口。
 - 本地 Harness 模式和 MCP 接入模式必须共享需求设计确认点：`planning` 阶段只允许迭代 `meta.md` 和 `requirement.md`；`plan.md`、`execution-report.md`、`review-report.md` 必须等明确执行授权后由 Execution Agent/Review Agent 按阶段生成。
-- MCP 管理页面管理绑定到人员的访问 Key，并在管理员角色下展示“配置请求地址”入口。普通用户新增 Key 默认绑定自己且不可修改绑定用户，管理员才可指定用户；页面不得提供修改或重置 Key 操作。管理员点击入口后弹窗调用 `/requirement/mcp/key/config` 读取和保存 `publicHost`，只允许填写域名/IP和端口，不填写协议或路径；普通开发人员不展示该入口。页面不得常驻展示 `X-MCP-Key` 请求头、客户端配置、全局 Skill 包或安装包；创建和使用指令弹窗只展示统一安装命令和高级配置，列表不得展示明文 Key、Key 前缀或哈希。
+- MCP 管理页面管理绑定到人员的访问 Key，并在管理员角色下展示“配置请求地址”入口。普通用户新增 Key 默认绑定自己且不可修改绑定用户，管理员才可指定用户；页面不得提供修改、重置 Key 或“重新打开安装命令”工具栏入口，需要再次查看命令时从对应 Key 行点击“使用指令”。管理员点击入口后弹窗调用 `/requirement/mcp/key/config` 读取和保存 `publicHost`，只允许填写域名/IP和端口，不填写协议或路径；普通开发人员不展示该入口。页面不得常驻展示 `X-MCP-Key` 请求头、客户端配置、全局 Skill 包或安装包；创建和使用指令弹窗只展示统一安装命令和高级配置，列表不得展示明文 Key、Key 前缀或哈希。
 - MCP 管理菜单和按钮必须使用 `req:mcp:key:*` 权限，需求人员角色默认不分配这些权限；开发人员角色可见 MCP 管理菜单。
 - 人员 MCP Key 不能替代项目分支动作 token：页面负责人员认证 Key，项目接入和索引指引中的 `actionToken` 是项目分支和目标动作识别 token。
 - 前端不得自行拼接 MCP endpoint；MCP 安装包中的远程地址由后端 `codexSetupPackage` 返回，管理员配置弹窗只保存 host/port 并展示后端返回的完整地址。发布默认应为 `/reqflow-api/requirement/mcp`，不得使用静态访问项目名作为 MCP 前缀。

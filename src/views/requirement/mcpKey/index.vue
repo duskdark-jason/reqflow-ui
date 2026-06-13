@@ -67,16 +67,6 @@
           @click="handleOpenMcpConfig"
         >配置请求地址</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button
-          v-if="lastInstallResult && lastInstallResult.plainKey"
-          type="info"
-          plain
-          icon="el-icon-document-copy"
-          size="mini"
-          @click="reopenInstallCommands"
-        >重新打开安装命令</el-button>
-      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -275,7 +265,6 @@ export default {
         plainKey: "",
         codexSetupPackage: null
       },
-      lastInstallResult: null,
       installResultByKeyId: {},
       mcpConfig: {
         configKey: "reqflow.mcp.public-host",
@@ -450,7 +439,7 @@ export default {
         addMcpKey(payload).then(response => {
           this.$modal.msgSuccess("新增成功")
           this.open = false
-          this.showCreateResult(response.data)
+          this.showInstructionResult(response.data)
           this.getList()
         })
       })
@@ -468,17 +457,14 @@ export default {
       if (!row || !row.keyId) return
       const cached = this.installResultByKeyId[row.keyId]
       if (cached) {
-        this.showInstructionResult(cached, false)
+        this.showInstructionResult(cached)
         return
       }
       getMcpKeyInstruction(row.keyId).then(response => {
-        this.showInstructionResult(response.data || { key: row, plainKey: "", codexSetupPackage: null }, false)
+        this.showInstructionResult(response.data || { key: row, plainKey: "", codexSetupPackage: null })
       })
     },
-    showCreateResult(data) {
-      this.showInstructionResult(data, true)
-    },
-    showInstructionResult(data, rememberPlainKey) {
+    showInstructionResult(data) {
       this.createResult = Object.assign({ key: null, plainKey: "", codexSetupPackage: null }, data || {})
       const plainKey = this.plainKeyForResult(this.createResult)
       if (plainKey && !this.createResult.plainKey) {
@@ -486,19 +472,11 @@ export default {
       }
       if (plainKey) {
         const snapshot = JSON.parse(JSON.stringify(this.createResult))
-        if (rememberPlainKey) {
-          this.lastInstallResult = snapshot
-        }
         const keyId = snapshot.key && snapshot.key.keyId
         if (keyId) {
           this.$set(this.installResultByKeyId, keyId, snapshot)
         }
       }
-      this.resultOpen = true
-    },
-    reopenInstallCommands() {
-      if (!this.lastInstallResult || !this.lastInstallResult.plainKey) return
-      this.createResult = JSON.parse(JSON.stringify(this.lastInstallResult))
       this.resultOpen = true
     },
     installCommandsFor(result) {
