@@ -29,11 +29,11 @@
 
 | 验收 ID | 需求描述 | 实现证据 | 验证证据 | Review 结论 |
 |---|---|---|---|---|
-| AC-001 | 渲染多客户端 | `clientSetupSections` | `npm run build:prod` | 通过 |
-| AC-002 | 通用安装脚本、配置片段和 skill 单独安装复制入口 | 弹窗模板 | `npm run build:prod` | 通过 |
-| AC-003 | 通用安装脚本/配置替换 Key | `copyInstallCommand`、`copyConfigSnippet` | `npm run build:prod` | 通过 |
-| AC-004 | skill 单独安装命令不要求 Key | `requiresPlainKey` | `npm run build:prod` | 通过 |
-| AC-005 | 旧包回退 | `clientSectionsFor` fallback | `npm run build:prod` | 通过 |
+| AC-001 | 只渲染统一安装指令 | `renderedInstallCommands` | 静态测试、`npm run build:prod` | 通过 |
+| AC-002 | 不按客户端分组展示 | 弹窗模板 | 静态测试、`npm run build:prod` | 通过 |
+| AC-003 | 统一安装脚本替换 Key | `copyInstallCommand` | `npm run build:prod` | 通过 |
+| AC-004 | 高级配置可复制 | 高级配置折叠区 | `npm run build:prod` | 通过 |
+| AC-005 | 静态结构测试 | `scripts/test-mcp-install-dialog-unified.js` | 静态测试 | 通过 |
 | AC-006 | 文档同步 | `docs/ai-harness/**` | `check-docs` 和 harness complete | 通过 |
 
 ## 返修交接清单

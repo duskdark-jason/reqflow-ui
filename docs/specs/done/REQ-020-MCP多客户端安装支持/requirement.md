@@ -2,15 +2,15 @@
 
 ## 背景
 
-后端 MCP Key 创建响应扩展为多客户端安装包后，前端需要从单一 Codex 命令展示升级为客户端分组展示，支持 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode，不增加其他客户端别名。
+后端 MCP Key 创建响应扩展为多客户端安装包后，前端需要从单一 Codex 命令展示升级为统一安装指令展示。普通弹窗不再按 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode 分组展示，具体客户端材料只保留在高级 JSON 中。
 
 ## 目标
 
 - MCP Key 结果弹窗展示明文 Key。
-- 按 `codexSetupPackage.clientInstructions` 分组展示客户端安装指令。
-- 每个客户端展示通用安装脚本、MCP 配置片段、全局 skill 单独安装命令和说明。
-- 复制包含 `${REQFLOW_MCP_KEY}` 的通用安装脚本或配置时要求明文 Key；复制 skill 单独安装命令不要求明文 Key。
-- 保留历史 `installCommands` 兼容回退。
+- 按 `codexSetupPackage.installCommands` 展示一组统一安装指令。
+- 不在普通弹窗中展示客户端分组、MCP 配置片段或全局 skill 单独安装命令。
+- 复制包含 `${REQFLOW_MCP_KEY}` 的统一安装脚本时要求明文 Key。
+- 完整 `codexSetupPackage` 仅作为高级配置/调试信息保留。
 
 ## 范围
 
@@ -35,12 +35,12 @@
 
 ## 验收标准
 
-- AC-001：弹窗能基于 `clientInstructions` 渲染 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode。
-- AC-002：通用安装脚本、MCP 配置片段和全局 skill 单独安装命令都有单独复制入口。
-- AC-003：复制通用安装脚本或配置时替换 `${REQFLOW_MCP_KEY}`，没有明文 Key 时提示用户填写。
-- AC-004：复制全局 skill 单独安装命令不要求明文 Key。
-- AC-005：历史旧包没有 `clientInstructions` 时，仍回退展示旧 `installCommands`。
-- AC-006：前端 harness 文档同步多客户端展示规则。
+- AC-001：弹窗只渲染 `installCommands` 统一安装指令。
+- AC-002：弹窗不按客户端分组展示普通安装内容。
+- AC-003：复制统一安装脚本时替换 `${REQFLOW_MCP_KEY}`，没有明文 Key 时提示用户填写。
+- AC-004：完整安装包仍可在高级配置/调试信息中复制。
+- AC-005：前端静态测试覆盖统一安装指令结构。
+- AC-006：前端 harness 文档同步统一指令展示规则。
 
 ## Companion 关联
 

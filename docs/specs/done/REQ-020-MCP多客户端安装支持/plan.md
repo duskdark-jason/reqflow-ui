@@ -10,7 +10,7 @@
 ## 实施步骤
 
 1. 读取后端多客户端安装包结构，确认 `clientInstructions` 字段。
-2. 调整 MCP Key 结果弹窗，按客户端分组展示安装内容。
+2. 调整 MCP Key 结果弹窗，只展示统一安装指令。
 3. 补充复制逻辑：MCP 命令/配置需要明文 Key，skill 命令不需要。
 4. 保留旧 `installCommands` 回退。
 5. 更新前端 harness 文档。

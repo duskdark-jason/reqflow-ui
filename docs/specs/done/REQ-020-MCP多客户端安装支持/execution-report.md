@@ -12,9 +12,10 @@
 
 | 路径 | 修改说明 |
 |---|---|
-| `src/views/requirement/mcpKey/index.vue` | 结果弹窗按客户端分组展示通用安装脚本、配置片段、全局 skill 单独安装命令和说明。 |
+| `src/views/requirement/mcpKey/index.vue` | 结果弹窗只展示 `installCommands` 统一安装指令，不再按客户端分组展示。 |
 | `docs/ai-harness/modules/requirement-platform.md` | 记录多客户端展示规则。 |
-| `docs/ai-harness/contracts/requirement-platform-ui.md` | 记录 `clientInstructions` UI 契约。 |
+| `docs/ai-harness/contracts/requirement-platform-ui.md` | 记录统一安装指令 UI 契约。 |
+| `scripts/test-mcp-install-dialog-unified.js` | 增加静态测试，约束 MCP Key 弹窗不得按客户端分组渲染安装指令。 |
 | `docs/ai-harness/search-map.md` | 更新 MCP 管理搜索关键词。 |
 
 ## 模块知识库沉淀
@@ -41,6 +42,8 @@
 
 | 层级 | 验收 ID | 命令或方式 | 结果 |
 |---|---|---|---|
+| L1 | AC-001、AC-002、AC-003、AC-005 | `node scripts/test-mcp-install-dialog-unified.js` | 通过 |
+| L1 | 首页 MCP 管理入口回归 | `node scripts/test-dashboard-quick-actions.js` | 通过 |
 | L1 | AC-001、AC-002、AC-003、AC-004、AC-005 | `npm run build:prod` | 通过，存在历史体积告警 |
 | L0 | AC-006 | `sh scripts/check-docs.sh && sh scripts/check-harness.sh complete --spec docs/specs/done/REQ-020-MCP多客户端安装支持` | 通过 |
 | L3 | AC-001 到 AC-006 | 不适用 | 未启动服务 |
@@ -55,7 +58,8 @@
 ## 计划偏差
 
 - 用户澄清客户端名称以 CodeBuddy 为准，前端仅展示 CodeBuddy。
-- 用户追加 OpenCode，由后端 `clientInstructions` 数据驱动渲染，无需前端特判。
+- 用户追加 OpenCode，由后端高级 JSON 保留配置材料；普通弹窗只展示统一安装指令，无需前端特判。
+- 用户要求前端不要区分不同工具，已收敛为单组统一安装指令。
 
 ## Review 返修记录
 

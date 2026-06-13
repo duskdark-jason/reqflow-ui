@@ -169,67 +169,21 @@
           />
         </div>
         <div class="result-field">
-          <span class="config-label">客户端安装指令</span>
-          <div class="client-setup-list">
+          <span class="config-label">统一安装指令</span>
+          <div class="install-command-group">
             <div
-              v-for="section in clientSetupSections"
-              :key="section.client"
-              class="client-setup-card"
+              v-for="command in renderedInstallCommands"
+              :key="'unified-' + command.platform"
+              class="install-command-card"
             >
-              <div class="client-setup-header">
+              <div class="install-command-header">
                 <div>
-                  <span class="install-command-title">{{ section.label }}</span>
-                  <el-tag size="mini" type="info">{{ section.transport }}</el-tag>
+                  <span class="install-command-title">{{ command.label }}</span>
+                  <el-tag size="mini" type="info">{{ command.language }}</el-tag>
                 </div>
-                <span class="client-config-path">{{ section.mcpConfigPath }}</span>
+                <el-button size="mini" icon="el-icon-document-copy" @click="copyInstallCommand(command)">复制命令</el-button>
               </div>
-              <div v-if="section.commands.length" class="install-command-group">
-                <div class="install-group-title">通用安装脚本</div>
-                <div
-                  v-for="command in section.commands"
-                  :key="section.client + '-' + command.platform"
-                  class="install-command-card"
-                >
-                  <div class="install-command-header">
-                    <div>
-                      <span class="install-command-title">{{ command.label }}</span>
-                      <el-tag size="mini" type="info">{{ command.language }}</el-tag>
-                    </div>
-                    <el-button size="mini" icon="el-icon-document-copy" @click="copyInstallCommand(command)">复制命令</el-button>
-                  </div>
-                  <pre class="markdown-code-block"><code>{{ command.renderedCommand }}</code></pre>
-                </div>
-              </div>
-              <div v-if="section.renderedMcpConfigSnippet" class="install-command-group">
-                <div class="install-command-header config-snippet-header">
-                  <div class="install-group-title">MCP配置片段</div>
-                  <el-button size="mini" icon="el-icon-document-copy" @click="copyConfigSnippet(section)">复制配置</el-button>
-                </div>
-                <pre class="markdown-code-block"><code>{{ section.renderedMcpConfigSnippet }}</code></pre>
-              </div>
-              <div v-if="section.skillCommands.length" class="install-command-group">
-                <div class="install-group-title">全局Skill</div>
-                <div
-                  v-for="command in section.skillCommands"
-                  :key="section.client + '-' + command.platform"
-                  class="install-command-card"
-                >
-                  <div class="install-command-header">
-                    <div>
-                      <span class="install-command-title">{{ command.label }}</span>
-                      <el-tag size="mini" type="info">{{ command.language }}</el-tag>
-                    </div>
-                    <el-button size="mini" icon="el-icon-document-copy" @click="copyInstallCommand(command)">复制命令</el-button>
-                  </div>
-                  <pre class="markdown-code-block"><code>{{ command.renderedCommand }}</code></pre>
-                </div>
-              </div>
-              <div v-if="section.skillInstructions" class="client-note">
-                {{ section.skillInstructions }}
-              </div>
-              <div v-if="section.notes.length" class="client-note-list">
-                <div v-for="note in section.notes" :key="note" class="client-note">{{ note }}</div>
-              </div>
+              <pre class="markdown-code-block"><code>{{ command.renderedCommand }}</code></pre>
             </div>
           </div>
         </div>
@@ -333,9 +287,6 @@ export default {
     },
     renderedInstallCommands() {
       return this.installCommandsFor(this.createResult)
-    },
-    clientSetupSections() {
-      return this.clientSectionsFor(this.createResult)
     }
   },
   methods: {
@@ -460,34 +411,6 @@ export default {
       const commands = setupPackage && Array.isArray(setupPackage.installCommands) ? setupPackage.installCommands : []
       return this.renderCommandList(commands, result && result.plainKey)
     },
-    clientSectionsFor(result) {
-      const setupPackage = result && result.codexSetupPackage
-      const plainKey = result && result.plainKey
-      const sections = setupPackage && Array.isArray(setupPackage.clientInstructions) ? setupPackage.clientInstructions : []
-      if (!sections.length) {
-        return [{
-          client: "codex",
-          label: "Codex",
-          transport: "streamable-http",
-          mcpConfigPath: "~/.codex/config.toml",
-          commands: this.installCommandsFor(result),
-          renderedMcpConfigSnippet: "",
-          skillCommands: [],
-          skillInstructions: "",
-          notes: []
-        }]
-      }
-      return sections.map(section => {
-        const skillInstall = section.skillInstall || {}
-        return Object.assign({}, section, {
-          commands: this.renderCommandList(section.commands, plainKey),
-          renderedMcpConfigSnippet: this.renderInstallCommand(section.mcpConfigSnippet, plainKey),
-          skillCommands: this.renderCommandList(skillInstall.commands, plainKey),
-          skillInstructions: skillInstall.instructions || "",
-          notes: Array.isArray(section.notes) ? section.notes : []
-        })
-      })
-    },
     renderCommandList(commands, plainKey) {
       const sourceCommands = Array.isArray(commands) ? commands : []
       return sourceCommands.map(command => {
@@ -510,14 +433,6 @@ export default {
         return
       }
       this.copyText(command.renderedCommand || "")
-    },
-    copyConfigSnippet(section) {
-      if (!section) return
-      if ((section.mcpConfigSnippet || "").indexOf("${REQFLOW_MCP_KEY}") >= 0 && !this.createResult.plainKey) {
-        this.$modal.msgWarning("请先填写明文Key")
-        return
-      }
-      this.copyText(section.renderedMcpConfigSnippet || "")
     },
     formatSkillPackage(skillPackage) {
       if (!skillPackage) return ""
@@ -596,42 +511,6 @@ export default {
   gap: 14px;
 }
 
-.install-command-list {
-  display: grid;
-  gap: 12px;
-}
-
-.client-setup-list {
-  display: grid;
-  gap: 12px;
-}
-
-.client-setup-card {
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.client-setup-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-bottom: 1px solid #ebeef5;
-  background: #f8f9fb;
-}
-
-.client-config-path {
-  min-width: 0;
-  color: #909399;
-  font-size: 12px;
-  line-height: 18px;
-  text-align: right;
-  word-break: break-all;
-}
-
 .install-command-group {
   padding: 10px 12px;
   border-bottom: 1px solid #ebeef5;
@@ -669,15 +548,6 @@ export default {
   border-bottom: 1px solid #ebeef5;
 }
 
-.config-snippet-header {
-  padding: 0 0 8px;
-  border-bottom: none;
-}
-
-.config-snippet-header .install-group-title {
-  margin-bottom: 0;
-}
-
 .install-command-title {
   margin-right: 8px;
   font-weight: 600;
@@ -694,27 +564,6 @@ export default {
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-all;
-}
-
-.client-note-list {
-  display: grid;
-  gap: 6px;
-  padding: 10px 12px;
-  border-top: 1px solid #ebeef5;
-  background: #fafafa;
-}
-
-.client-note {
-  color: #606266;
-  font-size: 12px;
-  line-height: 18px;
-}
-
-.install-command-group + .client-note,
-.client-setup-header + .client-note {
-  padding: 10px 12px;
-  border-top: 1px solid #ebeef5;
-  background: #fafafa;
 }
 
 .advanced-install-package {
