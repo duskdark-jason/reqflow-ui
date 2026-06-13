@@ -14,7 +14,7 @@
 - Review 授权：已授权
 - 目标客户：通用
 - 基线分支：当前任务分支
-- companion 仓库：../reqflow-be/docs/specs/active/REQ-022-MCP-Key明文持久与交互安装
+- companion 仓库：../reqflow-be/docs/specs/done/REQ-022-MCP-Key明文持久与交互安装
 - 关联 spec：REQ-020-MCP多客户端安装支持
 - 影响模块：MCP 管理页、MCP 请求地址配置、多客户端安装指令、本地 Harness 门禁
 - 模块知识库动作：更新
