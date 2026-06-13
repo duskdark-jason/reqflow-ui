@@ -18,7 +18,7 @@ MCP 管理页已展示统一安装指令。用户补充要求：
 - 复制统一安装命令时仍使用响应中的 `plainKey` 替换 `${REQFLOW_MCP_KEY}`。
 - 使用指令响应兼容顶层 `plainKey` 和 `key.plainKey`，保证再次打开也能渲染真实命令。
 - 前端普通区域不按客户端分组展示安装内容，用户通过统一命令脚本交互选择工具。
-- 管理员在 MCP 管理页顶部可读取和保存 MCP 请求地址 `publicHost`，普通开发人员不展示配置栏。
+- 管理员在 MCP 管理页通过“配置请求地址”按钮打开弹窗，读取和保存 MCP 请求地址 `publicHost`；普通开发人员不展示入口。
 - 文档和静态检查同步防回归。
 - 收紧 `check-harness.sh --spec` 目标路径，拒绝 `docs/specs/done/` 并补充自测。
 
@@ -37,12 +37,12 @@ MCP 管理页已展示统一安装指令。用户补充要求：
 - AC-005：静态检查覆盖上述展示约束。
 - AC-006：`check-harness.sh complete --spec docs/specs/done/...` 必须失败，并提示使用 `docs/specs/active/`。
 - AC-007：下次打开使用指令时，前端可从顶层 `plainKey` 或 `key.plainKey` 渲染真实明文 Key，复制命令不得包含隐藏或缺失提示。
-- AC-008：MCP 管理页仅管理员展示请求地址配置栏，调用 `/requirement/mcp/key/config` 读取和保存配置，普通开发人员不展示该配置栏。
+- AC-008：MCP 管理页仅管理员展示“配置请求地址”入口，点击后以弹窗调用 `/requirement/mcp/key/config` 读取和保存配置，普通开发人员不展示入口。
 
 ## 影响范围
 
 - 接口：是，新增调用管理员 `/requirement/mcp/key/config` 读写接口。
 - 数据库：否，数据库变更由 companion 后端 spec 处理。
 - 权限：是，MCP 请求地址配置仅管理员可见可保存。
-- 页面展示：是，MCP 管理页隐藏明文 Key 和 Key 前缀字段，管理员额外展示请求地址配置栏。
+- 页面展示：是，MCP 管理页隐藏明文 Key 和 Key 前缀字段，管理员额外通过弹窗配置请求地址。
 - 流程门禁：是，`check-harness.sh --spec` 只允许指向 `docs/specs/active/`。

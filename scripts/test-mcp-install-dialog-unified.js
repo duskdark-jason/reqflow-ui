@@ -58,8 +58,16 @@ assert(
   "MCP Key 统一安装指令不得把缺失提示写进可复制命令，避免用户复制到隐藏/无效 Key。"
 )
 assert(
-  component.includes("label=\"MCP请求地址\"") && component.includes("v-if=\"isAdminUser\""),
-  "MCP Key 页面应只向管理员展示 MCP 请求地址配置。"
+  component.includes(">配置请求地址</el-button>") && component.includes("v-if=\"isAdminUser\""),
+  "MCP Key 页面应只向管理员展示 MCP 请求地址配置入口。"
+)
+assert(
+  component.includes("title=\"MCP请求地址配置\"") && component.includes(":visible.sync=\"configOpen\""),
+  "MCP Key 请求地址配置应使用弹窗承载。"
+)
+assert(
+  !component.includes("class=\"mcp-config-form\""),
+  "MCP Key 页面不得在列表顶部常驻展示 MCP 请求地址配置表单。"
 )
 assert(
   component.includes("getMcpConfig()") && component.includes("saveMcpConfig()"),

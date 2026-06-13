@@ -132,9 +132,9 @@ review_report
 ## MCP管理页面契约
 
 - 菜单组件路径为 `requirement/mcpKey/index`，后端菜单脚本路由 path 为 `mcp-key`，菜单权限为 `req:mcp:key:list`；首页快捷入口必须跳转 `/requirement/mcp-key`，不能使用组件路径 `/requirement/mcpKey`。
-- 页面只在管理员角色下读取 `/requirement/mcp/key/config` 并展示 MCP 请求地址配置栏；普通开发人员不展示配置栏，也不调用配置保存接口。配置栏只保存 `publicHost`，格式为域名/IP和端口；不得让用户填写协议、路径、查询串或空白字符。
+- 页面只在管理员角色下展示“配置请求地址”入口，点击后读取 `/requirement/mcp/key/config` 并打开 MCP 请求地址配置弹窗；普通开发人员不展示入口，也不调用配置保存接口。弹窗只保存 `publicHost`，格式为域名/IP和端口；不得让用户填写协议、路径、查询串或空白字符。
 - 页面不得在列表页顶部常驻展示请求头名 `X-MCP-Key`、客户端配置模板、全局 Skill 包或安装包。
-- 页面不得自行拼接 MCP 远程 endpoint。创建或使用指令中的 MCP 地址必须来自后端返回的 `codexSetupPackage.mcpServer.url`，管理员配置栏的完整地址也必须展示后端返回的 `mcpAddress`；发布默认路径为 `/reqflow-api/requirement/mcp`，前端静态访问项目名 `/reqflow/` 不参与该地址。
+- 页面不得自行拼接 MCP 远程 endpoint。创建或使用指令中的 MCP 地址必须来自后端返回的 `codexSetupPackage.mcpServer.url`，管理员配置弹窗的完整地址也必须展示后端返回的 `mcpAddress`；发布默认路径为 `/reqflow-api/requirement/mcp`，前端静态访问项目名 `/reqflow/` 不参与该地址。
 - 列表读取 `/requirement/mcp/key/list`，一行对应一个 `req_mcp_user_key`，只能展示 Key 名称、绑定用户、状态、最近使用时间、最近 IP 和创建时间；不得展示明文 Key、Key 前缀或哈希。
 - 新增时通过 `/requirement/mcp/key/user-options` 查询可绑定用户，不调用 `/system/user/list`，避免要求 MCP 维护人员同时具备系统用户菜单权限。
 - 新增时必须选择启用用户并填写 Key 名称；后端返回的顶层 `plainKey` 或 `key.plainKey` 只用于渲染统一安装命令，前端下次打开使用指令时也必须替换出真实明文 Key。前端不得单独展示明文 Key 字段，不得写入列表、查询参数或本地持久化。

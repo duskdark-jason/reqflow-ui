@@ -1,36 +1,5 @@
 <template>
   <div class="app-container mcp-key-page">
-    <el-form
-      v-if="isAdminUser"
-      ref="mcpConfigForm"
-      :model="mcpConfig"
-      size="small"
-      :inline="true"
-      class="mcp-config-form"
-      label-width="100px"
-      v-loading="configLoading"
-    >
-      <el-form-item label="MCP请求地址">
-        <el-input
-          v-model.trim="mcpConfig.publicHost"
-          placeholder="域名/IP:端口，例如 mcp.example.com:8443"
-          clearable
-          class="mcp-config-host"
-        />
-      </el-form-item>
-      <el-form-item label="完整地址">
-        <el-input
-          :value="mcpConfig.mcpAddress || '-'"
-          readonly
-          class="mcp-config-address"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-check" size="mini" :loading="configSaving" @click="saveMcpConfig">保存</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="getMcpConfig">刷新</el-button>
-      </el-form-item>
-    </el-form>
-
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
       <el-form-item label="Key名称" prop="keyName">
         <el-input
@@ -87,6 +56,16 @@
           @click="handleDelete"
           v-hasPermi="['req:mcp:key:remove']"
         >删除</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          v-if="isAdminUser"
+          type="warning"
+          plain
+          icon="el-icon-setting"
+          size="mini"
+          @click="handleOpenMcpConfig"
+        >配置请求地址</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -189,6 +168,36 @@
       </div>
     </el-dialog>
 
+    <el-dialog title="MCP请求地址配置" :visible.sync="configOpen" width="620px" append-to-body>
+      <el-form
+        ref="mcpConfigForm"
+        :model="mcpConfig"
+        label-width="100px"
+        v-loading="configLoading"
+      >
+        <el-form-item label="MCP请求地址">
+          <el-input
+            v-model.trim="mcpConfig.publicHost"
+            placeholder="域名/IP:端口，例如 mcp.example.com:8443"
+            clearable
+            class="mcp-config-host"
+          />
+        </el-form-item>
+        <el-form-item label="完整地址">
+          <el-input
+            :value="mcpConfig.mcpAddress || '-'"
+            readonly
+            class="mcp-config-address"
+          />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button icon="el-icon-refresh" @click="getMcpConfig">刷 新</el-button>
+        <el-button type="primary" :loading="configSaving" @click="saveMcpConfig">保 存</el-button>
+        <el-button @click="configOpen = false">取 消</el-button>
+      </div>
+    </el-dialog>
+
     <el-dialog title="MCP Key" :visible.sync="resultOpen" width="860px" append-to-body>
       <div class="result-grid">
         <div class="result-field">
@@ -259,6 +268,7 @@ export default {
       userOptions: [],
       title: "",
       open: false,
+      configOpen: false,
       resultOpen: false,
       createResult: {
         key: null,
@@ -297,7 +307,6 @@ export default {
   created() {
     this.getList()
     if (this.isAdminUser) {
-      this.getMcpConfig()
       this.searchUsers("")
     } else {
       this.setCurrentUserOption()
@@ -323,6 +332,11 @@ export default {
     }
   },
   methods: {
+    handleOpenMcpConfig() {
+      if (!this.isAdminUser) return
+      this.configOpen = true
+      this.getMcpConfig()
+    },
     getMcpConfig() {
       if (!this.isAdminUser) return
       this.configLoading = true
@@ -360,6 +374,7 @@ export default {
         } else {
           this.getMcpConfig()
         }
+        this.configOpen = false
         this.configSaving = false
       }).catch(() => {
         this.configSaving = false
@@ -579,18 +594,12 @@ export default {
   min-width: 0;
 }
 
-.mcp-config-form {
-  margin-bottom: 12px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #ebeef5;
-}
-
 .mcp-config-host {
-  width: 260px;
+  width: 100%;
 }
 
 .mcp-config-address {
-  width: 360px;
+  width: 100%;
 }
 
 .result-field {

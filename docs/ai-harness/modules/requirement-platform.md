@@ -56,10 +56,10 @@
 - Harness 初始化模板由需求平台存储和下发给 Codex；前端不直接写文件，后端不直接执行 Git 或文件系统写入。执行初始化的本地 agent 必须先拉取默认基线最新代码，初始化校验通过后提交并推送 harness 文件，再登记初始化结果。
 - 前端 harness 必须和后端模板保持一致：包含 `docs/ai-harness/search-map.md`、`docs/process/local-harness-workflow.md`，并在 `harness-index.json` 登记 `searchMap` 和 `localHarnessWorkflow` 入口。
 - 本地 Harness 模式和 MCP 接入模式必须共享需求设计确认点：`planning` 阶段只允许迭代 `meta.md` 和 `requirement.md`；`plan.md`、`execution-report.md`、`review-report.md` 必须等明确执行授权后由 Execution Agent/Review Agent 按阶段生成。
-- MCP 管理页面管理绑定到人员的访问 Key，并在管理员角色下展示 MCP 请求地址配置栏。普通用户新增 Key 默认绑定自己且不可修改绑定用户，管理员才可指定用户；页面不得提供修改或重置 Key 操作。管理员配置栏调用 `/requirement/mcp/key/config` 读取和保存 `publicHost`，只允许填写域名/IP和端口，不填写协议或路径；普通开发人员不展示该配置栏。页面不得常驻展示 `X-MCP-Key` 请求头、客户端配置、全局 Skill 包或安装包；创建和使用指令弹窗只展示统一安装命令和高级配置，列表不得展示明文 Key、Key 前缀或哈希。
+- MCP 管理页面管理绑定到人员的访问 Key，并在管理员角色下展示“配置请求地址”入口。普通用户新增 Key 默认绑定自己且不可修改绑定用户，管理员才可指定用户；页面不得提供修改或重置 Key 操作。管理员点击入口后弹窗调用 `/requirement/mcp/key/config` 读取和保存 `publicHost`，只允许填写域名/IP和端口，不填写协议或路径；普通开发人员不展示该入口。页面不得常驻展示 `X-MCP-Key` 请求头、客户端配置、全局 Skill 包或安装包；创建和使用指令弹窗只展示统一安装命令和高级配置，列表不得展示明文 Key、Key 前缀或哈希。
 - MCP 管理菜单和按钮必须使用 `req:mcp:key:*` 权限，需求人员角色默认不分配这些权限；开发人员角色可见 MCP 管理菜单。
 - 人员 MCP Key 不能替代项目分支动作 token：页面负责人员认证 Key，项目接入和索引指引中的 `actionToken` 是项目分支和目标动作识别 token。
-- 前端不得自行拼接 MCP endpoint；MCP 安装包中的远程地址由后端 `codexSetupPackage` 返回，管理员配置栏只保存 host/port 并展示后端返回的完整地址。发布默认应为 `/reqflow-api/requirement/mcp`，不得使用静态访问项目名作为 MCP 前缀。
+- 前端不得自行拼接 MCP endpoint；MCP 安装包中的远程地址由后端 `codexSetupPackage` 返回，管理员配置弹窗只保存 host/port 并展示后端返回的完整地址。发布默认应为 `/reqflow-api/requirement/mcp`，不得使用静态访问项目名作为 MCP 前缀。
 - 用户可见系统名称统一为“统一需求流转平台”，登录页、首页、导航入口和页脚不得保留若依官网、若依文档或默认更新日志入口。
 - 后台布局固定为浅色左侧菜单，用户可见入口不得再提供布局设置抽屉；历史本地 `layout-setting` 中的 `sideTheme` 和 `navType` 不应覆盖目标布局。
 - 隐藏页签从父菜单打开时必须携带 `parentPath` 或依赖路由 `meta.activeMenu`；关闭/返回时优先回父菜单，不得跳到最后打开的无关标签。
@@ -83,7 +83,7 @@
 ## 风险点
 
 - 后端接口未运行时，页面只能通过构建验证，不能宣称完成联调。
-- MCP 管理页面依赖后端 `/requirement/mcp/key/**` 和系统用户列表接口；管理员配置栏依赖 `/requirement/mcp/key/config`。只有前端构建通过时，不能宣称 Key 创建、权限隔离、请求地址保存或 Codex 调用已经完成运行态联调。
+- MCP 管理页面依赖后端 `/requirement/mcp/key/**` 和系统用户列表接口；管理员配置弹窗依赖 `/requirement/mcp/key/config`。只有前端构建通过时，不能宣称 Key 创建、权限隔离、请求地址保存或 Codex 调用已经完成运行态联调。
 - 子路径发布时需要同时检查 `dist/index.html` 静态资源引用包含 `/reqflow/`，并确认构建产物不再引用模板默认 `/prod-api`。
 - 项目列表会对当前页项目逐个读取初始化上下文；后续如项目数明显增加，可考虑后端增加批量初始化状态接口。
 - 初始化指令、需求分析指令、需求生成指令、执行任务指令和返修任务指令中的明文 `actionToken` 只用于复制给 MCP 调用，前端不得持久化到本地存储、查询条件或日志；缺少 `initInstruction` 时只能展示兼容降级提示。
