@@ -150,6 +150,14 @@ export function canShowDevelopSubmitAction(status, packageVersions) {
     hasDevelopmentResultArtifacts(packageVersions)
 }
 
+export function canShowCloseoutInstruction(verified) {
+  return !verified
+}
+
+export function canShowCloseoutSubmitAction(status, verified) {
+  return String(status) !== "closeout_pending" || !!verified
+}
+
 export function hasFeedbackConclusionAction(row, roles, permissions, currentUserId) {
   return statusActions(row && row.status, roles, permissions, row, currentUserId)
     .some(action => action.feedbackOptions && action.feedbackOptions.length)

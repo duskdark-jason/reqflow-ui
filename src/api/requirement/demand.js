@@ -85,6 +85,14 @@ export function getDemandDevelopInstruction(demandId) {
   })
 }
 
+// 查询合并归档平台验证结果
+export function getDemandCloseoutVerification(demandId) {
+  return request({
+    url: '/requirement/demand/' + demandId + '/closeout-verification',
+    method: 'get'
+  })
+}
+
 // 上传需求附件
 export function uploadDemandAttachment(data) {
   return request({

@@ -151,6 +151,11 @@ assert.strictEqual(status.canShowDevelopSubmitAction("developing", [
   { artifactType: "review_report", versionNo: 1 }
 ]), true)
 assert.strictEqual(status.canShowDevelopSubmitAction("closeout_pending", []), true)
+assert.strictEqual(status.canShowCloseoutInstruction(false), true)
+assert.strictEqual(status.canShowCloseoutSubmitAction("closeout_pending", false), false)
+assert.strictEqual(status.canShowCloseoutInstruction(true), false)
+assert.strictEqual(status.canShowCloseoutSubmitAction("closeout_pending", true), true)
+assert.strictEqual(status.canShowCloseoutSubmitAction("review", false), true)
 assert.strictEqual(status.statusActions("confirmed", developerRoles, flowPermissions, assignedDemand, 8)[0].value, "developing")
 assert.strictEqual(status.statusActions("review", ["requirement_user"], flowPermissions, {
   status: "review",

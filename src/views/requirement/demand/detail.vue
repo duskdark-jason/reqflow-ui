@@ -223,7 +223,7 @@ import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
 import { listIndexModule } from "@/api/requirement/index"
-import { getDemand, getDemandDevelopInstruction, getDemandPlanInstruction, submitDemandSupplement, updateDemandStatus } from "@/api/requirement/demand"
+import { getDemand, getDemandCloseoutVerification, getDemandDevelopInstruction, getDemandPlanInstruction, submitDemandSupplement, updateDemandStatus } from "@/api/requirement/demand"
 import { getDemandPackage } from "@/api/requirement/package"
 import { mapGetters } from "vuex"
 import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes, supplementVersionsForArtifact as getSupplementVersionsForArtifact } from "./artifacts"
@@ -232,6 +232,8 @@ import {
   canUseDeveloperInstruction as canUseDeveloperInstructionForRoles,
   canUseDevelopInstruction,
   canUsePlanInstruction,
+  canShowCloseoutInstruction,
+  canShowCloseoutSubmitAction,
   canShowDevelopInstructionByArtifacts,
   canShowDevelopSubmitAction,
   demandStatusOptions,
@@ -257,6 +259,10 @@ export default {
       showDesignAdjustmentPanel: false,
       planInstruction: {},
       developInstruction: {},
+      closeoutVerification: {
+        verified: false,
+        message: ""
+      },
       projectOptions: [],
       variantOptions: [],
       moduleOptions: [],
@@ -305,6 +311,7 @@ export default {
     },
     canCopyDevelopInstruction() {
       return canUseDevelopInstruction(this.roles, this.form, this.id, this.permissions) &&
+        (String(this.form.status) !== "closeout_pending" || canShowCloseoutInstruction(this.closeoutVerification.verified)) &&
         canShowDevelopInstructionByArtifacts(this.form.status, this.packageVersions)
     },
     instructionAction() {
@@ -393,6 +400,7 @@ export default {
         }
         this.setDefaultActiveArtifact()
         this.loading = false
+        return this.loadCloseoutVerification()
       }).catch(() => {
         this.loading = false
       })
@@ -411,6 +419,25 @@ export default {
         this.artifactTypes.forEach(item => this.setArtifact(item.value, {}))
         this.setDefaultActiveArtifact()
         this.artifactLoading = false
+      })
+    },
+    loadCloseoutVerification() {
+      if (String(this.form.status) !== "closeout_pending" || !this.demandId ||
+        !canUseDevelopInstruction(this.roles, this.form, this.id, this.permissions)) {
+        this.closeoutVerification = { verified: false, message: "" }
+        return Promise.resolve()
+      }
+      return getDemandCloseoutVerification(this.demandId).then(response => {
+        const data = response.data || {}
+        this.closeoutVerification = {
+          verified: !!data.verified,
+          message: data.message || ""
+        }
+      }).catch(() => {
+        this.closeoutVerification = {
+          verified: false,
+          message: "归档验证结果读取失败"
+        }
       })
     },
     handleRefresh() {
@@ -641,6 +668,9 @@ export default {
       const actions = this.statusActions(row)
       const artifactAwareActions = actions.filter(action => {
         if (action.value === "review" && !canShowDevelopSubmitAction(row && row.status, this.packageVersions)) {
+          return false
+        }
+        if (action.value === "completed" && !canShowCloseoutSubmitAction(row && row.status, this.closeoutVerification.verified)) {
           return false
         }
         if (!action.feedbackOptions || !action.feedbackOptions.length) {
