@@ -12,7 +12,7 @@
 | 需求管理 | 分支知识库详情页签 | 按项目分支查看模块知识、索引批次和初始化指令 | `src/views/requirement/project/knowledge.vue` | `src/api/requirement/index.js`、`project.js` | `/requirement/index/module/tree`，`req:index:list`；`/requirement/index/batch/list`，`req:index:list` | `ReqIndexController`、`ReqRepositoryIndexServiceImpl` |
 | 需求管理 | 需求列表 | 需求新增维护页签、编辑维护页签、查询、管理员删除、状态按钮、详情资料展示、返修版本记录、按阶段生成需求分析、需求设计、执行任务、返修任务和合并归档指令复制 | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue`、`status.js` | `src/api/requirement/demand.js`、`index.js` | `/requirement/demand/**`，`req:demand:*`；删除使用 `req:demand:remove`；`/requirement/index/impact/suggest` 可由需求权限读取 | `ReqDemandController`、`ReqDemandServiceImpl`、`ReqIndexController` |
 | 需求管理 | Agent 交接资料 | 查看和保存需求可行性评估、需求设计、执行计划、执行报告、Review 报告等 artifact；详情页内嵌读取使用需求详情权限 | `src/views/requirement/package/index.vue`、`src/views/requirement/demand/detail.vue` | `src/api/requirement/package.js` | `/requirement/package/**`，读取为 `req:package:list` 或 `req:demand:query`，保存为 `req:package:save` | `ReqPackageController`、`ReqPackageServiceImpl` |
-| 需求管理 | MCP 管理 | 管理人员 MCP Key，普通用户新增默认绑定自己，管理员可指定用户；创建后复制一次性明文 Key 和多平台 Codex 安装命令，列表行打开使用指令 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`/requirement/codex/install.*`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqCodexInstallController`、`ReqMcpController`、`McpService` |
+| 需求管理 | MCP 管理 | 管理人员 MCP Key，普通用户新增默认绑定自己，管理员可指定用户；创建后复制一次性明文 Key 和 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode 多客户端 MCP 与全局 skill 安装指令，列表行打开使用指令 | `src/views/requirement/mcpKey/index.vue` | `src/api/requirement/mcpKey.js` | `/requirement/mcp/key/**`，`/requirement/codex/install.*`，`req:mcp:key:*`；`/requirement/mcp` | `ReqMcpKeyController`、`ReqCodexInstallController`、`ReqMcpController`、`McpService` |
 | 需求管理 | 使用统计 | 展示需求、项目、用户和状态统计 | `src/views/requirement/statistics/index.vue` | `src/api/requirement/statistics.js` | `/requirement/statistics/**`，`req:stats:view` | `ReqStatisticsController`、`ReqStatisticsService` |
 | 需求管理 | 隐藏兼容能力 | 仓库、项目分支、人工模块兼容 CRUD，不作为左侧菜单独立入口 | `src/views/requirement/repository/index.vue`、`variant/index.vue`、`module/index.vue` | `src/api/requirement/repository.js`、`variant.js`、`module.js` | `/requirement/repository/**`、`/requirement/variant/**`、`/requirement/module/**` | `ReqRepositoryController`、`ReqVariantController`、`ReqModuleController` |
 
@@ -47,7 +47,7 @@
 - 项目分支维护中文标签、真实分支名和后端生成的初始化指令；指令复制内容必须来自 `initInstruction.content`，包含简短提示词和 `actionToken`，旧 `mcpKey` 只作为兼容降级展示。
 - 分支知识库详情必须通过新页签展示，不在项目列表或维护表格中使用展开行承载知识库详情。
 - MCP 索引用 `actionToken + remoteUrl` 识别项目、分支和代码仓库；旧 `mcpKey + remoteUrl` 仅作为兼容路径。
-- MCP 管理创建 Key 后，结果弹窗必须优先展示明文 Key 和 `codexSetupPackage.installCommands` 的多平台代码块命令；前端只在当前页面会话内把一次性 `plainKey` 填入命令并允许重复打开复制，刷新后不得恢复明文 Key。历史 Key 的使用指令只展示模板，不反向恢复明文。完整 JSON 安装包只作为高级配置/调试信息。
+- MCP 管理创建 Key 后，结果弹窗必须优先展示明文 Key 和 `codexSetupPackage.clientInstructions` 的客户端分组安装指令；每个客户端可展示 MCP 命令、MCP 配置片段、全局 skill 安装命令和说明。支持客户端为 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode。前端只在当前页面会话内把一次性 `plainKey` 填入命令和配置片段并允许重复打开复制，刷新后不得恢复明文 Key。历史 Key 的使用指令只展示模板，不反向恢复明文。完整 JSON 安装包只作为高级配置/调试信息。
 - 模块和知识库必须同时关联项目与项目分支。需求维护页签选择模块时按 `projectId + variantId` 过滤，优先读取知识库模块；前后端 companion 项目存在前端页面知识模块时，只向需求人员展示前端菜单/页面模块，没有前端页面模块时才兼容人工模块和其他索引模块；分支知识库页签的索引批次和模块知识库也按选中分支展示。
 - 新增和编辑需求的项目分支下拉只能展示已初始化完成的分支，数据来自项目初始化上下文的分支行级 `indexedRepositoryCount` 和 `unindexedRepositoryCount`。新功能提需允许当前分支暂时没有既有模块知识；需求列表查询筛选可以继续展示全部分支，避免历史需求不可检索。
 - 需求维护页签允许填写新功能名称并通过需求备注提交；列表和详情在没有模块标识时展示该新功能名称。
@@ -56,7 +56,7 @@
 - Harness 初始化模板由需求平台存储和下发给 Codex；前端不直接写文件，后端不直接执行 Git 或文件系统写入。执行初始化的本地 agent 必须先拉取默认基线最新代码，初始化校验通过后提交并推送 harness 文件，再登记初始化结果。
 - 前端 harness 必须和后端模板保持一致：包含 `docs/ai-harness/search-map.md`、`docs/process/local-harness-workflow.md`，并在 `harness-index.json` 登记 `searchMap` 和 `localHarnessWorkflow` 入口。
 - 本地 Harness 模式和 MCP 接入模式必须共享需求设计确认点：`planning` 阶段只允许迭代 `meta.md` 和 `requirement.md`；`plan.md`、`execution-report.md`、`review-report.md` 必须等明确执行授权后由 Execution Agent/Review Agent 按阶段生成。
-- MCP 管理页面只管理绑定到人员的访问 Key。普通用户新增 Key 默认绑定自己且不可修改绑定用户，管理员才可指定用户；页面不得提供修改或重置 Key 操作。页面不得常驻展示 MCP 地址、`X-MCP-Key` 请求头、Codex 配置、全局 Skill 包或 Codex 安装包；创建后只在结果弹窗展示一次明文 Key 和 Codex 安装包，列表不得展示明文或哈希。
+- MCP 管理页面只管理绑定到人员的访问 Key。普通用户新增 Key 默认绑定自己且不可修改绑定用户，管理员才可指定用户；页面不得提供修改或重置 Key 操作。页面不得常驻展示 MCP 地址、`X-MCP-Key` 请求头、客户端配置、全局 Skill 包或安装包；创建后只在结果弹窗展示一次明文 Key 和多客户端安装包，列表不得展示明文或哈希。
 - MCP 管理菜单和按钮必须使用 `req:mcp:key:*` 权限，需求人员角色默认不分配这些权限；开发人员角色可见 MCP 管理菜单。
 - 人员 MCP Key 不能替代项目分支动作 token：页面负责人员认证 Key，项目接入和索引指引中的 `actionToken` 是项目分支和目标动作识别 token。
 - 前端不得拼接 MCP endpoint；MCP 安装包中的远程地址由后端 `codexSetupPackage` 返回，发布默认应为 `/reqflow-api/requirement/mcp`，不得使用静态访问项目名作为 MCP 前缀。

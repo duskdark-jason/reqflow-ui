@@ -18,7 +18,7 @@
 | 需求列表 | 需求新增、编辑、状态按钮、详情和指令复制 | `docs/ai-harness/modules/requirement-platform.md` | `src/views/requirement/demand/index.vue`、`maintain.vue`、`detail.vue` |
 | 需求设计确认 | `plan_ready` 多轮补充调整、确认需求设计、回到待生成需求设计 | `docs/ai-harness/modules/requirement-platform.md` | `src/views/requirement/demand/detail.vue`、`status.js` |
 | Agent 交接资料 | 需求草稿、可行性评估、需求设计、执行计划、执行报告、Review 报告展示 | `docs/ai-harness/contracts/requirement-platform-ui.md` | `src/views/requirement/package/index.vue`、`src/views/requirement/demand/detail.vue` |
-| MCP 管理 | 人员 MCP Key、一次性明文 Key、安装命令复制 | `docs/ai-harness/modules/requirement-platform.md` | `src/views/requirement/mcpKey/index.vue`、`src/api/requirement/mcpKey.js` |
+| MCP 管理 | 人员 MCP Key、一次性明文 Key、多客户端安装命令和配置复制 | `docs/ai-harness/modules/requirement-platform.md` | `src/views/requirement/mcpKey/index.vue`、`src/api/requirement/mcpKey.js` |
 | 项目接入初始化 | 复制初始化指令、actionToken、初始化状态展示 | `docs/process/platform-key-workflow.md` | `src/api/requirement/projectInit.js`、项目维护页签 |
 | 本地 Harness 模式 | 未接入 MCP 或无 Key 时的本地需求、执行、Review、返修闭环 | `docs/process/local-harness-workflow.md` | `docs/specs/active/`、`scripts/check-harness.sh` |
 | MCP 接入模式 | 已接入需求平台后的需求设计、开发、回写和合并归档 | `docs/process/platform-key-workflow.md` | 后端 `McpService`、前端指令复制页面 |
