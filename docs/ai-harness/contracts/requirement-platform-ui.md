@@ -134,11 +134,11 @@ review_report
 - 菜单组件路径为 `requirement/mcpKey/index`，后端菜单脚本路由 path 为 `mcp-key`，菜单权限为 `req:mcp:key:list`；首页快捷入口必须跳转 `/requirement/mcp-key`，不能使用组件路径 `/requirement/mcpKey`。
 - 页面不得读取 `/requirement/mcp/key/config`，也不得在列表页顶部常驻展示 MCP 地址、请求头名 `X-MCP-Key`、客户端配置模板、全局 Skill 包或安装包。
 - 页面不得自行拼接 MCP 远程 endpoint。创建或使用指令中的 MCP 地址必须来自后端返回的 `codexSetupPackage.mcpServer.url`，发布默认路径为 `/reqflow-api/requirement/mcp`；前端静态访问项目名 `/reqflow/` 不参与该地址。
-- 列表读取 `/requirement/mcp/key/list`，一行对应一个 `req_mcp_user_key`，只能展示 Key 名称、Key 前缀、绑定用户、状态、最近使用时间和最近 IP。
+- 列表读取 `/requirement/mcp/key/list`，一行对应一个 `req_mcp_user_key`，只能展示 Key 名称、绑定用户、状态、最近使用时间、最近 IP 和创建时间；不得展示明文 Key、Key 前缀或哈希。
 - 新增时通过 `/requirement/mcp/key/user-options` 查询可绑定用户，不调用 `/system/user/list`，避免要求 MCP 维护人员同时具备系统用户菜单权限。
-- 新增时必须选择启用用户并填写 Key 名称；后端返回的 `plainKey` 只在结果弹窗中展示，前端不得把明文 Key 写入列表、查询参数或本地持久化。
+- 新增时必须选择启用用户并填写 Key 名称；后端返回的 `plainKey` 只用于渲染统一安装命令，前端不得单独展示明文 Key 字段，不得写入列表、查询参数或本地持久化。
 - 普通用户新增 Key 时绑定当前登录用户且不可修改绑定用户，管理员才展示远程用户选择并可指定绑定用户。
-- 后端返回的 `codexSetupPackage.installCommands` 是推荐展示的统一安装指令，只在创建结果或使用指令弹窗中以代码块样式展示。创建结果必须明文展示 `plainKey`；页面只展示一组统一安装命令，不得按 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode 分组展示普通安装内容。复制包含 `${REQFLOW_MCP_KEY}` 的安装脚本时，用当前弹窗中的明文 Key 替换占位符。页面可在当前会话内保留最近一次创建结果并重复打开复制，但不得把明文 Key 写入列表、本地持久化或 URL。历史 Key 通过 `/requirement/mcp/key/{keyId}/instruction` 打开安装模板时不反向恢复明文，用户如已保存明文可粘贴后复制命令。完整 `codexSetupPackage` 仅作为高级配置/调试信息折叠展示，其中 `clientInstructions` 只供手工配置或排障参考。
+- 后端返回的 `codexSetupPackage.installCommands` 是推荐展示的统一安装指令，只在创建结果或使用指令弹窗中以代码块样式展示。页面只展示一组统一安装命令，不得按 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode 分组展示普通安装内容。复制包含 `${REQFLOW_MCP_KEY}` 的安装脚本时，用当前响应中的明文 Key 替换占位符，但不单独展示明文 Key 字段。统一命令执行后由脚本提示用户选择 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode 或全部工具；高级 JSON 中可保留带 `--client`/`-Client` 的单客户端命令供自动化和排障使用。完整 `codexSetupPackage` 仅作为高级配置/调试信息折叠展示，其中 `clientInstructions` 只供手工配置或排障参考。
 - 页面不提供修改和重置 Key 操作；列表操作列只保留“使用指令”和删除。
 - 提需求人员角色默认不分配 `req:mcp:key:*` 权限，因此看不到菜单，也不能调用页面 API。
 

@@ -16,6 +16,14 @@ assert(
   "MCP Key 结果弹窗应展示统一安装指令标题。"
 )
 assert(
+  !component.includes("label=\"明文Key\""),
+  "MCP Key 页面不得单独展示明文 Key 字段。"
+)
+assert(
+  !component.includes("label=\"Key前缀\""),
+  "MCP Key 页面不得展示 Key 前缀字段。"
+)
+assert(
   component.includes("v-for=\"command in renderedInstallCommands\""),
   "MCP Key 结果弹窗应只遍历顶层 installCommands。"
 )
@@ -30,6 +38,10 @@ assert(
 assert(
   !component.includes("clientSectionsFor(result)"),
   "MCP Key 页面不应再把 clientInstructions 转成页面分组。"
+)
+assert(
+  !component.includes("历史 Key 可粘贴") && !component.includes("请粘贴明文Key"),
+  "MCP Key 页面不应再把历史 Key 当作需要用户手工粘贴明文的场景。"
 )
 
 console.log("mcp install dialog unified tests passed")

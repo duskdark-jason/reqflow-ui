@@ -73,7 +73,6 @@
     <el-table v-loading="loading" :data="mcpKeyList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="Key名称" align="center" prop="keyName" min-width="170" :show-overflow-tooltip="true" />
-      <el-table-column label="Key前缀" align="center" prop="keyPrefix" min-width="150" :show-overflow-tooltip="true" />
       <el-table-column label="绑定用户" align="center" min-width="180" :show-overflow-tooltip="true">
         <template slot-scope="scope">
           <span>{{ userDisplay(scope.row) }}</span>
@@ -162,13 +161,6 @@
     <el-dialog title="MCP Key" :visible.sync="resultOpen" width="860px" append-to-body>
       <div class="result-grid">
         <div class="result-field">
-          <span class="config-label">明文Key</span>
-          <el-input
-            v-model="createResult.plainKey"
-            placeholder="新建后自动展示明文 Key；历史 Key 可粘贴已保存的明文后复制安装命令"
-          />
-        </div>
-        <div class="result-field">
           <span class="config-label">统一安装指令</span>
           <div class="install-command-group">
             <div
@@ -202,12 +194,6 @@
         </el-collapse>
       </div>
       <div slot="footer" class="dialog-footer">
-        <el-button
-          type="primary"
-          icon="el-icon-document-copy"
-          :disabled="!createResult.plainKey"
-          @click="copyText(createResult.plainKey)"
-        >复制Key</el-button>
         <el-button @click="resultOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
@@ -390,10 +376,11 @@ export default {
     },
     showInstructionResult(data, rememberPlainKey) {
       this.createResult = Object.assign({ key: null, plainKey: "", codexSetupPackage: null }, data || {})
-      if (rememberPlainKey && this.createResult.plainKey) {
-        // 明文 Key 只在创建后返回一次，前端仅在本次会话缓存，便于用户重新打开安装命令。
+      if (this.createResult.plainKey) {
         const snapshot = JSON.parse(JSON.stringify(this.createResult))
-        this.lastInstallResult = snapshot
+        if (rememberPlainKey) {
+          this.lastInstallResult = snapshot
+        }
         const keyId = snapshot.key && snapshot.key.keyId
         if (keyId) {
           this.$set(this.installResultByKeyId, keyId, snapshot)
@@ -424,12 +411,12 @@ export default {
     },
     renderInstallCommand(command, plainKey) {
       if (!command) return ""
-      return command.replace(/\$\{REQFLOW_MCP_KEY\}/g, plainKey || "请粘贴明文Key")
+      return command.replace(/\$\{REQFLOW_MCP_KEY\}/g, plainKey || "明文Key缺失")
     },
     copyInstallCommand(command) {
       if (!command) return
       if (command.requiresPlainKey && !this.createResult.plainKey) {
-        this.$modal.msgWarning("请先填写明文Key")
+        this.$modal.msgWarning("当前Key暂无明文，请重新生成Key")
         return
       }
       this.copyText(command.renderedCommand || "")
