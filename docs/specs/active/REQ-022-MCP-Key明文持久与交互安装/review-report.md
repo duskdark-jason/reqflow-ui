@@ -18,6 +18,7 @@
 | 需求入口互斥 | 通过 | 覆盖 AC-010。需求列表页不再同时展示同阶段生成指令和反馈结论入口；详情页按 `requirement_assessment` 或 `requirement` 是否已回写切换生成指令和反馈结论。 |
 | 开发验收门禁 | 通过 | 覆盖 AC-011。详情页 `developing` 和 `repairing` 必须等 `execution_report` 与 `review_report` 都已回写后，才从生成任务指令切换为验收提交按钮。 |
 | 合并归档门禁 | 通过 | 覆盖 AC-012。详情页 `closeout_pending` 必须等平台归档验证通过后，才从生成合并归档指令切换为确认归档完成按钮。 |
+| 返修问题说明 | 通过 | 覆盖 AC-013。列表页和详情页提交返修时必须先填写问题说明，并通过 `/repair` 接口提交；返修说明在资料包中归入 Review 报告标签。 |
 | 文档同步 | 通过 | 覆盖 AC-005、AC-007、AC-008、AC-009、AC-010、AC-011、AC-012。模块文档、UI 契约和搜索索引已同步。 |
 | Harness 门禁 | 通过 | 覆盖 AC-006。`--spec` 指向 `docs/specs/done/` 会失败，当前执行 spec 保持在 `active/`。 |
 

@@ -61,5 +61,8 @@ export function supplementTargetArtifact(version) {
   if (note.includes("设计调整")) {
     return "requirement"
   }
+  if (note.includes("返修")) {
+    return "review_report"
+  }
   return "requirement_assessment"
 }

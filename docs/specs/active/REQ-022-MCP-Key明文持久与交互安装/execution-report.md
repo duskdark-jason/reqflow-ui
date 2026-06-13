@@ -21,10 +21,11 @@
 | `docs/process/local-harness-workflow.md` | 明确 `--spec` 只检查 `active/`，完成后再按需归档到 `done/`。 |
 | `scripts/check-harness.sh`、`scripts/test-check-harness.sh` | 限制 `--spec` 只能指向 `docs/specs/active/`，并补充 done 目录失败用例。 |
 | `src/views/requirement/demand/status.js`、`index.vue`、`detail.vue`、`src/api/requirement/demand.js`、`scripts/test-demand-ui-helpers.js` | 修复需求列表/详情同阶段操作入口互斥，列表页不同时展示生成指令和反馈结论，详情页按资料包回写状态切换；开发和返修阶段必须等执行报告与 Review 报告回写后才展示验收提交入口；合并归档阶段必须等平台验证通过后才展示确认归档完成。 |
+| `src/api/requirement/demand.js`、`src/views/requirement/demand/index.vue`、`detail.vue`、`artifacts.js`、`scripts/test-demand-ui-helpers.js` | 新增提交返修问题说明弹窗和 `/repair` 接口封装，返修说明资料包记录归入 Review 报告标签。 |
 
 ## 模块知识库沉淀
 
-- 影响模块：MCP 管理页、MCP 请求地址配置、多客户端安装指令
+- 影响模块：MCP 管理页、MCP 请求地址配置、多客户端安装指令、需求返修流程
 - 模块知识库动作：更新
 - 模块知识库文档：`docs/ai-harness/modules/requirement-platform.md`、`docs/ai-harness/contracts/requirement-platform-ui.md`
 
@@ -47,6 +48,7 @@
 |---|---|---|---|
 | L2 | AC-001、AC-002、AC-003、AC-004、AC-005、AC-007、AC-008、AC-009 | `node scripts/test-mcp-install-dialog-unified.js` | 通过 |
 | L2 | AC-010、AC-011、AC-012 | `node scripts/test-demand-ui-helpers.js` | 通过，先红于合并归档入口互斥 helper 缺失，修复后通过 |
+| L2 | AC-013 | `node scripts/test-demand-ui-helpers.js` | 通过，覆盖返修问题说明归入 Review 报告标签 |
 | L2 | AC-006 | `sh scripts/test-check-harness.sh` | 通过 |
 | L1 | AC-001、AC-002、AC-003、AC-004、AC-010、AC-011、AC-012 | `npm run build:prod` | 通过，存在历史体积告警 |
 | L0 | AC-005、AC-006、AC-007、AC-008、AC-009、AC-010、AC-011、AC-012 | `sh scripts/check-docs.sh && sh scripts/check-harness.sh complete --spec docs/specs/active/REQ-022-MCP-Key明文持久与交互安装` | 通过 |
@@ -69,6 +71,7 @@
 - 用户反馈需求列表页“反馈分析结论”和“生成需求分析指令”不应同时出现，已补列表专用状态动作过滤和详情页资料包感知互斥。
 - 用户反馈需求详情页开发中同时出现“生成执行任务指令”和“提交验收”，已按执行报告与 Review 报告回写状态补齐开发和返修阶段互斥门禁。
 - 用户要求检查完整需求流转阶段，发现合并归档阶段仍会同时展示“生成合并归档指令”和“确认归档完成”，已接入后端归档验证结果做互斥展示。
+- 用户指出需求人员提交返修时需要指出问题，已在列表页和详情页补充返修问题说明弹窗，并调用专用 `/repair` 接口。
 
 ## Review 返修记录
 

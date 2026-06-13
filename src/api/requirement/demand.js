@@ -69,6 +69,15 @@ export function submitDemandSupplement(demandId, data) {
   })
 }
 
+// 提交需求返修问题说明
+export function submitDemandRepair(demandId, data) {
+  return request({
+    url: '/requirement/demand/' + demandId + '/repair',
+    method: 'post',
+    data: data
+  })
+}
+
 // 获取生成需求可行性评估和需求设计的 MCP 指令
 export function getDemandPlanInstruction(demandId) {
   return request({

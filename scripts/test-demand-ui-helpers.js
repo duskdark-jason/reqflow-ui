@@ -33,13 +33,19 @@ assert(!artifacts.handoffArtifactTypes.some(item => item.value === "requirement_
 assert.deepStrictEqual(artifacts.supplementVersionsForArtifact([
   { artifactType: "requirement_supplement", versionNo: 1, versionNote: "需求人补充说明" },
   { artifactType: "requirement_supplement", versionNo: 2, versionNote: "需求设计调整说明" },
+  { artifactType: "requirement_supplement", versionNo: 3, versionNote: "需求人返修问题说明" },
   { artifactType: "requirement", versionNo: 1 }
 ], "requirement_assessment").map(item => item.versionNo), [1])
 assert.deepStrictEqual(artifacts.supplementVersionsForArtifact([
   { artifactType: "requirement_supplement", versionNo: 1, versionNote: "需求人补充说明" },
   { artifactType: "requirement_supplement", versionNo: 2, versionNote: "需求设计调整说明" },
+  { artifactType: "requirement_supplement", versionNo: 3, versionNote: "需求人返修问题说明" },
   { artifactType: "requirement", versionNo: 1 }
 ], "requirement").map(item => item.versionNo), [2])
+assert.deepStrictEqual(artifacts.supplementVersionsForArtifact([
+  { artifactType: "requirement_supplement", versionNo: 1, versionNote: "需求人补充说明" },
+  { artifactType: "requirement_supplement", versionNo: 3, versionNote: "需求人返修问题说明" }
+], "review_report").map(item => item.versionNo), [3])
 
 const html = markdown.renderMarkdown(`# 需求设计
 

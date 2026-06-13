@@ -215,6 +215,27 @@
         <el-button type="primary" :loading="feedbackDialog.loading" @click="submitFeedbackConclusion">确认提交</el-button>
       </span>
     </el-dialog>
+
+    <el-dialog
+      title="提交返修问题说明"
+      :visible.sync="repairDialog.visible"
+      width="560px"
+      append-to-body
+    >
+      <el-input
+        v-model="repairDialog.content"
+        type="textarea"
+        :rows="6"
+        maxlength="4000"
+        show-word-limit
+        resize="vertical"
+        placeholder="请说明本次验收发现的问题、需要返修的位置和期望结果"
+      />
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="repairDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="repairDialog.loading" @click="submitRepairIssue">提交返修</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -223,7 +244,7 @@ import { listProject } from "@/api/requirement/project"
 import { listVariant } from "@/api/requirement/variant"
 import { listModule } from "@/api/requirement/module"
 import { listIndexModule } from "@/api/requirement/index"
-import { getDemand, getDemandCloseoutVerification, getDemandDevelopInstruction, getDemandPlanInstruction, submitDemandSupplement, updateDemandStatus } from "@/api/requirement/demand"
+import { getDemand, getDemandCloseoutVerification, getDemandDevelopInstruction, getDemandPlanInstruction, submitDemandRepair, submitDemandSupplement, updateDemandStatus } from "@/api/requirement/demand"
 import { getDemandPackage } from "@/api/requirement/package"
 import { mapGetters } from "vuex"
 import { createEmptyArtifacts, defaultArtifactByStatus, handoffArtifactTypes, supplementVersionsForArtifact as getSupplementVersionsForArtifact } from "./artifacts"
@@ -273,6 +294,11 @@ export default {
         visible: false,
         action: null,
         selected: "",
+        loading: false
+      },
+      repairDialog: {
+        visible: false,
+        content: "",
         loading: false
       },
       demandTypeOptions: [
@@ -507,6 +533,10 @@ export default {
         this.openFeedbackDialog(action)
         return
       }
+      if (this.isRepairAction(action)) {
+        this.openRepairDialog()
+        return
+      }
       this.$modal.confirm(action.confirm || "是否确认更新需求状态？").then(() => {
         return updateDemandStatus(this.demandId, action.value)
       }).then(() => {
@@ -519,6 +549,32 @@ export default {
       this.feedbackDialog.selected = action.feedbackOptions[0].value
       this.feedbackDialog.loading = false
       this.feedbackDialog.visible = true
+    },
+    isRepairAction(action) {
+      return action && action.value === "repairing" && String(this.form.status) === "review"
+    },
+    openRepairDialog() {
+      this.repairDialog.content = ""
+      this.repairDialog.loading = false
+      this.repairDialog.visible = true
+    },
+    submitRepairIssue() {
+      const content = String(this.repairDialog.content || "").trim()
+      if (!content) {
+        this.$modal.msgWarning("请输入返修问题说明")
+        return
+      }
+      this.repairDialog.loading = true
+      submitDemandRepair(this.demandId, { content }).then(() => {
+        this.repairDialog.visible = false
+        this.repairDialog.loading = false
+        this.repairDialog.content = ""
+        this.$modal.msgSuccess("返修问题已提交")
+        this.getDetail()
+        this.loadPackagePreview()
+      }).catch(() => {
+        this.repairDialog.loading = false
+      })
     },
     submitFeedbackConclusion() {
       const option = this.feedbackOptions.find(item => item.value === this.feedbackDialog.selected)
