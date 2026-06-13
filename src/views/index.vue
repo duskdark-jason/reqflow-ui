@@ -150,7 +150,7 @@ export default {
       return [
         this.demandEntry,
         { title: "执行资料", path: "/requirement/package", icon: "el-icon-document-checked", desc: "生成或查看 Agent 交接资料", permission: "req:package:list" },
-        { title: "MCP 管理", path: "/requirement/mcpKey", icon: "el-icon-key", desc: "管理人员 MCP 访问 Key", permission: "req:mcp:key:list" }
+        { title: "MCP 管理", path: "/requirement/mcp-key", icon: "el-icon-key", desc: "管理人员 MCP 访问 Key", permission: "req:mcp:key:list" }
       ]
     },
     visibleQuickActions() {

@@ -24,7 +24,7 @@
 | MCP 接入模式 | 已接入需求平台后的需求设计、开发、回写和合并归档 | `docs/process/platform-key-workflow.md` | 后端 `McpService`、前端指令复制页面 |
 | search-map | 面向模型的关键词导航和拆分触发 | `docs/ai-harness/search-map.md` | `scripts/check-harness.sh` |
 | 检查脚本 | 文档占位符、harness 初始化、Review、完成态门禁 | `docs/process/agent-workflow.md` | `scripts/check-docs.sh`、`scripts/check-harness.sh` |
-| 权限与菜单 | RuoYi 菜单、按钮权限、首页快捷入口过滤 | `docs/ai-harness/modules/requirement-platform.md` | `src/router/index.js`、`src/store/modules/permission.js`、`src/views/index.vue` |
+| 权限与菜单 | RuoYi 菜单、按钮权限、首页快捷入口过滤 | `docs/ai-harness/modules/requirement-platform.md` | `src/router/index.js`、`src/store/modules/permission.js`、`src/views/index.vue`、`scripts/test-dashboard-quick-actions.js` |
 | 生产路径 | `/reqflow/` 静态访问、`/reqflow-api` API 前缀、开发 `/dev-api` 代理 | `docs/ai-harness/contracts/requirement-platform-ui.md` | `.env.production`、`.env.development`、`vue.config.js` |
 
 ## 维护触发

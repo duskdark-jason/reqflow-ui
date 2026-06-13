@@ -131,7 +131,7 @@ review_report
 
 ## MCP管理页面契约
 
-- 菜单路径为 `requirement/mcpKey/index`，后端菜单脚本路径为 `mcp-key`，菜单权限为 `req:mcp:key:list`。
+- 菜单组件路径为 `requirement/mcpKey/index`，后端菜单脚本路由 path 为 `mcp-key`，菜单权限为 `req:mcp:key:list`；首页快捷入口必须跳转 `/requirement/mcp-key`，不能使用组件路径 `/requirement/mcpKey`。
 - 页面不得读取 `/requirement/mcp/key/config`，也不得在列表页顶部常驻展示 MCP 地址、请求头名 `X-MCP-Key`、客户端配置模板、全局 Skill 包或安装包。
 - 页面不得自行拼接 MCP 远程 endpoint。创建或使用指令中的 MCP 地址必须来自后端返回的 `codexSetupPackage.mcpServer.url`，发布默认路径为 `/reqflow-api/requirement/mcp`；前端静态访问项目名 `/reqflow/` 不参与该地址。
 - 列表读取 `/requirement/mcp/key/list`，一行对应一个 `req_mcp_user_key`，只能展示 Key 名称、Key 前缀、绑定用户、状态、最近使用时间和最近 IP。
