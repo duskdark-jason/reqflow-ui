@@ -184,7 +184,7 @@
                 <span class="client-config-path">{{ section.mcpConfigPath }}</span>
               </div>
               <div v-if="section.commands.length" class="install-command-group">
-                <div class="install-group-title">MCP命令</div>
+                <div class="install-group-title">通用安装脚本</div>
                 <div
                   v-for="command in section.commands"
                   :key="section.client + '-' + command.platform"

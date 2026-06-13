@@ -47,7 +47,7 @@
 - 项目分支维护中文标签、真实分支名和后端生成的初始化指令；指令复制内容必须来自 `initInstruction.content`，包含简短提示词和 `actionToken`，旧 `mcpKey` 只作为兼容降级展示。
 - 分支知识库详情必须通过新页签展示，不在项目列表或维护表格中使用展开行承载知识库详情。
 - MCP 索引用 `actionToken + remoteUrl` 识别项目、分支和代码仓库；旧 `mcpKey + remoteUrl` 仅作为兼容路径。
-- MCP 管理创建 Key 后，结果弹窗必须优先展示明文 Key 和 `codexSetupPackage.clientInstructions` 的客户端分组安装指令；每个客户端可展示 MCP 命令、MCP 配置片段、全局 skill 安装命令和说明。支持客户端为 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode。前端只在当前页面会话内把一次性 `plainKey` 填入命令和配置片段并允许重复打开复制，刷新后不得恢复明文 Key。历史 Key 的使用指令只展示模板，不反向恢复明文。完整 JSON 安装包只作为高级配置/调试信息。
+- MCP 管理创建 Key 后，结果弹窗必须优先展示明文 Key 和 `codexSetupPackage.clientInstructions` 的客户端分组安装指令；每个客户端可展示通用安装脚本、MCP 配置片段、全局 skill 单独安装命令和说明。支持客户端为 Codex、Claude Code、Trae、Qoder、CodeBuddy、OpenCode。前端只在当前页面会话内把一次性 `plainKey` 填入命令和配置片段并允许重复打开复制，刷新后不得恢复明文 Key。历史 Key 的使用指令只展示模板，不反向恢复明文。完整 JSON 安装包只作为高级配置/调试信息。
 - 模块和知识库必须同时关联项目与项目分支。需求维护页签选择模块时按 `projectId + variantId` 过滤，优先读取知识库模块；前后端 companion 项目存在前端页面知识模块时，只向需求人员展示前端菜单/页面模块，没有前端页面模块时才兼容人工模块和其他索引模块；分支知识库页签的索引批次和模块知识库也按选中分支展示。
 - 新增和编辑需求的项目分支下拉只能展示已初始化完成的分支，数据来自项目初始化上下文的分支行级 `indexedRepositoryCount` 和 `unindexedRepositoryCount`。新功能提需允许当前分支暂时没有既有模块知识；需求列表查询筛选可以继续展示全部分支，避免历史需求不可检索。
 - 需求维护页签允许填写新功能名称并通过需求备注提交；列表和详情在没有模块标识时展示该新功能名称。

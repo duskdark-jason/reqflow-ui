@@ -12,7 +12,7 @@
 
 | 路径 | 修改说明 |
 |---|---|
-| `src/views/requirement/mcpKey/index.vue` | 结果弹窗按客户端分组展示 MCP 命令、配置片段、全局 skill 安装命令和说明。 |
+| `src/views/requirement/mcpKey/index.vue` | 结果弹窗按客户端分组展示通用安装脚本、配置片段、全局 skill 单独安装命令和说明。 |
 | `docs/ai-harness/modules/requirement-platform.md` | 记录多客户端展示规则。 |
 | `docs/ai-harness/contracts/requirement-platform-ui.md` | 记录 `clientInstructions` UI 契约。 |
 | `docs/ai-harness/search-map.md` | 更新 MCP 管理搜索关键词。 |

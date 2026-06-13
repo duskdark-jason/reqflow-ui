@@ -30,9 +30,9 @@
 | 验收 ID | 需求描述 | 实现证据 | 验证证据 | Review 结论 |
 |---|---|---|---|---|
 | AC-001 | 渲染多客户端 | `clientSetupSections` | `npm run build:prod` | 通过 |
-| AC-002 | 多类复制入口 | 弹窗模板 | `npm run build:prod` | 通过 |
-| AC-003 | MCP 命令/配置替换 Key | `copyInstallCommand`、`copyConfigSnippet` | `npm run build:prod` | 通过 |
-| AC-004 | skill 命令不要求 Key | `requiresPlainKey` | `npm run build:prod` | 通过 |
+| AC-002 | 通用安装脚本、配置片段和 skill 单独安装复制入口 | 弹窗模板 | `npm run build:prod` | 通过 |
+| AC-003 | 通用安装脚本/配置替换 Key | `copyInstallCommand`、`copyConfigSnippet` | `npm run build:prod` | 通过 |
+| AC-004 | skill 单独安装命令不要求 Key | `requiresPlainKey` | `npm run build:prod` | 通过 |
 | AC-005 | 旧包回退 | `clientSectionsFor` fallback | `npm run build:prod` | 通过 |
 | AC-006 | 文档同步 | `docs/ai-harness/**` | `check-docs` 和 harness complete | 通过 |
 
